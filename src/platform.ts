@@ -1,11 +1,8 @@
-import '@project-chip/matter-node.js';
-import { OnOffCluster, WindowCovering, WindowCoveringCluster } from '@project-chip/matter-node.js/cluster';
-import { DeviceTypes } from '@project-chip/matter-node.js/device';
-
+import { DeviceTypes, WindowCovering, WindowCoveringCluster, logEndpoint } from 'matterbridge';
 import { Matterbridge, MatterbridgeDevice, MatterbridgeDynamicPlatform } from 'matterbridge';
 import { AnsiLogger } from 'node-ansi-logger';
 
-export class ExampleMatterbridgeDynamicPlatform extends MatterbridgeDynamicPlatform {
+export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   constructor(matterbridge: Matterbridge, log: AnsiLogger) {
     super(matterbridge, log);
   }
@@ -17,11 +14,13 @@ export class ExampleMatterbridgeDynamicPlatform extends MatterbridgeDynamicPlatf
     cover.createDefaultIdentifyClusterServer();
     cover.createDefaultGroupsClusterServer();
     cover.createDefaultScenesClusterServer();
-    cover.createDefaultBridgedDeviceBasicInformationClusterServer('Bridged device 1', '0x01020564', 0xfff1, 'Luligu', 'Dynamic device 1');
+    cover.createDefaultBridgedDeviceBasicInformationClusterServer('Blind 1', '0x01020599', 0xfff1, 'Luligu', 'Dynamic blind 1');
     cover.createDefaultPowerSourceRechargableBatteryClusterServer(86);
-    cover.createDefaultWindowCoveringClusterServer();
+    cover.createDefaultWindowCoveringClusterServer(0);
+
     await this.registerDevice(cover);
 
+    /*
     setInterval(
       () => {
         const coverCluster = cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
@@ -31,57 +30,71 @@ export class ExampleMatterbridgeDynamicPlatform extends MatterbridgeDynamicPlatf
           position = position >= 9000 ? 0 : position + 1000;
           coverCluster.setTargetPositionLiftPercent100thsAttribute(position);
           coverCluster.setCurrentPositionLiftPercent100thsAttribute(position);
-          coverCluster.setOperationalStatusAttribute({
-            global: WindowCovering.MovementStatus.Stopped,
-            lift: WindowCovering.MovementStatus.Stopped,
-            tilt: WindowCovering.MovementStatus.Stopped,
-          });
+          this.setStatus(cover, WindowCovering.MovementStatus.Stopped);
           this.log.info(`Set PositionLiftPercent100ths to ${position}`);
         }
       },
       60 * 1000 + 500,
     );
+    */
 
     cover.addCommandHandler('identify', async ({ request: { identifyTime } }) => {
       this.log.info(`Command identify called identifyTime:${identifyTime}`);
+      logEndpoint(cover);
     });
+
     cover.addCommandHandler('goToLiftPercentage', async ({ request: { liftPercent100thsValue } }) => {
       this.log.info(`Command goToLiftPercentage called liftPercent100thsValue:${liftPercent100thsValue}`);
-    });
-
-    const light = new MatterbridgeDevice(DeviceTypes.ON_OFF_LIGHT);
-    light.createDefaultIdentifyClusterServer();
-    light.createDefaultGroupsClusterServer();
-    light.createDefaultScenesClusterServer();
-    light.createDefaultBridgedDeviceBasicInformationClusterServer('Bridged device 2', '0x23480564', 0xfff1, 'Luligu', 'Dynamic device 2');
-    light.createDefaultPowerSourceReplaceableBatteryClusterServer(70);
-    light.createDefaultOnOffClusterServer();
-    this.registerDevice(light);
-
-    setInterval(
-      () => {
-        const lightCluster = light.getClusterServer(OnOffCluster);
-        if (lightCluster) {
-          const status = lightCluster.getOnOffAttribute();
-          lightCluster.setOnOffAttribute(!status);
-          this.log.info(`Set onOff to ${!status}`);
-        }
-      },
-      60 * 1000 + 200,
-    );
-
-    light.addCommandHandler('identify', async ({ request: { identifyTime } }) => {
-      this.log.info(`Command identify called identifyTime:${identifyTime}`);
-    });
-    light.addCommandHandler('on', async () => {
-      this.log.info('Command on called');
-    });
-    light.addCommandHandler('off', async () => {
-      this.log.info('Command off called');
+      this.moveToPosition(cover, liftPercent100thsValue);
     });
   }
 
   override async onShutdown(reason?: string) {
     this.log.info('onShutdown called with reason:', reason ?? 'none');
+  }
+
+  setStatus(cover: MatterbridgeDevice, status: WindowCovering.MovementStatus) {
+    const windowCovering = cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
+    if (!windowCovering) return;
+    windowCovering.setOperationalStatusAttribute({ global: status, lift: status, tilt: status });
+  }
+
+  setPosition(cover: MatterbridgeDevice, position: number) {
+    const windowCovering = cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
+    if (!windowCovering) return;
+    windowCovering.setCurrentPositionLiftPercent100thsAttribute(position);
+    windowCovering.setTargetPositionLiftPercent100thsAttribute(position);
+  }
+
+  // With Matter 0=open 10000=close
+  moveToPosition(cover: MatterbridgeDevice, targetPosition: number) {
+    const windowCovering = cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
+    if (!windowCovering) return;
+    let currentPosition = windowCovering.getCurrentPositionLiftPercent100thsAttribute();
+    if (currentPosition === null) return;
+    if (targetPosition === currentPosition) {
+      windowCovering.setTargetPositionLiftPercent100thsAttribute(targetPosition);
+      this.setStatus(cover, WindowCovering.MovementStatus.Stopped);
+      this.log.debug(`****Moving from ${currentPosition} to ${targetPosition}. Movement stopped.`);
+      return;
+    }
+    const movement = targetPosition - currentPosition;
+    const fullMovementSeconds = 30;
+    const movementSeconds = Math.abs((movement * fullMovementSeconds) / 10000);
+    this.log.debug(`****Moving from ${currentPosition} to ${targetPosition} in ${movementSeconds} seconds. Movement requested ${movement}`);
+    windowCovering.setTargetPositionLiftPercent100thsAttribute(targetPosition);
+    this.setStatus(cover, targetPosition > currentPosition ? WindowCovering.MovementStatus.Closing : WindowCovering.MovementStatus.Opening);
+    const interval = setInterval(() => {
+      currentPosition = Math.round(currentPosition! + movement / movementSeconds);
+      this.log.debug(`****Moving from ${currentPosition} to ${targetPosition} difference ${Math.abs(targetPosition - currentPosition)}`);
+      if (Math.abs(targetPosition - currentPosition) <= 100 || (movement > 0 && currentPosition >= targetPosition) || (movement < 0 && currentPosition <= targetPosition)) {
+        windowCovering.setCurrentPositionLiftPercent100thsAttribute(targetPosition);
+        this.setStatus(cover, WindowCovering.MovementStatus.Stopped);
+        clearInterval(interval);
+      } else {
+        windowCovering.setCurrentPositionLiftPercent100thsAttribute(Math.max(0, Math.min(currentPosition, 10000)));
+      }
+    }, 1000);
+    interval.unref();
   }
 }

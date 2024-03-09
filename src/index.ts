@@ -1,18 +1,16 @@
-import { Matterbridge } from '../../matterbridge/dist/index.js';
+import { Matterbridge } from 'matterbridge';
 import { AnsiLogger } from 'node-ansi-logger';
-import { ExampleMatterbridgeDynamicPlatform } from './platform.js';
+import { SomfyTahomaPlatform } from './platform.js';
 
 /**
  * This is the standard interface for MatterBridge plugins.
  * Each plugin should export a default function that follows this signature.
  *
- * @param matterbridge - An instance of MatterBridge
+ * @param {Matterbridge} matterbridge - An instance of MatterBridge. This is the main interface for interacting with the MatterBridge system.
+ * @param {AnsiLogger} log - An instance of AnsiLogger. This is used for logging messages in a format that can be displayed with ANSI color codes.
+ * @returns {SomfyTahomaPlatform} - An instance of the SomfyTahomaPlatform. This is the main interface for interacting with the Somfy Tahoma system.
+ *
  */
-export default function initializePlugin(matterbridge: Matterbridge, log: AnsiLogger) {
-  log.info('Matterbridge dynamic platform plugin example is loading...');
-
-  const platform = new ExampleMatterbridgeDynamicPlatform(matterbridge, log);
-
-  log.info('Matterbridge dynamic platform plugin example initialized successfully!');
-  return platform;
+export default function initializePlugin(matterbridge: Matterbridge, log: AnsiLogger): SomfyTahomaPlatform {
+  return new SomfyTahomaPlatform(matterbridge, log);
 }

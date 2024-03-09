@@ -1,7 +1,7 @@
 {
-  "name": "matterbridge-example-dynamic-platform",
+  "name": "matterbridge-somfy-tahoma",
   "version": "1.0.1",
-  "description": "Matterbridge dynamic platform plugin example",
+  "description": "Matterbridge somfy tahoma plugin",
   "author": "https://github.com/Luligu",
   "license": "MIT",
   "type": "module",
@@ -9,16 +9,18 @@
   "types": "dist/index.d.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Luligu/matterbridge-example-dynamic-platform"
+    "url": "https://github.com/Luligu/matterbridge-somfy-tahoma"
   },
   "bugs": {
-    "url": "https://github.com/Luligu/matterbridge-example-dynamic-platform/issues"
+    "url": "https://github.com/Luligu/matterbridge-somfy-tahoma/issues"
   },
   "keywords": [
     "matterbridge",
     "homebridge",
     "matter",
-    "matter.js"
+    "matter.js",
+    "tahoma",
+    "somfy"
   ],
   "engines": {
     "node": "^18.19.0 || ^20.11.0"
@@ -26,7 +28,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "start": "matterbridge -childbridge",
+    "start": "matterbridge -bridge",
     "test": "jest",
     "test:verbose": "jest --verbose",
     "test:watch": "jest --watch",
@@ -40,9 +42,14 @@
     "prepublishOnly": "npm run lint && npm run cleanBuild",
     "checkDependencies": "npx npm-check-updates",
     "updateDependencies": "npx npm-check-updates -u",
-    "dev:link": "npm link matterbridge matterbridge-history",
-    "dev:unlink": "npm unlink matterbridge matterbridge-history",
-    "dev:install": "npm install --save-dev matterbridge && npm install matterbridge-history",
+    "matterbridge:add": "matterbridge -add .\\",
+    "matterbridge:remove": "matterbridge -remove .\\",
+    "matterbridge:enable": "matterbridge -enable .\\",
+    "matterbridge:disable": "matterbridge -disable .\\",
+    "matterbridge:list": "matterbridge -list",
+    "dev:link": "npm link matterbridge",
+    "dev:unlink": "npm unlink matterbridge",
+    "dev:install": "npm install --save-dev matterbridge",
     "updateMatter:dev": "npm install @project-chip/matter-node.js@dev",
     "updateMatter:latest": "npm install @project-chip/matter-node.js"
   },
@@ -58,8 +65,6 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@project-chip/matter-node.js": "^0.7.5",
-    "node-ansi-logger": "^1.9.1",
-    "node-persist-manager": "^1.0.3"
+    "node-ansi-logger": "^1.9.1"
   }
 }
