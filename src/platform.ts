@@ -3,6 +3,8 @@ import { Matterbridge, MatterbridgeDevice, MatterbridgeDynamicPlatform } from 'm
 import { AnsiLogger } from 'node-ansi-logger';
 
 export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
+  cover: MatterbridgeDevice | undefined = undefined;
+
   constructor(matterbridge: Matterbridge, log: AnsiLogger) {
     super(matterbridge, log);
   }
@@ -10,15 +12,15 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   override async onStart(reason?: string) {
     this.log.info('onStart called with reason:', reason ?? 'none');
 
-    const cover = new MatterbridgeDevice(DeviceTypes.WINDOW_COVERING);
-    cover.createDefaultIdentifyClusterServer();
-    cover.createDefaultGroupsClusterServer();
-    cover.createDefaultScenesClusterServer();
-    cover.createDefaultBridgedDeviceBasicInformationClusterServer('Blind 1', '0x01020599', 0xfff1, 'Luligu', 'Dynamic blind 1');
-    cover.createDefaultPowerSourceRechargableBatteryClusterServer(86);
-    cover.createDefaultWindowCoveringClusterServer(0);
+    this.cover = new MatterbridgeDevice(DeviceTypes.WINDOW_COVERING);
+    this.cover.createDefaultIdentifyClusterServer();
+    this.cover.createDefaultGroupsClusterServer();
+    this.cover.createDefaultScenesClusterServer();
+    this.cover.createDefaultBridgedDeviceBasicInformationClusterServer('Blind 1', '0x01020599', 0xfff1, 'Luligu', 'Dynamic blind 1');
+    this.cover.createDefaultPowerSourceRechargableBatteryClusterServer(86);
+    this.cover.createDefaultWindowCoveringClusterServer(0);
 
-    await this.registerDevice(cover);
+    await this.registerDevice(this.cover);
 
     /*
     setInterval(
@@ -38,15 +40,27 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     );
     */
 
-    cover.addCommandHandler('identify', async ({ request: { identifyTime } }) => {
+    this.cover.addCommandHandler('identify', async ({ request: { identifyTime } }) => {
       this.log.info(`Command identify called identifyTime:${identifyTime}`);
-      logEndpoint(cover);
+      if (this.cover) logEndpoint(this.cover);
     });
 
-    cover.addCommandHandler('goToLiftPercentage', async ({ request: { liftPercent100thsValue } }) => {
+    this.cover.addCommandHandler('goToLiftPercentage', async ({ request: { liftPercent100thsValue } }) => {
       this.log.info(`Command goToLiftPercentage called liftPercent100thsValue:${liftPercent100thsValue}`);
-      this.moveToPosition(cover, liftPercent100thsValue);
+      if (this.cover) this.moveToPosition(this.cover, liftPercent100thsValue);
     });
+  }
+
+  override async onConfigure() {
+    this.log.info('****onConfigure called');
+    if (!this.cover) return;
+    const windowCovering = this.cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
+    if (!windowCovering) return;
+    const currentPosition = windowCovering.getCurrentPositionLiftPercent100thsAttribute();
+    const targetPosition = windowCovering.getTargetPositionLiftPercent100thsAttribute();
+    if (currentPosition === null || targetPosition === null) return;
+    this.log.info('****onConfigure called setting currentPosition', currentPosition, targetPosition);
+    windowCovering.setTargetPositionLiftPercent100thsAttribute(currentPosition);
   }
 
   override async onShutdown(reason?: string) {
