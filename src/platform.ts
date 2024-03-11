@@ -52,14 +52,14 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   }
 
   override async onConfigure() {
-    this.log.info('****onConfigure called');
+    this.log.debug('onConfigure called');
     if (!this.cover) return;
     const windowCovering = this.cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
     if (!windowCovering) return;
     const currentPosition = windowCovering.getCurrentPositionLiftPercent100thsAttribute();
     const targetPosition = windowCovering.getTargetPositionLiftPercent100thsAttribute();
     if (currentPosition === null || targetPosition === null) return;
-    this.log.info('****onConfigure called setting currentPosition', currentPosition, targetPosition);
+    this.log.info('**onConfigure called setting currentPosition', currentPosition, targetPosition);
     windowCovering.setTargetPositionLiftPercent100thsAttribute(currentPosition);
   }
 
