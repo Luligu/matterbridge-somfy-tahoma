@@ -50,6 +50,11 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.info(`Command goToLiftPercentage called liftPercent100thsValue:${liftPercent100thsValue}`);
       if (this.cover) this.moveToPosition(this.cover, liftPercent100thsValue);
     });
+
+    this.cover.addCommandHandler('stopMotion', async () => {
+      this.log.info('Command stopMotion called');
+      //if (this.cover) this.moveToPosition(this.cover, liftPercent100thsValue);WindowCovering
+    });
   }
 
   override async onConfigure() {
