@@ -71,6 +71,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
   override async onShutdown(reason?: string) {
     this.log.info('onShutdown called with reason:', reason ?? 'none');
+    await this.unregisterAllDevices();
   }
 
   setStatus(cover: MatterbridgeDevice, status: WindowCovering.MovementStatus) {
