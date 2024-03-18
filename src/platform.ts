@@ -66,11 +66,13 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     const targetPosition = windowCovering.getTargetPositionLiftPercent100thsAttribute();
     if (currentPosition === null || targetPosition === null) return;
     this.log.debug('**onConfigure called setting currentPosition', currentPosition, targetPosition);
-    windowCovering.setTargetPositionLiftPercent100thsAttribute(currentPosition);
+    this.setPosition(this.cover, currentPosition);
+    this.setStatus(this.cover, WindowCovering.MovementStatus.Stopped);
   }
 
   override async onShutdown(reason?: string) {
     this.log.info('onShutdown called with reason:', reason ?? 'none');
+    clearInterval(this.interval);
     await this.unregisterAllDevices();
   }
 
