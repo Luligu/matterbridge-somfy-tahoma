@@ -18,7 +18,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.cover.createDefaultGroupsClusterServer();
     this.cover.createDefaultScenesClusterServer();
     this.cover.createDefaultBridgedDeviceBasicInformationClusterServer('Blind 1', '0x01020599', 0xfff1, 'Luligu', 'Dynamic blind 1');
-    this.cover.createDefaultPowerSourceRechargableBatteryClusterServer(86);
+    this.cover.createDefaultPowerSourceRechargeableBatteryClusterServer(86);
     this.cover.createDefaultWindowCoveringClusterServer(0);
 
     await this.registerDevice(this.cover);
