@@ -19,12 +19,12 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.cover.createDefaultScenesClusterServer();
     this.cover.createDefaultBridgedDeviceBasicInformationClusterServer('Blind 1', '0x01020599', 0xfff1, 'Luligu', 'Dynamic blind 1');
     this.cover.createDefaultPowerSourceRechargeableBatteryClusterServer(86);
-    this.cover.createDefaultWindowCoveringClusterServer(0);
+    this.cover.createDefaultWindowCoveringClusterServer();
 
     await this.registerDevice(this.cover);
 
     /*
-    setInterval(
+    this.interval = setInterval(
       () => {
         const coverCluster = cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
         if (coverCluster && coverCluster.getCurrentPositionLiftPercent100thsAttribute) {
@@ -53,21 +53,18 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
     this.cover.addCommandHandler('stopMotion', async () => {
       this.log.info('Command stopMotion called');
+      clearInterval(this.interval);
+      this.cover?.setWindowCoveringTargetAsCurrentAndStopped();
       //if (this.cover) this.moveToPosition(this.cover, liftPercent100thsValue);WindowCovering
     });
   }
 
   override async onConfigure() {
     this.log.info('onConfigure called');
-    if (!this.cover) return;
-    const windowCovering = this.cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
-    if (!windowCovering) return;
-    const currentPosition = windowCovering.getCurrentPositionLiftPercent100thsAttribute();
-    const targetPosition = windowCovering.getTargetPositionLiftPercent100thsAttribute();
-    if (currentPosition === null || targetPosition === null) return;
-    this.log.debug('**onConfigure called setting currentPosition', currentPosition, targetPosition);
-    this.setPosition(this.cover, currentPosition);
-    this.setStatus(this.cover, WindowCovering.MovementStatus.Stopped);
+
+    // Set cover to target = current position and status to stopped (current position is persisted in the cluster)
+    this.cover?.setWindowCoveringTargetAsCurrentAndStopped();
+    this.log.debug('Set cover initial targetPositionLiftPercent100ths = currentPositionLiftPercent100ths and operationalStatus to Stopped.');
   }
 
   override async onShutdown(reason?: string) {
@@ -76,45 +73,22 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     await this.unregisterAllDevices();
   }
 
-  setStatus(cover: MatterbridgeDevice, status: WindowCovering.MovementStatus) {
-    const windowCovering = cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
-    if (!windowCovering) return;
-    this.log.info(`**setStatus ${status}.`);
-    windowCovering.setOperationalStatusAttribute({ global: status, lift: status, tilt: status });
-  }
-
-  getStatus(cover: MatterbridgeDevice) {
-    const windowCovering = cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
-    if (!windowCovering) return undefined;
-    const status = windowCovering.getOperationalStatusAttribute();
-    this.log.info(`**getStatus ${status.global}.`);
-    return status.global;
-  }
-
-  setPosition(cover: MatterbridgeDevice, position: number) {
-    const windowCovering = cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
-    if (!windowCovering) return;
-    windowCovering.setCurrentPositionLiftPercent100thsAttribute(position);
-    windowCovering.setTargetPositionLiftPercent100thsAttribute(position);
-  }
-
   // With Matter 0=open 10000=close
   moveToPosition(cover: MatterbridgeDevice, targetPosition: number) {
     const windowCovering = cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
     if (!windowCovering) return;
-    if (this.getStatus(cover) !== WindowCovering.MovementStatus.Stopped) {
+
+    if (cover.getWindowCoveringStatus() !== WindowCovering.MovementStatus.Stopped) {
       this.log.info('**Stopping movement.');
-      const currentPosition = windowCovering.getCurrentPositionLiftPercent100thsAttribute();
-      windowCovering.setTargetPositionLiftPercent100thsAttribute(currentPosition);
-      this.setStatus(cover, WindowCovering.MovementStatus.Stopped);
       clearInterval(this.interval);
+      this.cover?.setWindowCoveringTargetAsCurrentAndStopped();
       return;
     }
     let currentPosition = windowCovering.getCurrentPositionLiftPercent100thsAttribute();
     if (currentPosition === null) return;
     if (targetPosition === currentPosition) {
-      windowCovering.setTargetPositionLiftPercent100thsAttribute(targetPosition);
-      this.setStatus(cover, WindowCovering.MovementStatus.Stopped);
+      clearInterval(this.interval);
+      this.cover?.setWindowCoveringTargetAsCurrentAndStopped();
       this.log.info(`**Moving from ${currentPosition} to ${targetPosition}. Movement stopped.`);
       return;
     }
@@ -123,15 +97,15 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     const movementSeconds = Math.abs((movement * fullMovementSeconds) / 10000);
     this.log.info(`**Moving from ${currentPosition} to ${targetPosition} in ${movementSeconds} seconds. Movement requested ${movement}`);
     windowCovering.setTargetPositionLiftPercent100thsAttribute(targetPosition);
-    this.setStatus(cover, targetPosition > currentPosition ? WindowCovering.MovementStatus.Closing : WindowCovering.MovementStatus.Opening);
+    cover.setWindowCoveringStatus(targetPosition > currentPosition ? WindowCovering.MovementStatus.Closing : WindowCovering.MovementStatus.Opening);
     this.interval = setInterval(() => {
       currentPosition = Math.round(currentPosition! + movement / movementSeconds);
-      this.log.info(`**Moving from ${currentPosition} to ${targetPosition} difference ${Math.abs(targetPosition - currentPosition)}`);
       if (Math.abs(targetPosition - currentPosition) <= 100 || (movement > 0 && currentPosition >= targetPosition) || (movement < 0 && currentPosition <= targetPosition)) {
-        windowCovering.setCurrentPositionLiftPercent100thsAttribute(targetPosition);
-        this.setStatus(cover, WindowCovering.MovementStatus.Stopped);
         clearInterval(this.interval);
+        cover.setWindowCoveringCurrentTargetStatus(targetPosition, targetPosition, WindowCovering.MovementStatus.Stopped);
+        this.log.info(`**Moving stopped at ${targetPosition}`);
       } else {
+        this.log.info(`**Moving from ${currentPosition} to ${targetPosition} difference ${Math.abs(targetPosition - currentPosition)}`);
         windowCovering.setCurrentPositionLiftPercent100thsAttribute(Math.max(0, Math.min(currentPosition, 10000)));
       }
     }, 1000);
