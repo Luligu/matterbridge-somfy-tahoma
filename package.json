@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-somfy-tahoma",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "Matterbridge somfy tahoma plugin",
   "author": "https://github.com/Luligu",
   "license": "MIT",
@@ -51,10 +51,7 @@
     "dev:link": "npm link --save-dev matterbridge",
     "dev:install": "npm install --save-dev matterbridge",
     "dev:uninstall": "npm uninstall matterbridge && npm unlink matterbridge",
-    "dev:installglobally": "npm install -g ./"
-  },
-  "peerDependencies": {
-    "matterbridge": "^1.2.0"
+    "install": "node link-matterbridge-script.js"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^1.7.0",
