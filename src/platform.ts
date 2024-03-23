@@ -1,4 +1,4 @@
-import { DeviceTypes, WindowCovering, WindowCoveringCluster, logEndpoint } from 'matterbridge';
+import { DeviceTypes, PlatformConfig, WindowCovering, WindowCoveringCluster, logEndpoint } from 'matterbridge';
 import { Matterbridge, MatterbridgeDevice, MatterbridgeDynamicPlatform } from 'matterbridge';
 import { AnsiLogger } from 'node-ansi-logger';
 
@@ -6,8 +6,8 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   cover: MatterbridgeDevice | undefined = undefined;
   interval: NodeJS.Timeout | undefined = undefined;
 
-  constructor(matterbridge: Matterbridge, log: AnsiLogger) {
-    super(matterbridge, log);
+  constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
+    super(matterbridge, log, config);
   }
 
   override async onStart(reason?: string) {

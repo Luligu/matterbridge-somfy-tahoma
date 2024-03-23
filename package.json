@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-somfy-tahoma",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Matterbridge somfy tahoma plugin",
   "author": "https://github.com/Luligu",
   "license": "MIT",
@@ -51,7 +51,7 @@
     "dev:link": "npm link --save-dev matterbridge",
     "dev:install": "npm install --save-dev matterbridge",
     "dev:unlink": "npm uninstall matterbridge && npm unlink matterbridge",
-    "install": "node link-matterbridge-script.js && npm run build"
+    "install": "npm run dev:unlink && node link-matterbridge-script.js && npm run build"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^1.7.0",
@@ -61,7 +61,6 @@
     "@typescript-eslint/parser": "^7.3.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
-    "matterbridge": "file:../matterbridge",
     "prettier": "^3.2.5",
     "typescript": "^5.4.3"
   },
