@@ -22,7 +22,10 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-
+  
+      - name: Install matterbridge
+        run: npm install --save-dev matterbridge
+  
       - name: Lint the project
         run: npm run lint
 
