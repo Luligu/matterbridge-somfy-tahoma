@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-somfy-tahoma",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Matterbridge somfy tahoma plugin",
   "author": "https://github.com/Luligu",
   "license": "MIT",
@@ -23,8 +23,14 @@
     "homebridge",
     "matter",
     "matter.js",
+    "matterprotocol",
+    "iot",
+    "smarthome",
+    "connectedthings",
     "tahoma",
-    "somfy"
+    "somfy",
+    "screens",
+    "blinds"
   ],
   "engines": {
     "node": ">=18.0.0"
@@ -32,6 +38,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
+    "start:frontend": "matterbridge",
     "start:bridge": "matterbridge -bridge",
     "start:childbridge": "matterbridge -childbridge",
     "test": "jest",
@@ -58,17 +65,19 @@
     "install": "node link-matterbridge-script.js"
   },
   "devDependencies": {
-    "@stylistic/eslint-plugin": "^1.7.0",
+    "@stylistic/eslint-plugin": "^1.7.2",
     "@tsconfig/node-lts": "^20.1.3",
     "@types/node": "^20.12.7",
-    "@typescript-eslint/eslint-plugin": "^7.6.0",
-    "@typescript-eslint/parser": "^7.6.0",
+    "@typescript-eslint/eslint-plugin": "^7.7.1",
+    "@typescript-eslint/parser": "^7.7.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
     "prettier": "^3.2.5",
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "node-ansi-logger": "^1.9.3"
+    "node-ansi-logger": "^1.9.5",
+    "node-persist-manager": "^1.0.7",
+    "overkiz-client": "^1.0.18"
   }
 }

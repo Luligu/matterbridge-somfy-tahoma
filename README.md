@@ -11,6 +11,99 @@
 
 ---
 
-Matterbridge somfy tahoma.
+This plugin allows to expose the Somfy TaHoma screens. 
+It exposes also the stateless screens that don't show up in the TaHoma HomeKit bridge because they don't have a bidirectional radio. The plugin resolve the problem counting the time of the screen movement (see Usage section).
 
-See the guidelines on [Matterbridge](https://github.com/Luligu/matterbridge/blob/main/README.md) for more information.
+## Prerequisites
+
+### Matterbridge
+
+Follow these steps to install or update Matterbridge if it is not already installed and up to date:
+
+on Windows:
+```
+npm install -g matterbridge
+```
+
+on Linux (you need the necessary permissions):
+```
+sudo npm install -g matterbridge
+```
+
+See the complete guidelines on [Matterbridge](https://github.com/Luligu/matterbridge/blob/main/README.md) for more information.
+
+### TaHoma bridge
+
+A working setup of any of the TaHoma bridges (like the Connectivity kit).
+
+## How to install
+
+On windows:
+```
+cd $HOME\Matterbridge
+npm install -g matterbridge-somfy-tahoma
+matterbridge -add matterbridge-somfy-tahoma
+```
+
+On linux:
+```
+cd ~/Matterbridge
+sudo npm install -g matterbridge-somfy-tahoma
+matterbridge -add matterbridge-somfy-tahoma
+```
+
+Then start Matterbridge
+```
+matterbridge -bridge
+```
+
+## How to use it
+
+You need to configure the service ("somfy_europe", "somfy_australia" or "somfy_north_america"), username and password of your Tahoma account.
+
+If the whiteList is defined only the devices included are exposed to Matter.
+
+If the blackList is defined the devices included will not be exposed to Matter.
+
+If any device creates issues put it in the blackList.
+
+Set for each device the full movement time (the plugin will use that time to syncronize the movement).
+
+These are the config values:
+
+```
+{
+  "name": "matterbridge-somfy-tahoma",
+  "type": "DynamicPlatform",
+  "username": "<USERNAME>",
+  "password": "<PASSWORD>",
+  "service": "somfy_europe",
+  "blackList": [],
+  "whiteList": [],
+  "duration": {
+    "<DEVICENAME1>": 30,
+    "<DEVICENAME2>": 30
+  }
+}
+```
+
+You can edit the config file:
+
+On windows:
+```
+cd $HOME\.matterbridge
+notepad matterbridge-somfy-tahoma.config.json
+```
+
+On linux:
+```
+cd ~/.matterbridge
+nano matterbridge-somfy-tahoma.config.json
+```
+
+- You can then ask Siri
+```
+Siri open the Living room blind
+Siri close the Living room blind
+Siri set the Living room blind to 70%
+```
