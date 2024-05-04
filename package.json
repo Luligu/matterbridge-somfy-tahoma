@@ -9,7 +9,7 @@
   "types": "dist/index.d.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Luligu/matterbridge-somfy-tahoma"
+    "url": "git+https://github.com/Luligu/matterbridge-somfy-tahoma.git"
   },
   "bugs": {
     "url": "https://github.com/Luligu/matterbridge-somfy-tahoma/issues"
