@@ -45,7 +45,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     });
 
     if (!this.config.username || !this.config.password || !this.config.service) {
-      // this.log.error('No service or username or password provided for:', this.config.name);
+      this.log.error('No service or username or password provided for:', this.config.name);
       throw new Error(`No service or username or password provided for ${this.config.name}`);
     }
     this.log.info('Finished initializing platform:', this.config.name);
@@ -65,22 +65,16 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.tahomaClient.on('disconnect', () => {
       this.log.warn('TaHoma service disconnected');
     });
-
-    // throw new Error(`Throw error test in constructor for ${this.config.name}`);
   }
 
   override async onStart(reason?: string) {
     this.log.info('onStart called with reason:', reason ?? 'none');
-
-    // throw new Error(`Throw error test in onStart for ${this.config.name}`);
 
     await this.discoverDevices();
   }
 
   override async onConfigure() {
     this.log.info('onConfigure called');
-
-    // throw new Error(`Throw error test in onConfigure for ${this.config.name}`);
 
     // Set cover to target = current position and status to stopped (current position is persisted in the cluster)
     for (const device of this.bridgedDevices) device.setWindowCoveringTargetAsCurrentAndStopped();
@@ -89,8 +83,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   override async onShutdown(reason?: string) {
     this.log.info('onShutdown called with reason:', reason ?? 'none');
     clearInterval(this.moveInterval);
-    // await this.unregisterAllDevices();
-    // throw new Error(`Throw error test in onShutdown for ${this.config.name}`);
+    if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices();
   }
 
   public validateWhiteBlackList(entityName: string) {
