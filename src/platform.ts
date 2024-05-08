@@ -46,7 +46,8 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
     if (!this.config.username || !this.config.password || !this.config.service) {
       this.log.error('No service or username or password provided for:', this.config.name);
-      throw new Error(`No service or username or password provided for ${this.config.name}`);
+      return;
+      // throw new Error(`No service or username or password provided for ${this.config.name}`);
     }
     this.log.info('Finished initializing platform:', this.config.name);
 
@@ -69,12 +70,26 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
   override async onStart(reason?: string) {
     this.log.info('onStart called with reason:', reason ?? 'none');
-
+    if (!this.tahomaClient) {
+      this.log.error('TaHoma service not connected');
+      return;
+    }
+    try {
+      await this.tahomaClient.connect(this.config.username as string, this.config.password as string);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      this.log.error('Error connecting to TaHoma service:', error.response?.data);
+      return;
+    }
     await this.discoverDevices();
   }
 
   override async onConfigure() {
     this.log.info('onConfigure called');
+    if (!this.tahomaClient) {
+      this.log.error('TaHoma service not connected');
+      return;
+    }
 
     // Set cover to target = current position and status to stopped (current position is persisted in the cluster)
     for (const device of this.bridgedDevices) device.setWindowCoveringTargetAsCurrentAndStopped();
@@ -82,6 +97,10 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
   override async onShutdown(reason?: string) {
     this.log.info('onShutdown called with reason:', reason ?? 'none');
+    if (!this.tahomaClient) {
+      this.log.error('TaHoma service not connected');
+    } else this.tahomaClient.removeAllListeners();
+    this.tahomaClient = undefined;
     clearInterval(this.moveInterval);
     if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices();
   }
@@ -104,13 +123,6 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       return;
     }
     let devices: Device[] = [];
-    try {
-      await this.tahomaClient.connect(this.config.username as string, this.config.password as string);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      this.log.error('Error connecting to TaHoma service:', error.response?.data);
-      return;
-    }
     try {
       devices = await this.tahomaClient.getDevices();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

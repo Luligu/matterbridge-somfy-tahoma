@@ -87,7 +87,7 @@ These are the config values:
 }
 ```
 
-You can edit the config file:
+You can edit the config file from the frontend or
 
 On windows:
 ```
