@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.9] - 2024-06-01
+
+### Added
+
+- [dependencies]: Update dependencies
+- [matterbridge]: Adapted the code to the new start mode of Matterbridge. 
+
 <a href="https://www.buymeacoffee.com/luligugithub">
   <img src="./yellow-button.png" alt="Buy me a coffee" width="120">
 </a>
