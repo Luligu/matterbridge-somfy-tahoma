@@ -27,6 +27,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   private whiteList: string[] = [];
   private blackList: string[] = [];
   private movementDuration: MovementDuration = {};
+  private connected = false;
 
   constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
@@ -61,10 +62,12 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
     this.tahomaClient.on('connect', () => {
       this.log.info('TaHoma service connected');
+      this.connected = true;
     });
 
     this.tahomaClient.on('disconnect', () => {
       this.log.warn('TaHoma service disconnected');
+      this.connected = false;
     });
   }
 
