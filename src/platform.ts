@@ -3,13 +3,10 @@ import { Matterbridge, MatterbridgeDevice, MatterbridgeDynamicPlatform } from 'm
 import { AnsiLogger, debugStringify, dn, wr } from 'node-ansi-logger';
 import { NodeStorageManager } from 'node-persist-manager';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Action, Client, Command, Device, Execution } from 'overkiz-client';
 import path from 'path';
 
-type MovementDuration = {
-  [key: string]: number;
-};
+type MovementDuration = Record<string, number>;
 
 export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   private tahomaDevices: Device[] = [];
@@ -223,7 +220,8 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.sendCommand(targetPosition > currentPosition ? 'close' : 'open', tahomaDevice, true);
 
     this.moveInterval = setInterval(() => {
-      currentPosition = Math.round(currentPosition! + movement / movementSeconds);
+      if (!currentPosition) return;
+      currentPosition = Math.round(currentPosition + movement / movementSeconds);
       if (Math.abs(targetPosition - currentPosition) <= 100 || (movement > 0 && currentPosition >= targetPosition) || (movement < 0 && currentPosition <= targetPosition)) {
         clearInterval(this.moveInterval);
         cover.setWindowCoveringCurrentTargetStatus(targetPosition, targetPosition, WindowCovering.MovementStatus.Stopped);
