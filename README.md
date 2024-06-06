@@ -11,7 +11,7 @@
 
 ---
 
-This plugin allows to expose the Somfy TaHoma screens. 
+This plugin allows to expose to matter the Somfy TaHoma screens. 
 It exposes also the stateless screens that don't show up in the TaHoma HomeKit bridge because they don't have a bidirectional radio. The plugin resolve the problem counting the time of the screen movement (see Usage section).
 
 ## Prerequisites
