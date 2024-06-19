@@ -2,11 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.10] - 2024-06-16
+## [1.0.11] - 2024-06-19
 
 ### Added
 
 - [dependencies]: Update dependencies
+- [schema]: Added schema to the root directory of the plugin.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
   <img src="./yellow-button.png" alt="Buy me a coffee" width="120">
@@ -17,7 +18,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - [dependencies]: Update dependencies
-- [matterbridge]: Adapted the code to the new start mode of Matterbridge. 
+- [matterbridge]: Adapted the code to the new start mode of Matterbridge.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
   <img src="./yellow-button.png" alt="Buy me a coffee" width="120">

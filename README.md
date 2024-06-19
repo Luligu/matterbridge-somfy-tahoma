@@ -13,7 +13,7 @@
 
 ---
 
-This plugin allows to expose to matter the Somfy TaHoma screens. 
+This plugin allows to expose to matter the Somfy TaHoma screens.
 It exposes also the stateless screens that don't show up in the TaHoma HomeKit bridge because they don't have a bidirectional radio. The plugin resolve the problem counting the time of the screen movement (see Usage section).
 
 ## Prerequisites
@@ -23,11 +23,13 @@ It exposes also the stateless screens that don't show up in the TaHoma HomeKit b
 Follow these steps to install or update Matterbridge if it is not already installed and up to date:
 
 on Windows:
+
 ```
 npm install -g matterbridge
 ```
 
 on Linux (you need the necessary permissions):
+
 ```
 sudo npm install -g matterbridge
 ```
@@ -41,6 +43,7 @@ A working setup of any of the TaHoma bridges (like the Connectivity kit).
 ## How to install
 
 On windows:
+
 ```
 cd $HOME\Matterbridge
 npm install -g matterbridge-somfy-tahoma
@@ -48,6 +51,7 @@ matterbridge -add matterbridge-somfy-tahoma
 ```
 
 On linux:
+
 ```
 cd ~/Matterbridge
 sudo npm install -g matterbridge-somfy-tahoma
@@ -55,6 +59,7 @@ matterbridge -add matterbridge-somfy-tahoma
 ```
 
 Then start Matterbridge
+
 ```
 matterbridge -bridge
 ```
@@ -92,18 +97,21 @@ These are the config values:
 You can edit the config file from the frontend (best option) or
 
 On windows:
+
 ```
 cd $HOME\.matterbridge
 notepad matterbridge-somfy-tahoma.config.json
 ```
 
 On linux:
+
 ```
 cd ~/.matterbridge
 nano matterbridge-somfy-tahoma.config.json
 ```
 
 - You can then ask Siri
+
 ```
 Siri open the Living room blind
 Siri close the Living room blind
