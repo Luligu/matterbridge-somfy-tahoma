@@ -151,7 +151,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.debug(`- states ${debugStringify(device.states)}`);
       this.log.debug(`- duration ${duration}`);
 
-      const cover = new MatterbridgeDevice(DeviceTypes.WINDOW_COVERING);
+      const cover = new MatterbridgeDevice(DeviceTypes.WINDOW_COVERING, undefined, this.config.debug as boolean);
       cover.createDefaultIdentifyClusterServer();
       cover.createDefaultGroupsClusterServer();
       cover.createDefaultScenesClusterServer();
