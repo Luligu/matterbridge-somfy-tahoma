@@ -2,7 +2,11 @@
   "title": "Matterbridge somfy tahoma plugin",
   "description": "matterbridge-somfy-tahoma v. 1.0.7 by https://github.com/Luligu",
   "type": "object",
-  "required": ["username", "password", "service"],
+  "required": [
+    "username",
+    "password",
+    "service"
+  ],
   "properties": {
     "name": {
       "description": "Plugin name",
@@ -28,19 +32,27 @@
       "oneOf": [
         {
           "title": "Local API (TaHoma / Switch)",
-          "enum": ["local"]
+          "enum": [
+            "local"
+          ]
         },
         {
           "title": "Somfy Europe (TaHoma / Switch / Connexoon IO)",
-          "enum": ["somfy_europe"]
+          "enum": [
+            "somfy_europe"
+          ]
         },
         {
           "title": "Somfy Australia (Connexoon RTS)",
-          "enum": ["somfy_australia"]
+          "enum": [
+            "somfy_australia"
+          ]
         },
         {
           "title": "Somfy North America",
-          "enum": ["somfy_north_america"]
+          "enum": [
+            "somfy_north_america"
+          ]
         }
       ]
     },
@@ -67,11 +79,13 @@
     },
     "debug": {
       "description": "Enable the debug for the plugin (development only)",
-      "type": "boolean"
+      "type": "boolean",
+      "default": false
     },
     "unregisterOnShutdown": {
       "description": "Unregister all devices on shutdown (development only)",
-      "type": "boolean"
+      "type": "boolean",
+      "default": false
     }
   }
 }
