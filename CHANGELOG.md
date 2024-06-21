@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 <a href="https://www.buymeacoffee.com/luligugithub">
   <img src="./yellow-button.png" alt="Buy me a coffee" width="120">
 </a>
+
 ## [1.0.11] - 2024-06-19
 
 ### Added
