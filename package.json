@@ -51,7 +51,7 @@
     "clean": "rimraf tsconfig.tsbuildinfo ./dist",
     "cleanBuild": "npm run clean && tsc",
     "deepClean": "rimraf tsconfig.tsbuildinfo package-lock.json ./dist ./node_modules",
-    "deepCleanRebuild": "npm run deepClean && npm install && npm run build && npm ls inflight glob",
+    "deepCleanRebuild": "npm run deepClean && npm install && npm run build",
     "prepublishOnly": "npm run lint && npm run cleanBuild",
     "checkDependencies": "npx npm-check-updates",
     "updateDependencies": "npx npm-check-updates -u && npm install & npm run cleanBuild",
