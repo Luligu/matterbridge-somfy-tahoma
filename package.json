@@ -1,12 +1,12 @@
 {
   "name": "matterbridge-somfy-tahoma",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Matterbridge somfy tahoma plugin",
   "author": "https://github.com/Luligu",
   "license": "Apache-2.0",
   "type": "module",
   "main": "dist/index.js",
-  "types": "dist/index.d.js",
+  "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Luligu/matterbridge-somfy-tahoma.git"
@@ -96,7 +96,7 @@
     "prettier": "^3.3.2",
     "rimraf": "^5.0.7",
     "ts-jest": "^29.1.5",
-    "typescript": "^5.5.2",
-    "typescript-eslint": "^7.14.1"
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^7.15.0"
   }
 }
