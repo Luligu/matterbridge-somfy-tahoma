@@ -1,7 +1,7 @@
 import { DeviceTypes, PlatformConfig, WindowCovering, WindowCoveringCluster } from 'matterbridge';
 import { Matterbridge, MatterbridgeDevice, MatterbridgeDynamicPlatform } from 'matterbridge';
-import { AnsiLogger, debugStringify, dn, wr } from 'node-ansi-logger';
-import { NodeStorageManager } from 'node-persist-manager';
+import { AnsiLogger, debugStringify, dn, wr } from 'matterbridge/logger';
+import { NodeStorageManager } from 'matterbridge/storage';
 
 import { Action, Client, Command, Device, Execution } from 'overkiz-client';
 import path from 'path';
