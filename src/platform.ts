@@ -28,6 +28,8 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
 
+    this.log.info('Initializing platform:', this.config.name);
+
     if (config.username) this.username = config.username as string;
     if (config.password) this.password = config.password as string;
     if (config.service) this.service = config.service as string;
@@ -133,7 +135,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.log.info('TaHoma', devices.length, 'devices discovered');
 
     for (const device of devices) {
-      this.log.debug(`Device: ${device.label} uniqueName ${device.uniqueName} uiClass ${device.definition.uiClass} deviceURL ${device.deviceURL} serial ${device.serialNumber}`);
+      this.log.debug(`Device: ${device.label} uniqueName ${device.uniqueName} uiClass ${device.definition?.uiClass} deviceURL ${device.deviceURL} serial ${device.serialNumber}`);
       const supportedUniqueNames = ['Blind', 'ExteriorBlindRTSComponent'];
       if (supportedUniqueNames.includes(device.uniqueName)) {
         this.tahomaDevices.push(device);
@@ -148,7 +150,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
       this.log.debug(`Adding device: ${BLUE}${device.label}${rs}`);
       this.log.debug(`- uniqueName ${device.uniqueName}`);
-      this.log.debug(`- uiClass ${device.definition.uiClass}`);
+      this.log.debug(`- uiClass ${device.definition?.uiClass}`);
       this.log.debug(`- serial ${device.serialNumber}`);
       this.log.debug(`- deviceURL ${device.deviceURL}`);
       this.log.debug(`- commands ${debugStringify(device.commands)}`);
