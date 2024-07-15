@@ -100,7 +100,9 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.log.info('onShutdown called with reason:', reason ?? 'none');
     if (!this.tahomaClient) {
       this.log.error('TaHoma service not connected');
-    } else this.tahomaClient.removeAllListeners();
+    } else {
+      this.tahomaClient.removeAllListeners();
+    }
     this.tahomaClient = undefined;
     clearInterval(this.moveInterval);
     if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices();
