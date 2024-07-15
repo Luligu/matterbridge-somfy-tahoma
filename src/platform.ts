@@ -1,6 +1,5 @@
-import { DeviceTypes, PlatformConfig, WindowCovering, WindowCoveringCluster } from 'matterbridge';
-import { Matterbridge, MatterbridgeDevice, MatterbridgeDynamicPlatform } from 'matterbridge';
-import { AnsiLogger, debugStringify, dn, wr } from 'matterbridge/logger';
+import { DeviceTypes, PlatformConfig, WindowCovering, WindowCoveringCluster, Matterbridge, MatterbridgeDevice, MatterbridgeDynamicPlatform } from 'matterbridge';
+import { AnsiLogger, BLUE, debugStringify, dn, rs, wr } from 'matterbridge/logger';
 import { NodeStorageManager } from 'matterbridge/storage';
 
 import { Action, Client, Command, Device, Execution } from 'overkiz-client';
@@ -134,8 +133,9 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.log.info('TaHoma', devices.length, 'devices discovered');
 
     for (const device of devices) {
-      this.log.debug(`Device: ${device.label} uiClass ${device.definition.uiClass} serial ${device.serialNumber}`);
-      if (device.uniqueName === 'Blind') {
+      this.log.debug(`Device: ${device.label} uniqueName ${device.uniqueName} uiClass ${device.definition.uiClass} serial ${device.serialNumber}`);
+      const supportedUniqueNames = ['Blind', 'ExteriorBlindRTSComponent'];
+      if (supportedUniqueNames.includes(device.uniqueName)) {
         this.tahomaDevices.push(device);
       }
     }
@@ -146,7 +146,10 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       }
       const duration = this.movementDuration[device.label] || 30;
 
-      this.log.debug(`Adding device: ${device.label} uiClass ${device.definition.uiClass} serial ${device.serialNumber}`);
+      this.log.debug(`Adding device: ${BLUE}${device.label}${rs}`);
+      this.log.debug(`- uniqueName ${device.uniqueName}`);
+      this.log.debug(`- uiClass ${device.definition.uiClass}`);
+      this.log.debug(`- serial ${device.serialNumber}`);
       this.log.debug(`- commands ${debugStringify(device.commands)}`);
       this.log.debug(`- states ${debugStringify(device.states)}`);
       this.log.debug(`- duration ${duration}`);
