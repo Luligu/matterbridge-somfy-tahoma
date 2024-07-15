@@ -11,7 +11,7 @@ describe('TestPlatform', () => {
 
   // const log = new AnsiLogger({ logName: 'shellyDeviceTest', logTimestampFormat: TimestampFormat.TIME_MILLIS, logDebug: true });
 
-  beforeEach(() => {
+  beforeAll(() => {
     mockMatterbridge = { addBridgedDevice: jest.fn(), matterbridgeDirectory: '', matterbridgePluginDirectory: '' } as unknown as Matterbridge;
     mockLog = { error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn() } as unknown as AnsiLogger;
     mockConfig = {
@@ -24,7 +24,7 @@ describe('TestPlatform', () => {
       'unregisterOnShutdown': false,
     } as PlatformConfig;
 
-    testPlatform = new SomfyTahomaPlatform(mockMatterbridge, mockLog, mockConfig);
+    // testPlatform = new SomfyTahomaPlatform(mockMatterbridge, mockLog, mockConfig);
   });
 
   it('should not initialize platform without username and password', () => {
