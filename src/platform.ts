@@ -133,7 +133,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.log.info('TaHoma', devices.length, 'devices discovered');
 
     for (const device of devices) {
-      this.log.debug(`Device: ${device.label} uniqueName ${device.uniqueName} uiClass ${device.definition.uiClass} serial ${device.serialNumber}`);
+      this.log.debug(`Device: ${device.label} uniqueName ${device.uniqueName} uiClass ${device.definition.uiClass} deviceURL ${device.deviceURL} serial ${device.serialNumber}`);
       const supportedUniqueNames = ['Blind', 'ExteriorBlindRTSComponent'];
       if (supportedUniqueNames.includes(device.uniqueName)) {
         this.tahomaDevices.push(device);
@@ -150,6 +150,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.debug(`- uniqueName ${device.uniqueName}`);
       this.log.debug(`- uiClass ${device.definition.uiClass}`);
       this.log.debug(`- serial ${device.serialNumber}`);
+      this.log.debug(`- deviceURL ${device.deviceURL}`);
       this.log.debug(`- commands ${debugStringify(device.commands)}`);
       this.log.debug(`- states ${debugStringify(device.states)}`);
       this.log.debug(`- duration ${duration}`);
