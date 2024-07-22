@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.17] - 2024-07-22
+
+### Changed
+
+- [package]: Updated dependencies.
+- [somfy]: Added ExteriorVenetianBlindRTSComponent.
+- [somfy]: Execute commands async.
+
+<a href="https://www.buymeacoffee.com/luligugithub">
+  <img src="./yellow-button.png" alt="Buy me a coffee" width="120">
+</a>
+
 ## [1.0.16] - 2024-07-15
 
 ### Changed

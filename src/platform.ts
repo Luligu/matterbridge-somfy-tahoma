@@ -138,7 +138,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
     for (const device of devices) {
       this.log.debug(`Device: ${device.label} uniqueName ${device.uniqueName} uiClass ${device.definition?.uiClass} deviceURL ${device.deviceURL} serial ${device.serialNumber}`);
-      const supportedUniqueNames = ['Blind', 'ExteriorBlindRTSComponent'];
+      const supportedUniqueNames = ['Blind', 'ExteriorBlindRTSComponent', 'ExteriorVenetianBlindRTSComponent'];
       if (supportedUniqueNames.includes(device.uniqueName)) {
         this.tahomaDevices.push(device);
       }
@@ -171,24 +171,24 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
       cover.addCommandHandler('identify', async ({ request: { identifyTime } }) => {
         this.log.info(`Command identify called identifyTime:${identifyTime}`);
-        this.sendCommand('identify', device, true);
+        await this.sendCommand('identify', device, true);
       });
 
       cover.addCommandHandler('goToLiftPercentage', async ({ request: { liftPercent100thsValue } }) => {
         this.log.info(`Command goToLiftPercentage called liftPercent100thsValue:${liftPercent100thsValue}`);
-        this.moveToPosition(cover, device, liftPercent100thsValue, duration);
+        await this.moveToPosition(cover, device, liftPercent100thsValue, duration);
       });
 
       cover.addCommandHandler('upOrOpen', async () => {
         this.log.info('Command upOrOpen called');
         clearInterval(this.moveInterval);
-        this.moveToPosition(cover, device, 0, duration);
+        await this.moveToPosition(cover, device, 0, duration);
       });
 
       cover.addCommandHandler('downOrClose', async () => {
         this.log.info('Command downOrClose called');
         clearInterval(this.moveInterval);
-        this.moveToPosition(cover, device, 10000, duration);
+        await this.moveToPosition(cover, device, 10000, duration);
       });
 
       cover.addCommandHandler('stopMotion', async () => {
@@ -200,7 +200,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   }
 
   // With Matter 0=open 10000=close
-  private moveToPosition(cover: MatterbridgeDevice, tahomaDevice: Device, targetPosition: number, fullMovementSeconds = 30) {
+  private async moveToPosition(cover: MatterbridgeDevice, tahomaDevice: Device, targetPosition: number, fullMovementSeconds = 30) {
     const windowCovering = cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
     if (!windowCovering) return;
 
@@ -208,7 +208,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.info('*Stopping movement.');
       clearInterval(this.moveInterval);
       cover.setWindowCoveringTargetAsCurrentAndStopped();
-      this.sendCommand('stop', tahomaDevice, true);
+      await this.sendCommand('stop', tahomaDevice, true);
       return;
     }
     let currentPosition = windowCovering.getCurrentPositionLiftPercent100thsAttribute();
@@ -217,7 +217,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       clearInterval(this.moveInterval);
       cover.setWindowCoveringTargetAsCurrentAndStopped();
       this.log.info(`*Moving from ${currentPosition} to ${targetPosition}. Movement stopped.`);
-      this.sendCommand('stop', tahomaDevice, true);
+      await this.sendCommand('stop', tahomaDevice, true);
       return;
     }
     const movement = targetPosition - currentPosition;
@@ -225,15 +225,15 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.log.info(`*Moving from ${currentPosition} to ${targetPosition} in ${movementSeconds} seconds. Movement requested ${movement}`);
     windowCovering.setTargetPositionLiftPercent100thsAttribute(targetPosition);
     cover.setWindowCoveringStatus(targetPosition > currentPosition ? WindowCovering.MovementStatus.Closing : WindowCovering.MovementStatus.Opening);
-    this.sendCommand(targetPosition > currentPosition ? 'close' : 'open', tahomaDevice, true);
+    await this.sendCommand(targetPosition > currentPosition ? 'close' : 'open', tahomaDevice, true);
 
-    this.moveInterval = setInterval(() => {
+    this.moveInterval = setInterval(async () => {
       if (!currentPosition) return;
       currentPosition = Math.round(currentPosition + movement / movementSeconds);
       if (Math.abs(targetPosition - currentPosition) <= 100 || (movement > 0 && currentPosition >= targetPosition) || (movement < 0 && currentPosition <= targetPosition)) {
         clearInterval(this.moveInterval);
         cover.setWindowCoveringCurrentTargetStatus(targetPosition, targetPosition, WindowCovering.MovementStatus.Stopped);
-        this.sendCommand('stop', tahomaDevice, true);
+        await this.sendCommand('stop', tahomaDevice, true);
         this.log.info(`*Moving stopped at ${targetPosition}`);
       } else {
         this.log.info(`*Moving from ${currentPosition} to ${targetPosition} difference ${Math.abs(targetPosition - currentPosition)}`);
@@ -242,13 +242,13 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     }, 1000);
   }
 
-  private sendCommand(command: string, device: Device, highPriority = false) {
+  private async sendCommand(command: string, device: Device, highPriority = false) {
     this.log.debug(`*Sending command ${command} highPriority ${highPriority}`);
     try {
       const _command = new Command(command);
       const _action = new Action(device.deviceURL, [_command]);
       const _execution = new Execution('Sending ' + command, _action);
-      this.tahomaClient?.execute(highPriority ? 'apply/highPriority' : 'apply', _execution);
+      await this.tahomaClient?.execute(highPriority ? 'apply/highPriority' : 'apply', _execution);
     } catch (error) {
       this.log.error('Error sending command');
     }
