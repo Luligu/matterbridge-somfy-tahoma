@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-somfy-tahoma",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "Matterbridge somfy tahoma plugin",
   "author": "https://github.com/Luligu",
   "license": "Apache-2.0",
@@ -80,15 +80,15 @@
     "eslint": "latest"
   },
   "dependencies": {
-    "node-ansi-logger": "^1.9.5",
-    "node-persist-manager": "^1.0.7",
-    "overkiz-client": "^1.0.18"
+    "node-ansi-logger": "^2.0.6",
+    "node-persist-manager": "^1.0.8",
+    "overkiz-client": "^1.0.19"
   },
   "devDependencies": {
     "@eslint/js": "^9.7.0",
     "@types/eslint__js": "^8.42.3",
     "@types/jest": "^29.5.12",
-    "@types/node": "^20.14.11",
+    "@types/node": "^20.14.12",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-jest": "^28.6.0",
     "eslint-plugin-prettier": "^5.2.1",
@@ -96,7 +96,7 @@
     "prettier": "^3.3.3",
     "rimraf": "^6.0.1",
     "ts-jest": "^29.2.3",
-    "typescript": "^5.5.3",
-    "typescript-eslint": "^7.16.1"
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^7.17.0"
   }
 }

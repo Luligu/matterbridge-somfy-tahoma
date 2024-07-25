@@ -2,13 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.17] - 2024-07-24
+
+### Changed
+
+- [package]: Updated dependencies.
+- [logger]: Update node-ansi-logger to 2.0.6.
+- [storage]: Update node-persist-manager to 1.0.8.
+- [somfy]: Execute commands async.
+- [somfy]: Added support for uniqueName = Shutter.
+
+<a href="https://www.buymeacoffee.com/luligugithub">
+  <img src="./yellow-button.png" alt="Buy me a coffee" width="120">
+</a>
+
 ## [1.0.16] - 2024-07-23
 
 ### Changed
 
 - [package]: Updated dependencies.
-- [somfy]: Added ExteriorVenetianBlindRTSComponent.
-- [somfy]: Added ExteriorBlindRTSComponent.
+- [somfy]: Added support for uniqueName = ExteriorVenetianBlindRTSComponent.
+- [somfy]: Added support for uniqueName = ExteriorBlindRTSComponent.
 - [somfy]: Execute commands async.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
