@@ -138,7 +138,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
     for (const device of devices) {
       this.log.debug(`Device: ${device.label} uniqueName ${device.uniqueName} uiClass ${device.definition?.uiClass} deviceURL ${device.deviceURL} serial ${device.serialNumber}`);
-      const supportedUniqueNames = ['Blind', 'ExteriorBlindRTSComponent', 'ExteriorVenetianBlindRTSComponent', 'Shutter'];
+      const supportedUniqueNames = ['Blind', 'BlindRTSComponent', 'ExteriorBlindRTSComponent', 'ExteriorVenetianBlindRTSComponent', 'Shutter'];
       if (supportedUniqueNames.includes(device.uniqueName)) {
         this.tahomaDevices.push(device);
       }
@@ -254,6 +254,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       const _action = new Action(device.deviceURL, [_command]);
       const _execution = new Execution('Sending ' + command, _action);
       await this.tahomaClient?.execute(highPriority ? 'apply/highPriority' : 'apply', _execution);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       this.log.error('Error sending command');
     }
