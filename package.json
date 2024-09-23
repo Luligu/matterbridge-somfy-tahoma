@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-somfy-tahoma",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "description": "Matterbridge somfy tahoma plugin",
   "author": "https://github.com/Luligu",
   "license": "Apache-2.0",
@@ -53,7 +53,7 @@
     "cleanBuild": "npm run clean && tsc",
     "deepClean": "rimraf tsconfig.tsbuildinfo package-lock.json ./dist ./node_modules",
     "deepCleanRebuild": "npm run deepClean && npm install && npm run build",
-    "prepublishOnly": "npm run lint && npm run test && npm run cleanBuild",
+    "prepublishOnly": "npm run lint && npm run cleanBuild && npm shrinkwrap --omit=dev",
     "npmPublish": "npm publish",
     "gitPublish": "npm run lint && npm run test && npm run cleanBuild && node create-release.js",
     "preversion": "npm run lint && npm run test && npm run cleanBuild",
@@ -84,11 +84,11 @@
     "overkiz-client": "1.0.19"
   },
   "devDependencies": {
-    "@eslint/js": "9.9.1",
+    "@eslint/js": "9.11.0",
     "@types/eslint__js": "8.42.3",
-    "@types/jest": "29.5.12",
-    "@types/node": "22.5.4",
-    "eslint": "9.9.1",
+    "@types/jest": "29.5.13",
+    "@types/node": "22.5.5",
+    "eslint": "9.11.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-jest": "28.8.3",
     "eslint-plugin-prettier": "5.2.1",
@@ -96,7 +96,7 @@
     "prettier": "3.3.3",
     "rimraf": "6.0.1",
     "ts-jest": "29.2.5",
-    "typescript": "5.5.4",
-    "typescript-eslint": "8.4.0"
+    "typescript": "5.6.2",
+    "typescript-eslint": "8.6.0"
   }
 }
