@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-somfy-tahoma",
-  "version": "1.0.22-dev.1",
+  "version": "1.0.22",
   "description": "Matterbridge somfy tahoma plugin",
   "author": "https://github.com/Luligu",
   "license": "Apache-2.0",
@@ -92,6 +92,6 @@
     "rimraf": "6.0.1",
     "ts-jest": "29.2.5",
     "typescript": "5.6.2",
-    "typescript-eslint": "8.7.0"
+    "typescript-eslint": "8.8.0"
   }
 }

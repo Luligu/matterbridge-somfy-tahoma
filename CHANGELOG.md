@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.22] - 2024-10-01
+
+### Changed
+
+- [package]: Upgrade to new workflows.
+- [package]: Updated dependencies.
+
+<a href="https://www.buymeacoffee.com/luligugithub">
+  <img src="./yellow-button.png" alt="Buy me a coffee" width="120">
+</a>
+
 ## [1.0.21] - 2024-09-23
 
 ### Changed
