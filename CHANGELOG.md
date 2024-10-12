@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2024-10-12
+
+### Added
+
+- [somfy]: Blinds are now added also for their uiClass.
+- [somfy]: Blinds are now added also if they support the command "open", "close" and "stop".
+- [somfy]: Blinds are now added also if they support the command "rollOut", "rollUp" and "stop".
+- [somfy]: Blinds are now added also if they support the command "down", "up" and "stop".
+
+<a href="https://www.buymeacoffee.com/luligugithub">
+  <img src="./yellow-button.png" alt="Buy me a coffee" width="120">
+</a>
+
 ## [1.0.22] - 2024-10-01
 
 ### Changed
