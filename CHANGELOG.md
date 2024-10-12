@@ -1,5 +1,7 @@
 # Changelog
 
+If you like this project and find it useful, please consider giving it a star on GitHub at https://github.com/Luligu/matterbridge-somfy-tahoma and sponsoring it.
+
 All notable changes to this project will be documented in this file.
 
 ## [1.1.0] - 2024-10-12
