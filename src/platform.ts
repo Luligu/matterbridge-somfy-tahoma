@@ -137,10 +137,43 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.log.info('TaHoma', devices.length, 'devices discovered');
 
     for (const device of devices) {
-      this.log.debug(`Device: ${device.label} uniqueName ${device.uniqueName} uiClass ${device.definition?.uiClass} deviceURL ${device.deviceURL} serial ${device.serialNumber}`);
-      const supportedUniqueNames = ['Blind', 'BlindRTSComponent', 'ExteriorBlindRTSComponent', 'ExteriorVenetianBlindRTSComponent', 'Shutter'];
+      this.log.debug(`Device: ${BLUE}${device.label}${rs}`);
+      this.log.debug(`- uniqueName ${device.uniqueName}`);
+      this.log.debug(`- uiClass ${device.definition.uiClass}`);
+      this.log.debug(`- serial ${device.serialNumber}`);
+      this.log.debug(`- deviceURL ${device.deviceURL}`);
+      this.log.debug(`- commands ${debugStringify(device.commands)}`);
+      this.log.debug(`- states ${debugStringify(device.states)}`);
+      // this.log.debug(`Device: ${device.label} uniqueName ${device.uniqueName} uiClass ${device.definition.uiClass} deviceURL ${device.deviceURL} serial ${device.serialNumber}`);
+      const supportedUniqueNames = [
+        'Blind',
+        'BlindRTSComponent',
+        'ExteriorBlindRTSComponent',
+        'ExteriorVenetianBlindRTSComponent',
+        'Shutter',
+        'RollerShutterRTSComponent',
+        'HorizontalAwningRTSComponent',
+        'PergolaHorizontalUnoIOComponent',
+        'Awning',
+        'TiltOnlyVenetianBlindRTSComponent',
+      ];
+      const supportedUiClasses = ['Screen', 'ExteriorScreen', 'Shutter', 'RollerShutter', 'VenetianBlind', 'ExteriorVenetianBlind', 'Awning', 'Pergola'];
+
       if (supportedUniqueNames.includes(device.uniqueName)) {
         this.tahomaDevices.push(device);
+        this.log.debug(`- added with uniqueName`);
+      } else if (supportedUiClasses.includes(device.definition.uiClass)) {
+        this.tahomaDevices.push(device);
+        this.log.debug(`- added with uiClass`);
+      } else if (device.commands.includes('open') && device.commands.includes('close') && device.commands.includes('stop')) {
+        this.tahomaDevices.push(device);
+        this.log.debug(`- added with commands "open", "close" and "stop"`);
+      } else if (device.commands.includes('rollOut') && device.commands.includes('rollUp') && device.commands.includes('stop')) {
+        this.tahomaDevices.push(device);
+        this.log.debug(`- added with commands "rollOut", "rollUp" and "stop"`);
+      } else if (device.commands.includes('down') && device.commands.includes('up') && device.commands.includes('stop')) {
+        this.tahomaDevices.push(device);
+        this.log.debug(`- added with commands "down", "up" and "stop"`);
       }
     }
     this.log.info('TaHoma', this.tahomaDevices.length, 'screens discovered');
@@ -208,6 +241,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     const windowCovering = cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
     if (!windowCovering) return;
 
+    // Stop movement if already moving
     if (cover.getWindowCoveringStatus() !== WindowCovering.MovementStatus.Stopped) {
       this.log.info('*Stopping movement.');
       clearInterval(this.moveInterval);
@@ -215,6 +249,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       await this.sendCommand('stop', tahomaDevice, true);
       return;
     }
+    // Return if already at target position
     let currentPosition = windowCovering.getCurrentPositionLiftPercent100thsAttribute();
     if (currentPosition === null) return;
     if (targetPosition === currentPosition) {
@@ -224,6 +259,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       // await this.sendCommand('stop', tahomaDevice, true);
       return;
     }
+    // Start movement
     const movement = targetPosition - currentPosition;
     const movementSeconds = Math.abs((movement * fullMovementSeconds) / 10000);
     this.log.info(`*Moving from ${currentPosition} to ${targetPosition} in ${movementSeconds} seconds. Movement requested ${movement}`);
@@ -248,6 +284,12 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   }
 
   private async sendCommand(command: string, device: Device, highPriority = false) {
+    if (command === 'open' && !device.commands.includes('open') && device.commands.includes('rollUp')) command = 'rollUp';
+    if (command === 'close' && !device.commands.includes('close') && device.commands.includes('rollOut')) command = 'rollOut';
+
+    if (command === 'open' && !device.commands.includes('open') && device.commands.includes('up')) command = 'up';
+    if (command === 'close' && !device.commands.includes('close') && device.commands.includes('down')) command = 'down';
+
     this.log.debug(`*Sending command ${command} highPriority ${highPriority}`);
     try {
       const _command = new Command(command);
