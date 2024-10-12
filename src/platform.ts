@@ -284,8 +284,8 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   }
 
   private async sendCommand(command: string, device: Device, highPriority = false) {
-    if (command === 'open' && !device.commands.includes('open') && device.commands.includes('rollUp')) command = 'rollUp';
-    if (command === 'close' && !device.commands.includes('close') && device.commands.includes('rollOut')) command = 'rollOut';
+    if (command === 'open' && !device.commands.includes('open') && device.commands.includes('rollOut')) command = 'rollOut';
+    if (command === 'close' && !device.commands.includes('close') && device.commands.includes('rollUp')) command = 'rollUp';
 
     if (command === 'open' && !device.commands.includes('open') && device.commands.includes('up')) command = 'up';
     if (command === 'close' && !device.commands.includes('close') && device.commands.includes('down')) command = 'down';
