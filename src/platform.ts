@@ -1,9 +1,24 @@
-import { DeviceTypes, PlatformConfig, WindowCovering, WindowCoveringCluster, Matterbridge, MatterbridgeDevice, MatterbridgeDynamicPlatform } from 'matterbridge';
+import {
+  DeviceTypes,
+  PlatformConfig,
+  WindowCovering,
+  WindowCoveringCluster,
+  Matterbridge,
+  MatterbridgeDevice,
+  MatterbridgeDynamicPlatform,
+  DeviceTypeDefinition,
+  AtLeastOne,
+  EndpointOptions,
+  bridgedNode,
+  powerSource,
+} from 'matterbridge';
 import { AnsiLogger, BLUE, debugStringify, dn, rs, wr } from 'matterbridge/logger';
+import { isValidNumber } from 'matterbridge/utils';
 import { NodeStorageManager } from 'matterbridge/storage';
 
 import { Action, Client, Command, Device, Execution } from 'overkiz-client';
 import path from 'path';
+import { db, YELLOW } from 'node-ansi-logger';
 
 type MovementDuration = Record<string, number>;
 
@@ -11,6 +26,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   private tahomaDevices: Device[] = [];
   private bridgedDevices: MatterbridgeDevice[] = [];
   moveInterval: NodeJS.Timeout | undefined = undefined;
+  commandTimeout: NodeJS.Timeout | undefined = undefined;
 
   // NodeStorageManager
   private nodeStorageManager: NodeStorageManager;
@@ -25,8 +41,26 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   private movementDuration: MovementDuration = {};
   private connected = false;
 
+  async createMutableDevice(definition: DeviceTypeDefinition | AtLeastOne<DeviceTypeDefinition>, options: EndpointOptions = {}, debug = false): Promise<MatterbridgeDevice> {
+    let device: MatterbridgeDevice;
+    const matterbridge = await import('matterbridge');
+    if ('edge' in this.matterbridge && this.matterbridge.edge === true && 'MatterbridgeEndpoint' in matterbridge) {
+      // Dynamically resolve the MatterbridgeEndpoint class from the imported module and instantiate it without throwing a TypeScript error for old versions of Matterbridge
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      device = new (matterbridge as any).MatterbridgeEndpoint(definition, options, debug) as MatterbridgeDevice;
+    } else device = new MatterbridgeDevice(definition, undefined, debug);
+    return device;
+  }
+
   constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
+
+    // Verify that Matterbridge is the correct version
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('1.6.0')) {
+      throw new Error(
+        `This plugin requires Matterbridge version >= "1.6.0". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend."`,
+      );
+    }
 
     this.log.info('Initializing platform:', this.config.name);
 
@@ -93,7 +127,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     }
 
     // Set cover to target = current position and status to stopped (current position is persisted in the cluster)
-    for (const device of this.bridgedDevices) device.setWindowCoveringTargetAsCurrentAndStopped();
+    for (const device of this.bridgedDevices) await device.setWindowCoveringTargetAsCurrentAndStopped();
   }
 
   override async onShutdown(reason?: string) {
@@ -105,6 +139,9 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     }
     this.tahomaClient = undefined;
     clearInterval(this.moveInterval);
+    this.moveInterval = undefined;
+    clearTimeout(this.commandTimeout);
+    this.commandTimeout = undefined;
     if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices();
   }
 
@@ -192,13 +229,15 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.debug(`- states ${debugStringify(device.states)}`);
       this.log.debug(`- duration ${duration}`);
 
-      const cover = new MatterbridgeDevice(DeviceTypes.WINDOW_COVERING, undefined, this.config.debug as boolean);
+      const cover = await this.createMutableDevice(DeviceTypes.WINDOW_COVERING, { uniqueStorageKey: device.label }, this.config.debug as boolean);
       cover.createDefaultIdentifyClusterServer();
       cover.createDefaultGroupsClusterServer();
       cover.createDefaultScenesClusterServer();
-      cover.createDefaultBridgedDeviceBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', device.definition.uiClass);
-      cover.createDefaultPowerSourceWiredClusterServer();
       cover.createDefaultWindowCoveringClusterServer();
+      cover.addDeviceType(bridgedNode);
+      cover.createDefaultBridgedDeviceBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', device.definition.uiClass);
+      cover.addDeviceType(powerSource);
+      cover.createDefaultPowerSourceWiredClusterServer();
       await this.registerDevice(cover);
       this.bridgedDevices.push(cover);
 
@@ -208,77 +247,79 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       });
 
       cover.addCommandHandler('goToLiftPercentage', async ({ request: { liftPercent100thsValue } }) => {
-        this.log.info(`Command goToLiftPercentage called liftPercent100thsValue:${liftPercent100thsValue}`);
-        await this.moveToPosition(cover, device, liftPercent100thsValue, duration);
+        if (this.commandTimeout) clearTimeout(this.commandTimeout);
+        this.commandTimeout = setTimeout(async () => {
+          this.commandTimeout = undefined;
+          this.log.info(`Command goToLiftPercentage called liftPercent100thsValue:${liftPercent100thsValue}`);
+          await this.moveToPosition(cover, device, liftPercent100thsValue, duration);
+        }, 1000);
       });
 
       cover.addCommandHandler('upOrOpen', async () => {
         this.log.info('Command upOrOpen called');
         await this.sendCommand('open', device, true);
         clearInterval(this.moveInterval);
-        cover.setWindowCoveringCurrentTargetStatus(0, 0, WindowCovering.MovementStatus.Stopped);
-        // await this.moveToPosition(cover, device, 0, duration);
+        await cover.setWindowCoveringCurrentTargetStatus(0, 0, WindowCovering.MovementStatus.Stopped);
       });
 
       cover.addCommandHandler('downOrClose', async () => {
         this.log.info('Command downOrClose called');
         await this.sendCommand('close', device, true);
         clearInterval(this.moveInterval);
-        cover.setWindowCoveringCurrentTargetStatus(10000, 10000, WindowCovering.MovementStatus.Stopped);
-        // await this.moveToPosition(cover, device, 10000, duration);
+        await cover.setWindowCoveringCurrentTargetStatus(10000, 10000, WindowCovering.MovementStatus.Stopped);
       });
 
       cover.addCommandHandler('stopMotion', async () => {
         this.log.info('Command stopMotion called');
+        if ((await cover.getWindowCoveringStatus()) !== WindowCovering.MovementStatus.Stopped) {
+          await this.sendCommand('stop', device, true);
+        }
         clearInterval(this.moveInterval);
-        cover.setWindowCoveringTargetAsCurrentAndStopped();
+        await cover.setWindowCoveringTargetAsCurrentAndStopped();
       });
     }
   }
 
   // With Matter 0=open 10000=close
   private async moveToPosition(cover: MatterbridgeDevice, tahomaDevice: Device, targetPosition: number, fullMovementSeconds = 30) {
-    const windowCovering = cover.getClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift));
-    if (!windowCovering) return;
-
     // Stop movement if already moving
-    if (cover.getWindowCoveringStatus() !== WindowCovering.MovementStatus.Stopped) {
+    if ((await cover.getWindowCoveringStatus()) !== WindowCovering.MovementStatus.Stopped) {
       this.log.info('*Stopping movement.');
       clearInterval(this.moveInterval);
-      cover.setWindowCoveringTargetAsCurrentAndStopped();
+      await cover.setWindowCoveringTargetAsCurrentAndStopped();
       await this.sendCommand('stop', tahomaDevice, true);
       return;
     }
     // Return if already at target position
-    let currentPosition = windowCovering.getCurrentPositionLiftPercent100thsAttribute();
-    if (currentPosition === null) return;
+    let currentPosition = cover.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths', cover.log);
+    if (!isValidNumber(currentPosition, 0, 10000)) return;
     if (targetPosition === currentPosition) {
       clearInterval(this.moveInterval);
-      cover.setWindowCoveringTargetAsCurrentAndStopped();
+      await cover.setWindowCoveringTargetAsCurrentAndStopped();
       this.log.info(`*Moving from ${currentPosition} to ${targetPosition}. No movement needed.`);
-      // await this.sendCommand('stop', tahomaDevice, true);
       return;
     }
     // Start movement
     const movement = targetPosition - currentPosition;
     const movementSeconds = Math.abs((movement * fullMovementSeconds) / 10000);
-    this.log.info(`*Moving from ${currentPosition} to ${targetPosition} in ${movementSeconds} seconds. Movement requested ${movement}`);
-    windowCovering.setTargetPositionLiftPercent100thsAttribute(targetPosition);
-    cover.setWindowCoveringStatus(targetPosition > currentPosition ? WindowCovering.MovementStatus.Closing : WindowCovering.MovementStatus.Opening);
+    this.log.debug(`*Moving from ${currentPosition} to ${targetPosition} in ${movementSeconds} seconds. Movement requested ${movement}`);
+    cover.setAttribute(WindowCoveringCluster.id, 'targetPositionLiftPercent100ths', targetPosition, cover.log);
+
+    await cover.setWindowCoveringStatus(targetPosition > currentPosition ? WindowCovering.MovementStatus.Closing : WindowCovering.MovementStatus.Opening);
     await this.sendCommand(targetPosition > currentPosition ? 'close' : 'open', tahomaDevice, true);
 
     this.moveInterval = setInterval(async () => {
-      // this.log.info(`**Moving interval from ${currentPosition} to ${targetPosition}`);
+      this.log.debug(`**Moving interval from ${currentPosition} to ${targetPosition} with movement ${movement}`);
       if (currentPosition === null) return;
       currentPosition = Math.round(currentPosition + movement / movementSeconds);
       if (Math.abs(targetPosition - currentPosition) <= 100 || (movement > 0 && currentPosition >= targetPosition) || (movement < 0 && currentPosition <= targetPosition)) {
         clearInterval(this.moveInterval);
-        cover.setWindowCoveringCurrentTargetStatus(targetPosition, targetPosition, WindowCovering.MovementStatus.Stopped);
-        await this.sendCommand('stop', tahomaDevice, true);
-        this.log.info(`*Moving stopped at ${targetPosition}`);
+        await cover.setWindowCoveringCurrentTargetStatus(targetPosition, targetPosition, WindowCovering.MovementStatus.Stopped);
+        if (targetPosition !== 0 && targetPosition !== 10000) await this.sendCommand('stop', tahomaDevice, true);
+        this.log.debug(`*Moving stopped at ${targetPosition}`);
       } else {
-        this.log.info(`*Moving from ${currentPosition} to ${targetPosition} difference ${Math.abs(targetPosition - currentPosition)}`);
-        windowCovering.setCurrentPositionLiftPercent100thsAttribute(Math.max(0, Math.min(currentPosition, 10000)));
+        this.log.debug(`*Moving from ${currentPosition} to ${targetPosition} difference ${Math.abs(targetPosition - currentPosition)}`);
+        await cover.setAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths', Math.max(0, Math.min(currentPosition, 10000)), cover.log);
       }
     }, 1000);
   }
@@ -290,15 +331,14 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     if (command === 'open' && !device.commands.includes('open') && device.commands.includes('up')) command = 'up';
     if (command === 'close' && !device.commands.includes('close') && device.commands.includes('down')) command = 'down';
 
-    this.log.debug(`*Sending command ${command} highPriority ${highPriority}`);
+    this.log.debug(`*Sending command ${YELLOW}${command}${db} highPriority ${highPriority}`);
     try {
       const _command = new Command(command);
       const _action = new Action(device.deviceURL, [_command]);
       const _execution = new Execution('Sending ' + command, _action);
       await this.tahomaClient?.execute(highPriority ? 'apply/highPriority' : 'apply', _execution);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      this.log.error('Error sending command');
+      this.log.error(`Error sending command: ${error instanceof Error ? error.message : error}`);
     }
   }
 }
