@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- [edge]: Update to support Matterbridge edge (matter.js new API).
+- [edge]: Verified to work with matterbridge edge (matter.js new API).
 - [matter]: Added bridgedNode and powerSource device types to the cover.
 
 ### Changed
