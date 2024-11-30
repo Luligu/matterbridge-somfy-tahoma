@@ -26,13 +26,13 @@ Follow these steps to install or update Matterbridge if it is not already instal
 on Windows:
 
 ```
-npm install -g matterbridge
+npm install -g matterbridge --omit=dev
 ```
 
-on Linux (you need the necessary permissions):
+on Linux (if may need the necessary permissions):
 
 ```
-sudo npm install -g matterbridge
+sudo npm install -g matterbridge --omit=dev
 ```
 
 See the complete guidelines on [Matterbridge](https://github.com/Luligu/matterbridge/blob/main/README.md) for more information.
@@ -43,11 +43,15 @@ A working setup of any of the TaHoma bridges (like the Connectivity kit).
 
 ## How to install
 
+Open the frontend of matterbridge, select the plugin and install it.
+
+## How to install from the command line
+
 On windows:
 
 ```
 cd $HOME\Matterbridge
-npm install -g matterbridge-somfy-tahoma
+npm install -g matterbridge-somfy-tahoma --omit=dev
 matterbridge -add matterbridge-somfy-tahoma
 ```
 
@@ -55,14 +59,14 @@ On linux:
 
 ```
 cd ~/Matterbridge
-sudo npm install -g matterbridge-somfy-tahoma
+sudo npm install -g matterbridge-somfy-tahoma --omit=dev
 matterbridge -add matterbridge-somfy-tahoma
 ```
 
 Then start Matterbridge
 
 ```
-matterbridge -bridge
+matterbridge
 ```
 
 ## How to use it

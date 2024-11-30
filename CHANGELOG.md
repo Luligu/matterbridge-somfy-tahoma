@@ -4,16 +4,18 @@ If you like this project and find it useful, please consider giving it a star on
 
 All notable changes to this project will be documented in this file.
 
-## [1.2.0] - 2024-11-21
+## [1.2.0] - 2024-11-30
 
 ### Added
 
-- [edge]: Verified to work with matterbridge edge (matter.js new API).
+- [edge]: Verified to work with Matterbridge edge (matter.js new API).
+- [plugin]: Refactor movement to support concurrent movementes from all screens.
+- [plugin]: Refactor movement to show the movement on the controller (if it supports that) even for close and open commands.
 - [matter]: Added bridgedNode and powerSource device types to the cover.
 
 ### Changed
 
-- [package]: Requires matterbridge 1.6.0.
+- [package]: Requires matterbridge 1.6.5.
 - [package]: Updated dependencies.
 
 ### Fixed
