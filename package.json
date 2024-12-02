@@ -38,6 +38,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
+    "buildProduction": "npm run clean && tsc --project tsconfig.production.json",
     "start:frontend": "matterbridge",
     "start:bridge": "matterbridge -bridge",
     "start:childbridge": "matterbridge -childbridge",
@@ -45,6 +46,7 @@
     "test:verbose": "node --experimental-vm-modules node_modules/jest/bin/jest.js --verbose",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test:platform": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/platform.test.ts --verbose --coverage",
     "lint": "eslint --max-warnings=0",
     "lint:fix": "eslint --max-warnings=0 --fix",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
@@ -57,6 +59,7 @@
     "updateDependencies": "npx npm-check-updates -u && npm install && npm link matterbridge && npm run build",
     "prepublishOnly": "npm pkg delete devDependencies && npm pkg delete scripts && npm install --omit=dev && npm shrinkwrap",
     "npmPack": "npm run cleanBuild && copy package.json package.log && npm pkg delete devDependencies && npm pkg delete scripts && npm install --omit=dev && npm shrinkwrap && npm pack && copy package.log package.json && npm run deepCleanBuild",
+    "npmPublishTagDev": "copy package.json package.log && npm run buildProduction && npm pkg delete devDependencies && npm pkg delete scripts && npx rimraf ./node_modules && npm install --omit=dev && npm shrinkwrap && npm publish --tag dev && copy package.log package.json",
     "matterbridge:add": "matterbridge -add .\\",
     "matterbridge:remove": "matterbridge -remove .\\",
     "matterbridge:enable": "matterbridge -enable .\\",
