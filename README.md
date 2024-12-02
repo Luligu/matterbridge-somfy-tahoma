@@ -18,6 +18,8 @@ This plugin allows to expose to matter the Somfy TaHoma screens.
 
 It exposes also the stateless screens that don't show up in the TaHoma HomeKit bridge because they don't have a bidirectional radio. The plugin resolve the problem counting the time of the screen movement (see Usage section).
 
+If you like this project and find it useful, please consider giving it a star on GitHub at https://github.com/Luligu/matterbridge-somfy-tahoma and sponsoring it.
+
 ## Prerequisites
 
 ### Matterbridge
