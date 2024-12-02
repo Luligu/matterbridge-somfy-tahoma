@@ -13,13 +13,13 @@ import {
   MatterbridgeEndpoint,
   coverDevice,
 } from 'matterbridge';
-import { AnsiLogger, BLUE, debugStringify, dn, rs, wr } from 'matterbridge/logger';
-import { isValidNumber } from 'matterbridge/utils';
+import { AnsiLogger, BLUE, debugStringify, dn, rs, wr, CYAN, db, ign, nf, YELLOW } from 'matterbridge/logger';
 import { NodeStorageManager } from 'matterbridge/storage';
+import { isValidNumber } from 'matterbridge/utils';
 
 import { Action, Client, Command, Device, Execution } from 'overkiz-client';
 import path from 'path';
-import { CYAN, db, ign, nf, YELLOW } from 'node-ansi-logger';
+import { promises as fs } from 'fs';
 
 type MovementDuration = Record<string, number>;
 const Stopped = WindowCovering.MovementStatus.Stopped;
@@ -114,7 +114,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   override async onStart(reason?: string) {
     this.log.info('onStart called with reason:', reason ?? 'none');
     if (!this.tahomaClient) {
-      this.log.error('TaHoma service not connected');
+      this.log.error('TaHoma service not created');
       return;
     }
     try {
@@ -191,6 +191,19 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
     this.log.info('TaHoma', devices.length, 'devices discovered');
 
+    // Create the plugin directory inside the Matterbridge plugin directory
+    await fs.mkdir(path.join(this.matterbridge.matterbridgePluginDirectory, 'matterbridge-somfy-tahoma'), { recursive: true });
+
+    // Write the discovered devices to a file
+    const fileName = path.join(this.matterbridge.matterbridgePluginDirectory, 'matterbridge-somfy-tahoma', 'devices.json');
+    fs.writeFile(fileName, JSON.stringify(devices, null, 2))
+      .then(() => {
+        this.log.debug(`Devices successfully written to ${fileName}`);
+      })
+      .catch((error) => {
+        this.log.error(`Error writing devices to ${fileName}:`, error);
+      });
+
     for (const device of devices) {
       this.log.debug(`Device: ${BLUE}${device.label}${rs}`);
       this.log.debug(`- uniqueName ${device.uniqueName}`);
@@ -199,7 +212,6 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.debug(`- deviceURL ${device.deviceURL}`);
       this.log.debug(`- commands ${debugStringify(device.commands)}`);
       this.log.debug(`- states ${debugStringify(device.states)}`);
-      // this.log.debug(`Device: ${device.label} uniqueName ${device.uniqueName} uiClass ${device.definition.uiClass} deviceURL ${device.deviceURL} serial ${device.serialNumber}`);
       const supportedUniqueNames = [
         'Blind',
         'BlindRTSComponent',

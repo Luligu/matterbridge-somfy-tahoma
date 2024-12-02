@@ -20,25 +20,20 @@ describe('initializePlugin', () => {
     } as unknown as Matterbridge;
     mockLog = { error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn() } as unknown as AnsiLogger;
     mockConfig = {
-      'name': 'matterbridge-test',
+      'name': 'matterbridge-somfy-tahoma',
       'type': 'DynamicPlatform',
       'username': 'None',
       'password': 'None',
       'service': 'somfy_europe',
+      'blackList': [],
+      'whiteList': [],
       'debug': false,
       'unregisterOnShutdown': false,
     } as PlatformConfig;
   });
 
-  it('should return an instance of TestPlatform', () => {
+  it('should return an instance of SomfyTahomaPlatform', () => {
     const result = initializePlugin(mockMatterbridge, mockLog, mockConfig);
-
-    expect(result).toBeInstanceOf(SomfyTahomaPlatform);
-  });
-
-  it('should shutdown the instance of TestPlatform', () => {
-    const result = initializePlugin(mockMatterbridge, mockLog, mockConfig);
-
     expect(result).toBeInstanceOf(SomfyTahomaPlatform);
   });
 });

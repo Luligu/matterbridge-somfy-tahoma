@@ -42,7 +42,5 @@ coverage/
 hs_err_pid*
 replay_pid*
 
-# zigbee2mqtt
-bridge-info.json
-bridge-devices.json
-bridge-groups.json
+temp
+src/mock
