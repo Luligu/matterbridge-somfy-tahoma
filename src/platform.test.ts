@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Matterbridge, MatterbridgeDevice, MatterbridgeEndpoint, PlatformConfig } from 'matterbridge';
+import { coverDevice, Matterbridge, MatterbridgeDevice, MatterbridgeEndpoint, PlatformConfig } from 'matterbridge';
 import { AnsiLogger, dn, LogLevel, wr } from 'matterbridge/logger';
 import { SomfyTahomaPlatform } from './platform';
 
@@ -38,6 +38,7 @@ describe('TestPlatform', () => {
       matterbridgePluginDirectory: 'temp',
       systemInformation: { ipv4Address: undefined },
       matterbridgeVersion: '1.6.5',
+      edge: false,
       addBridgedDevice: jest.fn(async (pluginName: string, device: MatterbridgeDevice) => {
         // console.error('addBridgedDevice called');
       }),
@@ -112,6 +113,22 @@ describe('TestPlatform', () => {
     expect(mockLog.info).toHaveBeenCalledWith('Initializing platform:', mockConfig.name);
     expect(mockLog.info).toHaveBeenCalledWith('Finished initializing platform:', mockConfig.name);
     expect(mockLog.info).toHaveBeenCalledWith('Starting client Tahoma service somfy_europe with user None password: None');
+  });
+
+  it('should receive tahomaClient events', () => {
+    (somfyPlatform as any).tahomaClient?.emit('connect');
+    (somfyPlatform as any).tahomaClient?.emit('disconnect');
+    expect(mockLog.info).toHaveBeenCalledWith('TaHoma service connected');
+    expect(mockLog.warn).toHaveBeenCalledWith('TaHoma service disconnected');
+  });
+
+  it('should create a mutableDevice', async () => {
+    expect(await somfyPlatform.createMutableDevice(coverDevice)).toBeDefined();
+    expect(await somfyPlatform.createMutableDevice(coverDevice)).toBeInstanceOf(MatterbridgeDevice);
+    mockMatterbridge.edge = true;
+    expect(await somfyPlatform.createMutableDevice(coverDevice)).toBeDefined();
+    expect(await somfyPlatform.createMutableDevice(coverDevice)).toBeInstanceOf(MatterbridgeEndpoint);
+    mockMatterbridge.edge = false;
   });
 
   it('should return false and log a warning if entity is not in the whitelist', () => {
@@ -216,7 +233,38 @@ describe('TestPlatform', () => {
     expect(mockLog.info).toHaveBeenCalledWith('onConfigure called');
   });
 
+  it('should call onConfigure and log error', async () => {
+    const client = (somfyPlatform as any).tahomaClient;
+    (somfyPlatform as any).tahomaClient = undefined;
+    await somfyPlatform.onConfigure();
+    expect(mockLog.info).toHaveBeenCalledWith('onConfigure called');
+    expect(mockLog.error).toHaveBeenCalledWith('TaHoma service not created');
+    (somfyPlatform as any).tahomaClient = client;
+  });
+
   it('should call onShutdown with reason', async () => {
+    const client = (somfyPlatform as any).tahomaClient;
+    (somfyPlatform as any).tahomaClient = undefined;
+    await somfyPlatform.onShutdown('Test reason');
+    expect(mockLog.info).toHaveBeenCalledWith('onShutdown called with reason:', 'Test reason');
+    expect((somfyPlatform as any).tahomaClient).toBeUndefined();
+    (somfyPlatform as any).tahomaClient = client;
+  });
+
+  it('should call onShutdown with reason and call unregisterAll', async () => {
+    const client = (somfyPlatform as any).tahomaClient;
+    (somfyPlatform as any).tahomaClient = undefined;
+    somfyPlatform.name = mockConfig.name as string;
+    mockConfig.unregisterOnShutdown = true;
+    await somfyPlatform.onShutdown('Test reason');
+    expect(mockLog.info).toHaveBeenCalledWith('onShutdown called with reason:', 'Test reason');
+    expect(mockMatterbridge.removeAllBridgedDevices).toHaveBeenCalledWith(mockConfig.name);
+    expect((somfyPlatform as any).tahomaClient).toBeUndefined();
+    (somfyPlatform as any).tahomaClient = client;
+    mockConfig.unregisterOnShutdown = false;
+  });
+
+  it('should call onShutdown with reason and log error', async () => {
     await somfyPlatform.onShutdown('Test reason');
     expect(mockLog.info).toHaveBeenCalledWith('onShutdown called with reason:', 'Test reason');
   });

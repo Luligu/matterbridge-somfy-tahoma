@@ -130,7 +130,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   override async onConfigure() {
     this.log.info('onConfigure called');
     if (!this.tahomaClient) {
-      this.log.error('TaHoma service not connected');
+      this.log.error('TaHoma service not created');
       return;
     }
 
@@ -148,7 +148,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   override async onShutdown(reason?: string) {
     this.log.info('onShutdown called with reason:', reason ?? 'none');
     if (!this.tahomaClient) {
-      this.log.error('TaHoma service not connected');
+      this.log.error('TaHoma service not created');
     } else {
       this.tahomaClient.removeAllListeners();
     }
