@@ -81,29 +81,32 @@ describe('TestPlatform', () => {
     });
 
     mockMatterbridge = {
-      matterbridgeDirectory: '',
-      matterbridgePluginDirectory: 'temp',
+      matterbridgeDirectory: './jest/matterbridge',
+      matterbridgePluginDirectory: './jest/plugins',
       systemInformation: { ipv4Address: undefined },
-      matterbridgeVersion: '1.6.5',
-      edge: false,
+      matterbridgeVersion: '1.6.7',
+      getDevices: jest.fn(() => {
+        // console.log('getDevices called');
+        return [];
+      }),
       addBridgedDevice: jest.fn(async (pluginName: string, device: MatterbridgeDevice) => {
-        // console.error('addBridgedDevice called');
+        // console.log('addBridgedDevice called');
       }),
       addBridgedEndpoint: jest.fn(async (pluginName: string, device: MatterbridgeEndpoint) => {
-        device.number = 100;
-        // console.error('addBridgedEndpoint called');
+        // console.log('addBridgedEndpoint called');
+        // await aggregator.add(device);
       }),
       removeBridgedDevice: jest.fn(async (pluginName: string, device: MatterbridgeDevice) => {
-        // console.error('removeBridgedDevice called');
+        // console.log('removeBridgedDevice called');
       }),
       removeBridgedEndpoint: jest.fn(async (pluginName: string, device: MatterbridgeEndpoint) => {
-        // console.error('removeBridgedEndpoint called');
+        // console.log('removeBridgedEndpoint called');
       }),
       removeAllBridgedDevices: jest.fn(async (pluginName: string) => {
-        // console.error('removeAllBridgedDevices called');
+        // console.log('removeAllBridgedDevices called');
       }),
       removeAllBridgedEndpoints: jest.fn(async (pluginName: string) => {
-        // console.error('removeAllBridgedEndpoints called');
+        // console.log('removeAllBridgedEndpoints called');
       }),
     } as unknown as Matterbridge;
     mockLog = {
@@ -181,56 +184,6 @@ describe('TestPlatform', () => {
     mockMatterbridge.edge = false;
   });
 
-  it('should return false and log a warning if entity is not in the whitelist', () => {
-    (somfyPlatform as any).whiteList = ['entity1', 'entity2'];
-    (somfyPlatform as any).blackList = [];
-
-    const result = (somfyPlatform as any).validateWhiteBlackList('entity3');
-
-    expect(result).toBe(false);
-    expect(mockLog.warn).toHaveBeenCalledWith(`Skipping ${dn}entity3${wr} because not in whitelist`);
-  });
-
-  it('should return false and log a warning if entity is in the blacklist', () => {
-    (somfyPlatform as any).whiteList = [];
-    (somfyPlatform as any).blackList = ['entity3'];
-
-    const result = (somfyPlatform as any).validateWhiteBlackList('entity3');
-
-    expect(result).toBe(false);
-    expect(mockLog.warn).toHaveBeenCalledWith(`Skipping ${dn}entity3${wr} because in blacklist`);
-  });
-
-  it('should return true if entity is in the whitelist', () => {
-    (somfyPlatform as any).whiteList = ['entity3'];
-    (somfyPlatform as any).blackList = [];
-
-    const result = (somfyPlatform as any).validateWhiteBlackList('entity3');
-
-    expect(result).toBe(true);
-    expect(mockLog.warn).not.toHaveBeenCalled();
-  });
-
-  it('should return true if entity is not in the blacklist and whitelist is empty', () => {
-    (somfyPlatform as any).whiteList = [];
-    (somfyPlatform as any).blackList = [];
-
-    const result = (somfyPlatform as any).validateWhiteBlackList('entity3');
-
-    expect(result).toBe(true);
-    expect(mockLog.warn).not.toHaveBeenCalled();
-  });
-
-  it('should return true if both whitelist and blacklist are empty', () => {
-    (somfyPlatform as any).whiteList = [];
-    (somfyPlatform as any).blackList = [];
-
-    const result = (somfyPlatform as any).validateWhiteBlackList('entity3');
-
-    expect(result).toBe(true);
-    expect(mockLog.warn).not.toHaveBeenCalled();
-  });
-
   it('should validate version', () => {
     mockMatterbridge.matterbridgeVersion = '1.5.4';
     expect(somfyPlatform.verifyMatterbridgeVersion('1.5.3')).toBe(true);
@@ -249,7 +202,7 @@ describe('TestPlatform', () => {
   it('should throw because of version', () => {
     mockMatterbridge.matterbridgeVersion = '1.5.4';
     expect(() => new SomfyTahomaPlatform(mockMatterbridge, mockLog, mockConfig)).toThrow();
-    mockMatterbridge.matterbridgeVersion = '1.6.5';
+    mockMatterbridge.matterbridgeVersion = '1.6.7';
   });
 
   it('should call onStart with reason', async () => {
@@ -304,7 +257,7 @@ describe('TestPlatform', () => {
   });
 
   it('should discover devices and not add if in black list', async () => {
-    (somfyPlatform as any).blackList = ['Device1'];
+    somfyPlatform.config.blackList = ['Device1'];
     clientGetDevicesSpy.mockImplementationOnce(() => {
       return Promise.resolve(mockDevices);
     });
@@ -314,7 +267,7 @@ describe('TestPlatform', () => {
     expect(mockLog.info).toHaveBeenCalledWith(`Discovered 1 TaHoma screens`);
     expect((somfyPlatform as any).bridgedDevices).toHaveLength(0);
     expect((somfyPlatform as any).covers.size).toBe(0);
-    (somfyPlatform as any).blackList = [];
+    somfyPlatform.config.blackList = [];
     (somfyPlatform as any).tahomaDevices = [];
     (somfyPlatform as any).bridgedDevices = [];
     (somfyPlatform as any).covers.clear();

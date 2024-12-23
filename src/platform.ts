@@ -13,9 +13,9 @@ import {
   MatterbridgeEndpoint,
   coverDevice,
 } from 'matterbridge';
-import { AnsiLogger, BLUE, debugStringify, dn, rs, wr, CYAN, ign, nf, YELLOW } from 'matterbridge/logger';
+import { AnsiLogger, BLUE, debugStringify, rs, CYAN, ign, nf, YELLOW } from 'matterbridge/logger';
 import { NodeStorageManager } from 'matterbridge/storage';
-import { isValidNumber } from 'matterbridge/utils';
+import { isValidNumber, isValidString } from 'matterbridge/utils';
 
 import { Action, Client, Command, Device, Execution } from 'overkiz-client';
 import path from 'path';
@@ -45,11 +45,6 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
   // TaHoma
   private tahomaClient?: Client;
-  private username = '';
-  private password = '';
-  private service = 'somfy_europe';
-  private whiteList: string[] = [];
-  private blackList: string[] = [];
   private movementDuration: MovementDuration = {};
   private connected = false;
 
@@ -64,19 +59,14 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('1.6.5')) {
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('1.6.7')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "1.6.5". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend."`,
+        `This plugin requires Matterbridge version >= "1.6.7". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend."`,
       );
     }
 
     this.log.info('Initializing platform:', this.config.name);
 
-    if (config.username) this.username = config.username as string;
-    if (config.password) this.password = config.password as string;
-    if (config.service) this.service = config.service as string;
-    if (config.whiteList) this.whiteList = config.whiteList as string[];
-    if (config.blackList) this.blackList = config.blackList as string[];
     if (config.movementDuration) this.movementDuration = config.movementDuration as MovementDuration;
 
     // create NodeStorageManager
@@ -85,7 +75,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       logging: false,
     });
 
-    if (!this.config.username || !this.config.password || !this.config.service) {
+    if (!isValidString(this.config.username) || !isValidString(this.config.password) || !isValidString(this.config.service)) {
       this.log.error('No service or username or password provided for:', this.config.name);
       return;
       // throw new Error(`No service or username or password provided for ${this.config.name}`);
@@ -128,6 +118,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   }
 
   override async onConfigure() {
+    super.onConfigure();
     this.log.info('onConfigure called');
     if (!this.tahomaClient) {
       this.log.error('TaHoma service not created');
@@ -146,6 +137,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   }
 
   override async onShutdown(reason?: string) {
+    super.onShutdown(reason);
     this.log.info('onShutdown called with reason:', reason ?? 'none');
     if (!this.tahomaClient) {
       this.log.error('TaHoma service not created');
@@ -161,18 +153,6 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     });
     this.covers.clear();
     if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices();
-  }
-
-  public validateWhiteBlackList(entityName: string) {
-    if (this.whiteList.length > 0 && !this.whiteList.find((name) => name === entityName)) {
-      this.log.warn(`Skipping ${dn}${entityName}${wr} because not in whitelist`);
-      return false;
-    }
-    if (this.blackList.length > 0 && this.blackList.find((name) => name === entityName)) {
-      this.log.warn(`Skipping ${dn}${entityName}${wr} because in blacklist`);
-      return false;
-    }
-    return true;
   }
 
   private async discoverDevices() {
@@ -246,14 +226,14 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     }
     this.log.info(`Discovered ${this.tahomaDevices.length} TaHoma screens`);
     for (const device of this.tahomaDevices) {
-      if (!this.validateWhiteBlackList(device.label)) {
+      if (!this.validateDeviceWhiteBlackList([device.label, device.uniqueName, device.serialNumber])) {
         continue;
       }
       const duration = this.movementDuration[device.label] || 30;
 
       this.log.debug(`Adding device: ${BLUE}${device.label}${rs}`);
       this.log.debug(`- uniqueName ${device.uniqueName}`);
-      this.log.debug(`- uiClass ${device.definition?.uiClass}`);
+      this.log.debug(`- uiClass ${device.definition.uiClass}`);
       this.log.debug(`- serial ${device.serialNumber}`);
       this.log.debug(`- deviceURL ${device.deviceURL}`);
       this.log.debug(`- commands ${debugStringify(device.commands)}`);

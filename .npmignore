@@ -167,3 +167,4 @@ yellow-button.png
 create-release.js
 tsconfig.*
 temp
+jest
