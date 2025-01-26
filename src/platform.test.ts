@@ -1,18 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  ClusterServerObj,
-  coverDevice,
-  Identify,
-  IdentifyCluster,
-  Matterbridge,
-  MatterbridgeDevice,
-  MatterbridgeEndpoint,
-  PlatformConfig,
-  WindowCovering,
-  WindowCoveringCluster,
-} from 'matterbridge';
-import { AnsiLogger, BLUE, CYAN, dn, ign, LogLevel, nf, rs, wr, YELLOW } from 'matterbridge/logger';
+import { Matterbridge, MatterbridgeEndpoint, PlatformConfig, WindowCovering, WindowCoveringCluster } from 'matterbridge';
+import { AnsiLogger, BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
 import { wait } from 'matterbridge/utils';
 import { SomfyTahomaPlatform } from './platform';
 
@@ -21,24 +10,16 @@ import { Client, Device } from 'overkiz-client';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-async function invokeCommands(cluster: ClusterServerObj, data?: Record<string, boolean | number | bigint | string | object | null | undefined>): Promise<void> {
-  const commands = (cluster as any).commands as object;
-  for (const [key, value] of Object.entries(commands)) {
-    if (typeof value.handler === 'function') await value.handler(data ?? {});
-  }
-}
-
-async function invokeCommand(cluster: ClusterServerObj, command: string, data?: Record<string, boolean | number | bigint | string | object | null | undefined>): Promise<void> {
-  const commands = (cluster as any).commands as object;
-  for (const [key, value] of Object.entries(commands)) {
-    if (key === command && typeof value.handler === 'function') await value.handler(data ?? {});
-  }
+// await invokeCommand(device, 'identify', { identifyTime: 1 });
+async function invokeCommand(
+  endpoint: MatterbridgeEndpoint,
+  command: string,
+  data?: Record<string, boolean | number | bigint | string | object | null | undefined>,
+): Promise<void> {
+  await endpoint.commandHandler.executeHandler(command as any, { request: data ?? {} } as any);
 }
 
 describe('TestPlatform', () => {
-  let mockMatterbridge: Matterbridge;
-  let mockLog: AnsiLogger;
-  let mockConfig: PlatformConfig;
   let somfyPlatform: SomfyTahomaPlatform;
 
   let consoleLogSpy: jest.SpiedFunction<typeof console.log>;
@@ -47,6 +28,68 @@ describe('TestPlatform', () => {
   let clientConnectSpy: jest.SpiedFunction<(user: string, password: string) => Promise<void>>;
   let clientGetDevicesSpy: jest.SpiedFunction<() => Promise<Device[]>>;
   let clientExecuteSpy: jest.SpiedFunction<(oid: any, execution: any) => Promise<any>>;
+
+  const mockLog = {
+    fatal: jest.fn((message: string, ...parameters: any[]) => {
+      // console.log('mockLog.fatal', message, parameters);
+    }),
+    error: jest.fn((message: string, ...parameters: any[]) => {
+      // console.log('mockLog.error', message, parameters);
+    }),
+    warn: jest.fn((message: string, ...parameters: any[]) => {
+      // console.log('mockLog.warn', message, parameters);
+    }),
+    notice: jest.fn((message: string, ...parameters: any[]) => {
+      // console.log('mockLog.notice', message, parameters);
+    }),
+    info: jest.fn((message: string, ...parameters: any[]) => {
+      // console.log('mockLog.info', message, parameters);
+    }),
+    debug: jest.fn((message: string, ...parameters: any[]) => {
+      // console.log('mockLog.debug', message, parameters);
+    }),
+  } as unknown as AnsiLogger;
+
+  const mockMatterbridge = {
+    matterbridgeDirectory: './jest/matterbridge',
+    matterbridgePluginDirectory: './jest/plugins',
+    systemInformation: { ipv4Address: undefined, ipv6Address: undefined, osRelease: 'xx.xx.xx.xx.xx.xx', nodeVersion: '22.1.10' },
+    matterbridgeVersion: '2.1.0',
+    edge: true,
+    log: mockLog,
+    getDevices: jest.fn(() => {
+      // console.log('getDevices called');
+      return [];
+    }),
+    getPlugins: jest.fn(() => {
+      // console.log('getDevices called');
+      return [];
+    }),
+    addBridgedEndpoint: jest.fn(async (pluginName: string, device: MatterbridgeEndpoint) => {
+      // console.log('addBridgedEndpoint called');
+    }),
+    removeBridgedEndpoint: jest.fn(async (pluginName: string, device: MatterbridgeEndpoint) => {
+      // console.log('removeBridgedEndpoint called');
+    }),
+    removeAllBridgedEndpoints: jest.fn(async (pluginName: string) => {
+      // console.log('removeAllBridgedEndpoints called');
+    }),
+  } as unknown as Matterbridge;
+
+  const mockConfig = {
+    'name': 'matterbridge-somfy-tahoma',
+    'type': 'DynamicPlatform',
+    'username': 'None',
+    'password': 'None',
+    'service': 'somfy_europe',
+    'movementDuration': {
+      'Device1': 5,
+    },
+    'blackList': [],
+    'whiteList': [],
+    'debug': false,
+    'unregisterOnShutdown': false,
+  } as PlatformConfig;
 
   const mockDevices = [
     {
@@ -79,70 +122,6 @@ describe('TestPlatform', () => {
       // console.error(`Mocked Client.execute(${oid}, ${execution})`);
       return Promise.resolve();
     });
-
-    mockMatterbridge = {
-      matterbridgeDirectory: './jest/matterbridge',
-      matterbridgePluginDirectory: './jest/plugins',
-      systemInformation: { ipv4Address: undefined },
-      matterbridgeVersion: '1.6.7',
-      getDevices: jest.fn(() => {
-        // console.log('getDevices called');
-        return [];
-      }),
-      addBridgedDevice: jest.fn(async (pluginName: string, device: MatterbridgeDevice) => {
-        // console.log('addBridgedDevice called');
-      }),
-      addBridgedEndpoint: jest.fn(async (pluginName: string, device: MatterbridgeEndpoint) => {
-        // console.log('addBridgedEndpoint called');
-        // await aggregator.add(device);
-      }),
-      removeBridgedDevice: jest.fn(async (pluginName: string, device: MatterbridgeDevice) => {
-        // console.log('removeBridgedDevice called');
-      }),
-      removeBridgedEndpoint: jest.fn(async (pluginName: string, device: MatterbridgeEndpoint) => {
-        // console.log('removeBridgedEndpoint called');
-      }),
-      removeAllBridgedDevices: jest.fn(async (pluginName: string) => {
-        // console.log('removeAllBridgedDevices called');
-      }),
-      removeAllBridgedEndpoints: jest.fn(async (pluginName: string) => {
-        // console.log('removeAllBridgedEndpoints called');
-      }),
-    } as unknown as Matterbridge;
-    mockLog = {
-      fatal: jest.fn((message: string, ...parameters: any[]) => {
-        // console.error('mockLog.fatal', message, ...parameters);
-      }),
-      error: jest.fn((message: string, ...parameters: any[]) => {
-        // console.error('mockLog.error', message, ...parameters);
-      }),
-      warn: jest.fn((message: string, ...parameters: any[]) => {
-        // console.error('mockLog.warn', message, ...parameters);
-      }),
-      notice: jest.fn((message: string, ...parameters: any[]) => {
-        // console.error('mockLog.notice', message, ...parameters);
-      }),
-      info: jest.fn((message: string, ...parameters: any[]) => {
-        // console.error('mockLog.info', message, ...parameters);
-      }),
-      debug: jest.fn((message: string, ...parameters: any[]) => {
-        // console.error('mockLog.debug', message, ...parameters);
-      }),
-    } as unknown as AnsiLogger;
-    mockConfig = {
-      'name': 'matterbridge-somfy-tahoma',
-      'type': 'DynamicPlatform',
-      'username': 'None',
-      'password': 'None',
-      'service': 'somfy_europe',
-      'movementDuration': {
-        'Device1': 5,
-      },
-      'blackList': [],
-      'whiteList': [],
-      'debug': false,
-      'unregisterOnShutdown': false,
-    } as PlatformConfig;
   });
 
   beforeEach(() => {
@@ -175,15 +154,6 @@ describe('TestPlatform', () => {
     expect(mockLog.warn).toHaveBeenCalledWith('TaHoma service disconnected');
   });
 
-  it('should create a mutableDevice', async () => {
-    expect(await somfyPlatform.createMutableDevice(coverDevice)).toBeDefined();
-    expect(await somfyPlatform.createMutableDevice(coverDevice)).toBeInstanceOf(MatterbridgeDevice);
-    mockMatterbridge.edge = true;
-    expect(await somfyPlatform.createMutableDevice(coverDevice)).toBeDefined();
-    expect(await somfyPlatform.createMutableDevice(coverDevice)).toBeInstanceOf(MatterbridgeEndpoint);
-    mockMatterbridge.edge = false;
-  });
-
   it('should validate version', () => {
     mockMatterbridge.matterbridgeVersion = '1.5.4';
     expect(somfyPlatform.verifyMatterbridgeVersion('1.5.3')).toBe(true);
@@ -202,7 +172,7 @@ describe('TestPlatform', () => {
   it('should throw because of version', () => {
     mockMatterbridge.matterbridgeVersion = '1.5.4';
     expect(() => new SomfyTahomaPlatform(mockMatterbridge, mockLog, mockConfig)).toThrow();
-    mockMatterbridge.matterbridgeVersion = '1.6.7';
+    mockMatterbridge.matterbridgeVersion = '2.0.0';
   });
 
   it('should call onStart with reason', async () => {
@@ -340,71 +310,67 @@ describe('TestPlatform', () => {
     (somfyPlatform as any).sendCommand('close', mockDevices[0]);
     expect(mockLog.error).toHaveBeenCalledWith(expect.stringContaining(`Error sending command`));
 
-    const identify = somfyPlatform.covers.get('Device1')?.bridgedDevice.getClusterServer(Identify.Complete);
-    expect(identify).toBeDefined();
-    if (!identify) return;
-    await invokeCommands(identify as unknown as ClusterServerObj);
+    const device = somfyPlatform.covers.get('Device1')?.bridgedDevice;
+    expect(device).toBeDefined();
+    if (!device) return;
+    await invokeCommand(device, 'identify', { identifyTime: 1 });
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}identify${rs}${nf} called identifyTime:1`);
 
-    jest.clearAllMocks();
-
-    const windowsCovering = somfyPlatform.covers.get('Device1')?.bridgedDevice.getClusterServer(WindowCovering.Complete);
-    expect(windowsCovering).toBeDefined();
-    if (!windowsCovering) return;
-    somfyPlatform.covers.get('Device1')?.bridgedDevice.setWindowCoveringCurrentTargetStatus(0, 0, WindowCovering.MovementStatus.Stopped);
+    device.setWindowCoveringCurrentTargetStatus(0, 0, WindowCovering.MovementStatus.Stopped);
 
     // With Matter 0=open 10000=close
 
     jest.clearAllMocks();
-    await invokeCommand(windowsCovering as unknown as ClusterServerObj, 'downOrClose');
+    await invokeCommand(device, 'downOrClose');
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}downOrClose${rs}${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 0 to 10000...`);
     await wait(6000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at 10000`);
-    expect(somfyPlatform.covers.get('Device1')?.bridgedDevice.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(10000);
+    expect(device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(10000);
 
     jest.clearAllMocks();
-    await invokeCommand(windowsCovering as unknown as ClusterServerObj, 'upOrOpen');
+    await invokeCommand(device, 'upOrOpen');
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}upOrOpen${rs}${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 10000 to 0...`);
     await wait(6000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at 0`);
-    expect(somfyPlatform.covers.get('Device1')?.bridgedDevice.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(0);
+    expect(device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(0);
 
     jest.clearAllMocks();
-    await invokeCommand(windowsCovering as unknown as ClusterServerObj, 'upOrOpen');
+    await invokeCommand(device, 'upOrOpen');
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}upOrOpen${rs}${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 0 to 0...`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 0 to 0. No movement needed.`);
-    expect(somfyPlatform.covers.get('Device1')?.bridgedDevice.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(0);
+    expect(device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(0);
 
     jest.clearAllMocks();
-    await invokeCommand(windowsCovering as unknown as ClusterServerObj, 'goToLiftPercentage', { liftPercent100thsValue: 5000 });
+    await invokeCommand(device, 'goToLiftPercentage', { liftPercent100thsValue: 5000 });
     await wait(1000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}5000${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 0 to 5000...`);
     await wait(4000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at 5000`);
-    expect(somfyPlatform.covers.get('Device1')?.bridgedDevice.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(5000);
+    expect(device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(5000);
 
     jest.clearAllMocks();
-    await invokeCommand(windowsCovering as unknown as ClusterServerObj, 'goToLiftPercentage', { liftPercent100thsValue: 10000 });
+    await invokeCommand(device, 'goToLiftPercentage', { liftPercent100thsValue: 10000 });
     await wait(1000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}10000${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 5000 to 10000...`);
-    await invokeCommand(windowsCovering as unknown as ClusterServerObj, 'downOrClose');
+    await invokeCommand(device, 'downOrClose');
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Stopping current movement.`);
-    await invokeCommand(windowsCovering as unknown as ClusterServerObj, 'downOrClose');
+    await invokeCommand(device, 'downOrClose');
     await wait(5000);
-    expect(somfyPlatform.covers.get('Device1')?.bridgedDevice.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(10000);
+    expect(device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(10000);
 
-    await invokeCommand(windowsCovering as unknown as ClusterServerObj, 'upOrOpen');
+    await invokeCommand(device, 'upOrOpen');
     await wait(1000);
-    await invokeCommand(windowsCovering as unknown as ClusterServerObj, 'stopMotion');
+    await invokeCommand(device, 'stopMotion');
     await wait(1000);
-    await invokeCommand(windowsCovering as unknown as ClusterServerObj, 'downOrClose');
+    await invokeCommand(device, 'downOrClose');
     await wait(1000);
-    await invokeCommand(windowsCovering as unknown as ClusterServerObj, 'upOrOpen');
-    await invokeCommand(windowsCovering as unknown as ClusterServerObj, 'stopMotion');
+    await invokeCommand(device, 'upOrOpen');
+    await invokeCommand(device, 'stopMotion');
 
     (somfyPlatform as any).tahomaDevices = [];
     (somfyPlatform as any).bridgedDevices = [];
@@ -486,7 +452,7 @@ describe('TestPlatform', () => {
     mockConfig.unregisterOnShutdown = true;
     await somfyPlatform.onShutdown('Test reason');
     expect(mockLog.info).toHaveBeenCalledWith('onShutdown called with reason:', 'Test reason');
-    expect(mockMatterbridge.removeAllBridgedDevices).toHaveBeenCalledWith(mockConfig.name);
+    expect(mockMatterbridge.removeAllBridgedEndpoints).toHaveBeenCalledWith(mockConfig.name);
     expect((somfyPlatform as any).tahomaClient).toBeUndefined();
     (somfyPlatform as any).tahomaClient = client;
     mockConfig.unregisterOnShutdown = false;

@@ -3,11 +3,7 @@ import {
   WindowCovering,
   WindowCoveringCluster,
   Matterbridge,
-  MatterbridgeDevice,
   MatterbridgeDynamicPlatform,
-  DeviceTypeDefinition,
-  AtLeastOne,
-  EndpointOptions,
   bridgedNode,
   powerSource,
   MatterbridgeEndpoint,
@@ -28,7 +24,7 @@ const Closing = WindowCovering.MovementStatus.Closing;
 
 interface Cover {
   tahomaDevice: Device;
-  bridgedDevice: MatterbridgeDevice;
+  bridgedDevice: MatterbridgeEndpoint;
   movementDuration: number;
   movementStatus: WindowCovering.MovementStatus;
   moveInterval?: NodeJS.Timeout;
@@ -37,7 +33,7 @@ interface Cover {
 
 export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   private tahomaDevices: Device[] = [];
-  private bridgedDevices: MatterbridgeDevice[] = [];
+  private bridgedDevices: MatterbridgeEndpoint[] = [];
   covers = new Map<string, Cover>();
 
   // NodeStorageManager
@@ -48,20 +44,13 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   private movementDuration: MovementDuration = {};
   private connected = false;
 
-  async createMutableDevice(definition: DeviceTypeDefinition | AtLeastOne<DeviceTypeDefinition>, options: EndpointOptions = {}, debug = false): Promise<MatterbridgeDevice> {
-    let device: MatterbridgeDevice;
-    if (this.matterbridge.edge === true) device = new MatterbridgeEndpoint(definition, options, debug) as unknown as MatterbridgeDevice;
-    else device = new MatterbridgeDevice(definition, undefined, debug);
-    return device;
-  }
-
   constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('1.6.7')) {
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('2.1.0')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "1.6.7". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend."`,
+        `This plugin requires Matterbridge version >= "2.1.0". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend."`,
       );
     }
 
@@ -240,21 +229,21 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.debug(`- states ${debugStringify(device.states)}`);
       this.log.debug(`- duration ${duration}`);
 
-      const cover = await this.createMutableDevice(coverDevice, { uniqueStorageKey: device.label }, this.config.debug as boolean);
+      const cover = new MatterbridgeEndpoint([coverDevice, bridgedNode, powerSource], { uniqueStorageKey: device.label }, this.config.debug as boolean);
       cover.createDefaultIdentifyClusterServer();
       cover.createDefaultGroupsClusterServer();
       cover.createDefaultScenesClusterServer();
       cover.createDefaultWindowCoveringClusterServer();
-      cover.addDeviceType(bridgedNode);
       cover.createDefaultBridgedDeviceBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', device.definition.uiClass);
-      cover.addDeviceType(powerSource);
       cover.createDefaultPowerSourceWiredClusterServer();
       await this.registerDevice(cover);
       this.bridgedDevices.push(cover);
       this.covers.set(device.label, { tahomaDevice: device, bridgedDevice: cover, movementStatus: Stopped, movementDuration: duration });
 
       cover.addCommandHandler('identify', async ({ request: { identifyTime } }) => {
-        this.log.info(`Command ${ign}identify${rs}${nf} called identifyTime:${identifyTime}`);
+        const cover = this.covers.get(device.label);
+        if (!cover) return;
+        cover.bridgedDevice.log.info(`Command ${ign}identify${rs}${nf} called identifyTime:${identifyTime}`);
         await this.sendCommand('identify', device, true);
       });
 
