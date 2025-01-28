@@ -232,7 +232,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       const cover = new MatterbridgeEndpoint([coverDevice, bridgedNode, powerSource], { uniqueStorageKey: device.label }, this.config.debug as boolean);
       cover.createDefaultIdentifyClusterServer();
       cover.createDefaultGroupsClusterServer();
-      cover.createDefaultScenesClusterServer();
+      // cover.createDefaultScenesClusterServer();
       cover.createDefaultWindowCoveringClusterServer();
       cover.createDefaultBridgedDeviceBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', device.definition.uiClass);
       cover.createDefaultPowerSourceWiredClusterServer();

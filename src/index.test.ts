@@ -76,8 +76,9 @@ describe('initializePlugin', () => {
     jest.restoreAllMocks();
   });
 
-  it('should return an instance of SomfyTahomaPlatform', () => {
+  it('should return an instance of SomfyTahomaPlatform', async () => {
     const result = initializePlugin(mockMatterbridge, mockLog, mockConfig);
     expect(result).toBeInstanceOf(SomfyTahomaPlatform);
+    await result.onShutdown();
   });
 });
