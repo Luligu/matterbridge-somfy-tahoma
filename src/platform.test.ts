@@ -103,14 +103,30 @@ describe('TestPlatform', () => {
   ];
 
   beforeAll(async () => {
-    /*
     // Spy on and mock the AnsiLogger.log method
     loggerLogSpy = jest.spyOn(AnsiLogger.prototype, 'log').mockImplementation((level: string, message: string, ...parameters: any[]) => {
       // console.error(`Mocked AnsiLogger.log: ${level} - ${message}`, ...parameters);
     });
-    */
-    // Spy on and mock the AnsiLogger.log method
-    loggerLogSpy = jest.spyOn(AnsiLogger.prototype, 'log');
+    // Spy on and mock console.log
+    const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation((...args: any[]) => {
+      //
+    });
+    // Spy on and mock console.debug
+    const consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation((...args: any[]) => {
+      //
+    });
+    // Spy on and mock console.info
+    const consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation((...args: any[]) => {
+      //
+    });
+    // Spy on and mock console.warn
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation((...args: any[]) => {
+      //
+    });
+    // Spy on and mock console.error
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation((...args: any[]) => {
+      //
+    });
 
     // Create a MatterbridgeEdge instance
     matterbridge = await Matterbridge.loadInstance(false);
