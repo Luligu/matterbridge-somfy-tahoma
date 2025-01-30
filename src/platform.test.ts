@@ -1,10 +1,12 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Matterbridge, MatterbridgeEndpoint, PlatformConfig, WindowCovering, WindowCoveringCluster } from 'matterbridge';
+import { Matterbridge, MatterbridgeEndpoint, PlatformConfig } from 'matterbridge';
 import { AnsiLogger, BLUE, CYAN, ign, LogLevel, nf, rs, TimestampFormat, YELLOW } from 'matterbridge/logger';
 import { wait } from 'matterbridge/utils';
-import { AggregatorEndpoint, Endpoint, ServerNode, LogLevel as Level, LogFormat as Format } from 'matterbridge/matter';
+import { Endpoint, ServerNode, LogLevel as Level, LogFormat as Format } from 'matterbridge/matter';
+import { AggregatorEndpoint } from 'matterbridge/matter/endpoints';
+import { WindowCovering, WindowCoveringCluster } from 'matterbridge/matter/clusters';
 import { SomfyTahomaPlatform } from './platform';
 
 import { jest } from '@jest/globals';

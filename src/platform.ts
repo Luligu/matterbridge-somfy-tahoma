@@ -1,17 +1,8 @@
-import {
-  PlatformConfig,
-  WindowCovering,
-  WindowCoveringCluster,
-  Matterbridge,
-  MatterbridgeDynamicPlatform,
-  bridgedNode,
-  powerSource,
-  MatterbridgeEndpoint,
-  coverDevice,
-} from 'matterbridge';
+import { PlatformConfig, Matterbridge, MatterbridgeDynamicPlatform, bridgedNode, powerSource, MatterbridgeEndpoint, coverDevice } from 'matterbridge';
 import { AnsiLogger, BLUE, debugStringify, rs, CYAN, ign, nf, YELLOW } from 'matterbridge/logger';
 import { NodeStorageManager } from 'matterbridge/storage';
 import { isValidNumber, isValidString } from 'matterbridge/utils';
+import { WindowCovering } from 'matterbridge/matter/clusters';
 
 import { Action, Client, Command, Device, Execution } from 'overkiz-client';
 import path from 'path';
@@ -117,7 +108,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     // Set cover to target = current position and status to stopped (current position persists in the cluster)
     for (const device of this.bridgedDevices) {
       const cover = this.covers.get(device.deviceName ?? '');
-      const position = await device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths', device.log);
+      const position = await device.getAttribute(WindowCovering.Cluster.id, 'currentPositionLiftPercent100ths', device.log);
       cover?.bridgedDevice.log.info(
         `Setting ${device.deviceName} target to ${CYAN}${position / 100}%${nf} position and status to stopped. Movement duration: ${CYAN}${cover?.movementDuration}${nf}`,
       );
@@ -288,7 +279,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       cover.addCommandHandler('goToLiftPercentage', async ({ request: { liftPercent100thsValue } }) => {
         const cover = this.covers.get(device.label);
         if (!cover) return;
-        await cover.bridgedDevice.setAttribute(WindowCoveringCluster.id, 'targetPositionLiftPercent100ths', liftPercent100thsValue, cover.bridgedDevice.log);
+        await cover.bridgedDevice.setAttribute(WindowCovering.Cluster.id, 'targetPositionLiftPercent100ths', liftPercent100thsValue, cover.bridgedDevice.log);
         if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
         cover.commandTimeout = setTimeout(async () => {
           cover.commandTimeout = undefined;
@@ -302,7 +293,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   // With Matter 0=open 10000=close
   private async moveToPosition(cover: Cover, targetPosition: number) {
     const log = cover.bridgedDevice.log;
-    let currentPosition = cover.bridgedDevice.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths', log);
+    let currentPosition = cover.bridgedDevice.getAttribute(WindowCovering.Cluster.id, 'currentPositionLiftPercent100ths', log);
     if (!isValidNumber(currentPosition, 0, 10000)) return;
     log.info(`Moving from ${currentPosition} to ${targetPosition}...`);
 
@@ -327,7 +318,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     const movement = targetPosition - currentPosition;
     const movementSeconds = Math.abs((movement * cover.movementDuration) / 10000);
     log.debug(`Moving from ${currentPosition} to ${targetPosition} in ${movementSeconds} seconds. Movement requested ${movement}`);
-    cover.bridgedDevice.setAttribute(WindowCoveringCluster.id, 'targetPositionLiftPercent100ths', targetPosition, log);
+    cover.bridgedDevice.setAttribute(WindowCovering.Cluster.id, 'targetPositionLiftPercent100ths', targetPosition, log);
 
     await cover.bridgedDevice.setWindowCoveringStatus(targetPosition > currentPosition ? WindowCovering.MovementStatus.Closing : WindowCovering.MovementStatus.Opening);
     cover.movementStatus = targetPosition > currentPosition ? Closing : Opening;
@@ -345,7 +336,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         log.debug(`Moving stopped at ${targetPosition}`);
       } else {
         log.debug(`Moving from ${currentPosition} to ${targetPosition} difference ${Math.abs(targetPosition - currentPosition)}`);
-        await cover.bridgedDevice.setAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths', Math.max(0, Math.min(currentPosition, 10000)), log);
+        await cover.bridgedDevice.setAttribute(WindowCovering.Cluster.id, 'currentPositionLiftPercent100ths', Math.max(0, Math.min(currentPosition, 10000)), log);
       }
     }, 1000);
   }
