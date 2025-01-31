@@ -67,12 +67,12 @@ describe('initializePlugin', () => {
   } as PlatformConfig;
 
   beforeEach(() => {
-    // Clear all mocks
+    // Clear all mocks.
     jest.clearAllMocks();
   });
 
   afterAll(async () => {
-    // Restore all mocks
+    // Restore all mocks.
     jest.restoreAllMocks();
   });
 
