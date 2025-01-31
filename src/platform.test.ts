@@ -4,7 +4,7 @@
 import { Matterbridge, MatterbridgeEndpoint, PlatformConfig } from 'matterbridge';
 import { AnsiLogger, BLUE, CYAN, ign, LogLevel, nf, rs, TimestampFormat, YELLOW } from 'matterbridge/logger';
 import { wait } from 'matterbridge/utils';
-import { Endpoint, ServerNode, LogLevel as Level, LogFormat as Format } from 'matterbridge/matter';
+import { Endpoint, ServerNode, LogLevel as Level, LogFormat as Format, Lifecycle } from 'matterbridge/matter';
 import { AggregatorEndpoint } from 'matterbridge/matter/endpoints';
 import { WindowCovering, WindowCoveringCluster } from 'matterbridge/matter/clusters';
 import { SomfyTahomaPlatform } from './platform';
@@ -22,8 +22,12 @@ describe('TestPlatform', () => {
 
   let somfyPlatform: SomfyTahomaPlatform;
 
-  let consoleLogSpy: jest.SpiedFunction<typeof console.log>;
   let loggerLogSpy: jest.SpiedFunction<(level: LogLevel, message: string, ...parameters: any[]) => void>;
+  let consoleLogSpy: jest.SpiedFunction<typeof console.log>;
+  let consoleDebugSpy: jest.SpiedFunction<typeof console.log>;
+  let consoleInfoSpy: jest.SpiedFunction<typeof console.log>;
+  let consoleWarnSpy: jest.SpiedFunction<typeof console.log>;
+  let consoleErrorSpy: jest.SpiedFunction<typeof console.log>;
 
   let clientConnectSpy: jest.SpiedFunction<(user: string, password: string) => Promise<void>>;
   let clientGetDevicesSpy: jest.SpiedFunction<() => Promise<Device[]>>;
@@ -107,26 +111,26 @@ describe('TestPlatform', () => {
   beforeAll(async () => {
     // Spy on and mock the AnsiLogger.log method
     loggerLogSpy = jest.spyOn(AnsiLogger.prototype, 'log').mockImplementation((level: string, message: string, ...parameters: any[]) => {
-      // console.error(`Mocked AnsiLogger.log: ${level} - ${message}`, ...parameters);
+      //
     });
     // Spy on and mock console.log
-    const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation((...args: any[]) => {
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation((...args: any[]) => {
       //
     });
     // Spy on and mock console.debug
-    const consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation((...args: any[]) => {
+    consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation((...args: any[]) => {
       //
     });
     // Spy on and mock console.info
-    const consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation((...args: any[]) => {
+    consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation((...args: any[]) => {
       //
     });
     // Spy on and mock console.warn
-    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation((...args: any[]) => {
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation((...args: any[]) => {
       //
     });
     // Spy on and mock console.error
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation((...args: any[]) => {
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation((...args: any[]) => {
       //
     });
 
@@ -188,7 +192,12 @@ describe('TestPlatform', () => {
 
   it('should start the server', async () => {
     await (matterbridge as any).startServerNode(server);
-    expect(server.lifecycle.isOnline).toBe(true);
+    expect(server).toBeDefined();
+    expect(server?.lifecycle.isReady).toBeTruthy();
+    expect(server?.construction.status).toBe(Lifecycle.Status.Active);
+    expect(aggregator).toBeDefined();
+    expect(aggregator?.lifecycle.isReady).toBeTruthy();
+    expect(aggregator?.construction.status).toBe(Lifecycle.Status.Active);
   });
 
   it('should not initialize platform without username and password', () => {
