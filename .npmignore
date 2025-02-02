@@ -168,3 +168,5 @@ create-release.js
 tsconfig.*
 temp
 jest
+matterstorage
+matterstorage.backup
