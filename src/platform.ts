@@ -5,8 +5,8 @@ import { isValidNumber, isValidString } from 'matterbridge/utils';
 import { WindowCovering } from 'matterbridge/matter/clusters';
 
 import { Action, Client, Command, Device, Execution } from 'overkiz-client';
-import path from 'path';
-import { promises as fs } from 'fs';
+import path from 'node:path';
+import { promises as fs } from 'node:fs';
 
 type MovementDuration = Record<string, number>;
 const Stopped = WindowCovering.MovementStatus.Stopped;

@@ -2,13 +2,14 @@
 
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import jesteslint from 'eslint-plugin-jest';
+import eslintPluginJest from 'eslint-plugin-jest';
 import eslintPluginPrettier from 'eslint-plugin-prettier/recommended';
+import eslintPluginN from 'eslint-plugin-n';
 
 export default [
   {
     name: 'global ignores',
-    ignores: ['dist/', 'build/', 'node_modules/', 'coverage/', 'frontend/'],
+    ignores: ['dist/', 'build/', 'node_modules/', 'coverage/', 'frontend/', 'rock-s0/'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.strict,
@@ -20,13 +21,6 @@ export default [
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
-      /*
-      parser: tseslint.parser,
-      parserOptions: {
-        project: './tsconfig.eslint.json',
-        tsconfigRootDir: import.meta.dirname,
-      },
-      */
     },
     linterOptions: {
       reportUnusedDisableDirectives: 'warn',
@@ -35,13 +29,12 @@ export default [
       'no-console': 'warn',
       'no-undef': 'off',
       'spaced-comment': ['error', 'always'],
-      'no-useless-constructor': 'off',
     },
   },
   {
     name: 'javascript',
     files: ['**/*.js'],
-    // ...tseslint.configs.disableTypeChecked,
+    ...tseslint.configs.disableTypeChecked,
   },
   {
     name: 'typescript',
@@ -59,20 +52,25 @@ export default [
     plugins: {
       '@typescript-eslint': tseslint.plugin,
     },
-    rules: {
-      '@typescript-eslint/no-useless-constructor': 'off',
-    },
   },
   {
     name: 'jest',
     files: ['**/__test__/*', '**/*.test.ts', '**/*.spec.ts'],
-    // ...tseslint.configs.disableTypeChecked,
     plugins: {
       '@typescript-eslint': tseslint.plugin,
-      jest: jesteslint,
+      jest: eslintPluginJest,
+    },
+    ...tseslint.configs.disableTypeChecked,
+    ...eslintPluginJest.configs['flat/recommended'],
+  },
+  {
+    name: 'node',
+    files: ['**/*.ts'],
+    plugins: {
+      n: eslintPluginN,
     },
     rules: {
-      ...jesteslint.configs['flat/recommended'].rules,
+      'n/prefer-node-protocol': 'error',
     },
   },
 ];
