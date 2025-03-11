@@ -4,7 +4,7 @@
 import { Matterbridge, MatterbridgeEndpoint, PlatformConfig } from 'matterbridge';
 import { AnsiLogger, BLUE, CYAN, ign, LogLevel, nf, rs, TimestampFormat, YELLOW } from 'matterbridge/logger';
 import { wait } from 'matterbridge/utils';
-import { Endpoint, ServerNode, LogLevel as Level, LogFormat as Format, Lifecycle } from 'matterbridge/matter';
+import { Endpoint, ServerNode, LogLevel as Level, LogFormat as Format, Lifecycle, MdnsService } from 'matterbridge/matter';
 import { AggregatorEndpoint } from 'matterbridge/matter/endpoints';
 import { WindowCovering, WindowCoveringCluster } from 'matterbridge/matter/clusters';
 import { SomfyTahomaPlatform } from './platform';
@@ -58,7 +58,7 @@ describe('TestPlatform', () => {
     matterbridgeDirectory: './jest/matterbridge',
     matterbridgePluginDirectory: './jest/plugins',
     systemInformation: { ipv4Address: undefined, ipv6Address: undefined, osRelease: 'xx.xx.xx.xx.xx.xx', nodeVersion: '22.1.10' },
-    matterbridgeVersion: '2.1.0',
+    matterbridgeVersion: '2.2.4',
     edge: true,
     log: mockLog,
     getDevices: jest.fn(() => {
@@ -244,7 +244,7 @@ describe('TestPlatform', () => {
   it('should throw because of version', () => {
     mockMatterbridge.matterbridgeVersion = '1.5.4';
     expect(() => new SomfyTahomaPlatform(mockMatterbridge, mockLog, mockConfig)).toThrow();
-    mockMatterbridge.matterbridgeVersion = '2.1.0';
+    mockMatterbridge.matterbridgeVersion = '2.2.4';
   });
 
   it('should call onStart with reason', async () => {
@@ -334,6 +334,7 @@ describe('TestPlatform', () => {
     (somfyPlatform as any).tahomaDevices = [];
     (somfyPlatform as any).bridgedDevices = [];
     (somfyPlatform as any).covers.clear();
+    (somfyPlatform as any)._registeredEndpointsByName.clear();
   });
 
   it('should discover devices with uiClass Screen', async () => {
@@ -356,6 +357,7 @@ describe('TestPlatform', () => {
     (somfyPlatform as any).tahomaDevices = [];
     (somfyPlatform as any).bridgedDevices = [];
     (somfyPlatform as any).covers.clear();
+    (somfyPlatform as any)._registeredEndpointsByName.clear();
   });
 
   it('should discover devices with command "open", "close" and "stop"', async () => {
@@ -454,6 +456,7 @@ describe('TestPlatform', () => {
     (somfyPlatform as any).tahomaDevices = [];
     (somfyPlatform as any).bridgedDevices = [];
     (somfyPlatform as any).covers.clear();
+    (somfyPlatform as any)._registeredEndpointsByName.clear();
   }, 120000);
 
   it('should discover devices with command "rollOut", "rollUp" and "stop"', async () => {
@@ -479,6 +482,7 @@ describe('TestPlatform', () => {
     (somfyPlatform as any).tahomaDevices = [];
     (somfyPlatform as any).bridgedDevices = [];
     (somfyPlatform as any).covers.clear();
+    (somfyPlatform as any)._registeredEndpointsByName.clear();
   });
 
   it('should discover devices with command "down", "up" and "stop"', async () => {
@@ -546,6 +550,7 @@ describe('TestPlatform', () => {
   it('should stop the server', async () => {
     await (matterbridge as any).stopServerNode(server);
     expect(server.lifecycle.isOnline).toBe(false);
+    await server.env.get(MdnsService)[Symbol.asyncDispose]();
   });
 
   it('should stop the storage', async () => {

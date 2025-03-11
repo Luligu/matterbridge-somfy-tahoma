@@ -39,9 +39,9 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('2.1.0')) {
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('2.2.4')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "2.1.0". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend."`,
+        `This plugin requires Matterbridge version >= "2.2.4". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend."`,
       );
     }
 
@@ -206,9 +206,10 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     }
     this.log.info(`Discovered ${this.tahomaDevices.length} TaHoma screens`);
     for (const device of this.tahomaDevices) {
-      if (!this.validateDeviceWhiteBlackList([device.label, device.uniqueName, device.serialNumber])) {
+      if (!this.validateDevice([device.label, device.uniqueName, device.serialNumber])) {
         continue;
       }
+      this.setSelectDevice(device.serialNumber, device.label);
       const duration = this.movementDuration[device.label] || 30;
 
       this.log.debug(`Adding device: ${BLUE}${device.label}${rs}`);

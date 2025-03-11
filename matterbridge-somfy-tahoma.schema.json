@@ -49,14 +49,18 @@
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "uniqueItems": true,
+      "selectFrom": "name"
     },
     "whiteList": {
       "description": "Only the devices in the list will be exposed.",
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "uniqueItems": true,
+      "selectFrom": "name"
     },
     "movementDuration": {
       "description": "Set the duration in seconds of the full movement for each device. Enter in the first field the name of the device and in the second field the duration in seconds.",
