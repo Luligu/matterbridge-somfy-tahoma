@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-somfy-tahoma",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Matterbridge somfy tahoma plugin",
   "author": "https://github.com/Luligu",
   "license": "Apache-2.0",
@@ -73,7 +73,7 @@
     "dev:unlink": "npm unlink matterbridge",
     "install:dependencies": "npm install node-ansi-logger node-persist-manager overkiz-client",
     "install:typescript": "npm install --save-dev typescript @types/node && npm run install && npm run build",
-    "install:eslint": "npm uninstall eslint @types/eslint__js && npm install --save-dev @eslint/js typescript-eslint && npm run lint",
+    "install:eslint": "npm uninstall eslint @types/eslint__js && npm install --save-dev @eslint/js typescript-eslint eslint-plugin-n && npm run lint",
     "install:prettier": "npm install --save-dev prettier eslint-config-prettier eslint-plugin-prettier",
     "install:jest": "npm install --save-dev jest ts-jest @types/jest eslint-plugin-jest"
   },
@@ -83,17 +83,17 @@
     "overkiz-client": "1.0.20"
   },
   "devDependencies": {
-    "@eslint/js": "^9.22.0",
+    "@eslint/js": "9.26.0",
     "@types/jest": "29.5.14",
-    "@types/node": "22.13.10",
-    "eslint-config-prettier": "10.1.1",
+    "@types/node": "22.15.3",
+    "eslint-config-prettier": "10.1.2",
     "eslint-plugin-jest": "28.11.0",
-    "eslint-plugin-n": "^17.16.2",
-    "eslint-plugin-prettier": "5.2.3",
+    "eslint-plugin-n": "17.17.0",
+    "eslint-plugin-prettier": "5.2.6",
     "jest": "29.7.0",
     "prettier": "3.5.3",
-    "ts-jest": "29.2.6",
-    "typescript": "5.8.2",
-    "typescript-eslint": "^8.26.1"
+    "ts-jest": "29.3.2",
+    "typescript": "5.8.3",
+    "typescript-eslint": "8.31.1"
   }
 }

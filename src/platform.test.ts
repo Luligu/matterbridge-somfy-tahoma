@@ -58,7 +58,7 @@ describe('TestPlatform', () => {
     matterbridgeDirectory: './jest/matterbridge',
     matterbridgePluginDirectory: './jest/plugins',
     systemInformation: { ipv4Address: undefined, ipv6Address: undefined, osRelease: 'xx.xx.xx.xx.xx.xx', nodeVersion: '22.1.10' },
-    matterbridgeVersion: '2.2.4',
+    matterbridgeVersion: '3.0.0',
     edge: true,
     log: mockLog,
     getDevices: jest.fn(() => {
@@ -244,7 +244,7 @@ describe('TestPlatform', () => {
   it('should throw because of version', () => {
     mockMatterbridge.matterbridgeVersion = '1.5.4';
     expect(() => new SomfyTahomaPlatform(mockMatterbridge, mockLog, mockConfig)).toThrow();
-    mockMatterbridge.matterbridgeVersion = '2.2.4';
+    mockMatterbridge.matterbridgeVersion = '3.0.0';
   });
 
   it('should call onStart with reason', async () => {
@@ -536,7 +536,7 @@ describe('TestPlatform', () => {
     mockConfig.unregisterOnShutdown = true;
     await somfyPlatform.onShutdown();
     expect(mockLog.info).toHaveBeenCalledWith('onShutdown called with reason:', 'none');
-    expect(mockMatterbridge.removeAllBridgedEndpoints).toHaveBeenCalledWith(mockConfig.name);
+    expect(mockMatterbridge.removeAllBridgedEndpoints).toHaveBeenCalledWith(mockConfig.name, 0);
     expect((somfyPlatform as any).tahomaClient).toBeUndefined();
     (somfyPlatform as any).tahomaClient = client;
     mockConfig.unregisterOnShutdown = false;
