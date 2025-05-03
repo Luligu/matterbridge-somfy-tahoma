@@ -7,12 +7,14 @@
     "name": {
       "description": "Plugin name",
       "type": "string",
-      "readOnly": true
+      "readOnly": true,
+      "ui:widget": "hidden"
     },
     "type": {
       "description": "Plugin type",
       "type": "string",
-      "readOnly": true
+      "readOnly": true,
+      "ui:widget": "hidden"
     },
     "username": {
       "description": "Username",
@@ -20,7 +22,8 @@
     },
     "password": {
       "description": "Password",
-      "type": "string"
+      "type": "string",
+      "ui:widget": "password"
     },
     "service": {
       "description": "Service name to connect to",
@@ -65,6 +68,8 @@
     "movementDuration": {
       "description": "Set the duration in seconds of the full movement for each device. Enter in the first field the name of the device and in the second field the duration in seconds.",
       "type": "object",
+      "uniqueItems": true,
+      "selectFrom": "name",
       "additionalProperties": {
         "type": "integer"
       }
@@ -77,7 +82,8 @@
     "unregisterOnShutdown": {
       "description": "Unregister all devices on shutdown (development only)",
       "type": "boolean",
-      "default": false
+      "default": false,
+      "ui:widget": "hidden"
     }
   }
 }

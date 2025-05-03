@@ -6,6 +6,19 @@ If you like this project and find it useful, please consider giving it a star on
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.5] - 2025-05-03
+
+### Changed
+
+- [package]: Requires matterbridge 3.0.0.
+- [package]: Updated package.
+- [package]: Updated workflows.
+- [package]: Updated dependencies.
+
+<a href="https://www.buymeacoffee.com/luligugithub">
+  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+</a>
+
 ## [1.2.4] - 2025-03-11
 
 ### Added
