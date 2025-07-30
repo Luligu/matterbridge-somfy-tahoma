@@ -6,6 +6,32 @@ If you like this project and find it useful, please consider giving it a star on
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2025-07-30
+
+### Added
+
+- [DevContainer]: Added support for the **Matterbridge Dev Container** with an optimized named volume for `node_modules`.
+- [GitHub]: Added GitHub issue templates for bug reports and feature requests.
+- [ESLint]: Refactored the flat config.
+- [ESLint]: Added the plugins `eslint-plugin-promise`, `eslint-plugin-jsdoc`, and `@vitest/eslint-plugin`.
+- [Jest]: Refactored the flat config.
+- [Vitest]: Added Vitest for TypeScript project testing. It will replace Jest, which does not work correctly with ESM module mocks.
+- [JSDoc]: Added missing JSDoc comments, including `@param` and `@returns` tags.
+- [CodeQL]: Added CodeQL badge in the readme.
+- [Codecov]: Added Codecov badge in the readme.
+- [config]: Added default config file.
+
+### Changed
+
+- [package]: Updated package to Automator v. 2.0.3.
+- [package]: Updated dependencies.
+- [storage]: Bumped `node-storage-manager` to 2.0.0.
+- [logger]: Bumped `node-ansi-logger` to 3.1.1.
+
+<a href="https://www.buymeacoffee.com/luligugithub">
+  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+</a>
+
 ## [1.2.5] - 2025-05-03
 
 ### Changed

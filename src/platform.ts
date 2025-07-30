@@ -1,12 +1,12 @@
+import path from 'node:path';
+import { promises as fs } from 'node:fs';
+
 import { PlatformConfig, Matterbridge, MatterbridgeDynamicPlatform, bridgedNode, powerSource, MatterbridgeEndpoint, coverDevice } from 'matterbridge';
 import { AnsiLogger, BLUE, debugStringify, rs, CYAN, ign, nf, YELLOW } from 'matterbridge/logger';
 import { NodeStorageManager } from 'matterbridge/storage';
 import { isValidNumber, isValidString } from 'matterbridge/utils';
 import { WindowCovering } from 'matterbridge/matter/clusters';
-
 import { Action, Client, Command, Device, Execution } from 'overkiz-client';
-import path from 'node:path';
-import { promises as fs } from 'node:fs';
 
 type MovementDuration = Record<string, number>;
 const Stopped = WindowCovering.MovementStatus.Stopped;
@@ -160,6 +160,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     fs.writeFile(fileName, JSON.stringify(devices, null, 2))
       .then(() => {
         this.log.debug(`Devices successfully written to ${fileName}`);
+        return;
       })
       .catch((error) => {
         this.log.error(`Error writing devices to ${fileName}:`, error);

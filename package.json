@@ -1,9 +1,10 @@
 {
   "name": "matterbridge-somfy-tahoma",
-  "version": "1.2.5",
+  "version": "1.3.0",
   "description": "Matterbridge somfy tahoma plugin",
   "author": "https://github.com/Luligu",
   "license": "Apache-2.0",
+  "homepage": "https://www.npmjs.com/package/matterbridge-somfy-tahoma",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -74,7 +75,7 @@
     "npmPublishTagDev": "npx shx cp package.json package.json.backup && npm run prepublishOnly && npm publish --tag dev && npx shx cp package.json.backup package.json && npx shx rm -rf package.json.backup && npm run reset",
     "npmPublishTagEdge": "npx shx cp package.json package.json.backup && npm run prepublishOnly && npm publish --tag edge && npx shx cp package.json.backup package.json && npx shx rm -rf package.json.backup && npm run reset",
     "npmPublishTagLatest": "npx shx cp package.json package.json.backup && npm run prepublishOnly && npm publish --tag latest && npx shx cp package.json.backup package.json && npx shx rm -rf package.json.backup && npm run reset",
-    "install:dependencies": "npm install node-ansi-logger node-persist-manager overkiz-client",
+    "install:dependencies": "npm install --save-exact node-ansi-logger node-persist-manager overkiz-client",
     "install:scripts": "npm install --save-dev --save-exact npm-check-updates shx",
     "install:typescript": "npm install --save-dev --save-exact typescript @types/node",
     "install:eslint": "npm install --save-dev --save-exact @eslint/js typescript-eslint eslint-plugin-import eslint-plugin-n eslint-plugin-promise eslint-plugin-jsdoc",
@@ -89,9 +90,9 @@
     "matterbridge:list": "matterbridge -list"
   },
   "dependencies": {
-    "node-ansi-logger": "^3.1.1",
-    "node-persist-manager": "^2.0.0",
-    "overkiz-client": "^1.0.20"
+    "node-ansi-logger": "3.1.1",
+    "node-persist-manager": "2.0.0",
+    "overkiz-client": "1.0.20"
   },
   "devDependencies": {
     "@eslint/js": "9.32.0",
