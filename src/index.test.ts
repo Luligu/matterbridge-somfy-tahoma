@@ -55,15 +55,15 @@ describe('initializePlugin', () => {
   } as unknown as Matterbridge;
 
   const mockConfig = {
-    'name': 'matterbridge-somfy-tahoma',
-    'type': 'DynamicPlatform',
-    'username': 'None',
-    'password': 'None',
-    'service': 'somfy_europe',
-    'blackList': [],
-    'whiteList': [],
-    'debug': false,
-    'unregisterOnShutdown': false,
+    name: 'matterbridge-somfy-tahoma',
+    type: 'DynamicPlatform',
+    username: 'None',
+    password: 'None',
+    service: 'somfy_europe',
+    blackList: [],
+    whiteList: [],
+    debug: false,
+    unregisterOnShutdown: false,
   } as PlatformConfig;
 
   beforeEach(() => {

@@ -1,0 +1,1894 @@
+[
+  {
+    "_events": {},
+    "_eventsCount": 0,
+    "oid": "ef9e010b-6ea8-40db-aa8e-22c8c3bc6f4f",
+    "deviceURL": "ogp://2102-2972-4350/1390574",
+    "label": "Guest room Blind dx",
+    "controllableName": "ogp:Blind",
+    "states": [
+      {
+        "name": "core:NameState",
+        "type": 3,
+        "value": "Guest room Blind dx"
+      },
+      {
+        "name": "core:AvailabilityState",
+        "type": 3,
+        "value": "available"
+      },
+      {
+        "name": "core:StatusState",
+        "type": 3,
+        "value": "available"
+      }
+    ],
+    "pendingUpdate": {},
+    "definition": {
+      "commands": [
+        {
+          "commandName": "close",
+          "nparams": 0
+        },
+        {
+          "commandName": "goToAlias",
+          "nparams": 1
+        },
+        {
+          "commandName": "identify",
+          "nparams": 0
+        },
+        {
+          "commandName": "open",
+          "nparams": 0
+        },
+        {
+          "commandName": "saveAlias",
+          "nparams": 1
+        },
+        {
+          "commandName": "setName",
+          "nparams": 1
+        },
+        {
+          "commandName": "setNodeDefinition",
+          "nparams": 3
+        },
+        {
+          "commandName": "stop",
+          "nparams": 0
+        }
+      ],
+      "states": [
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:AvailabilityState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:NameState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:RemovableState"
+        },
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:StatusState"
+        }
+      ],
+      "dataProperties": [],
+      "widgetName": "DynamicScreen",
+      "uiProfiles": ["OpenClose"],
+      "uiClass": "Screen",
+      "qualifiedName": "ogp:Blind",
+      "type": "ACTUATOR"
+    },
+    "sensors": [],
+    "creationTime": 1706771352000,
+    "lastUpdateTime": 1706771352000,
+    "shortcut": false,
+    "attributes": [
+      {
+        "name": "core:Manufacturer",
+        "type": 3,
+        "value": "Somfy"
+      },
+      {
+        "name": "core:ManufacturerReference",
+        "type": 3,
+        "value": "blind"
+      },
+      {
+        "name": "ogp:Features",
+        "type": 10,
+        "value": [
+          {
+            "name": "openClose",
+            "stateLess": true
+          },
+          {
+            "name": "stop",
+            "stateLess": true
+          },
+          {
+            "name": "identification"
+          },
+          {
+            "name": "alternativeTyping"
+          },
+          {
+            "name": "alias",
+            "stateLess": true
+          }
+        ]
+      },
+      {
+        "name": "core:SupportedAlternativeNodeDefinitions",
+        "type": 10,
+        "value": [
+          {
+            "name": "blind",
+            "subTypes": [
+              {
+                "name": "indoor",
+                "definitions": ["favorite1"]
+              },
+              {
+                "name": "outdoor",
+                "definitions": ["favorite1"]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "core:Technology",
+        "type": 3,
+        "value": "rts"
+      },
+      {
+        "name": "core:SupportedAliases",
+        "type": 10,
+        "value": [
+          {
+            "id": "1",
+            "type": "favorite1",
+            "features": ["openClose"]
+          }
+        ]
+      },
+      {
+        "name": "core:SubType",
+        "type": 3,
+        "value": "indoor"
+      }
+    ],
+    "available": true,
+    "enabled": true,
+    "placeOID": "b81d6115-d731-4a3e-be4a-e261e6434d6b",
+    "type": 1,
+    "widget": "DynamicScreen",
+    "uiClass": "Screen"
+  },
+  {
+    "_events": {},
+    "_eventsCount": 0,
+    "oid": "b4821fca-1088-4d6d-9dd5-036d4a4520d7",
+    "deviceURL": "ogp://2102-2972-4350/15728639",
+    "label": "Connectivity kit-ledBox",
+    "controllableName": "ogp:Light",
+    "states": [
+      {
+        "name": "core:NameState",
+        "type": 3,
+        "value": "Connectivity kit-ledBox"
+      },
+      {
+        "name": "core:AvailabilityState",
+        "type": 3,
+        "value": "available"
+      },
+      {
+        "name": "core:StatusState",
+        "type": 3,
+        "value": "available"
+      },
+      {
+        "name": "core:IntensityState",
+        "type": 1,
+        "value": 99
+      },
+      {
+        "name": "core:LightIntensityState",
+        "type": 1,
+        "value": 99
+      }
+    ],
+    "pendingUpdate": {},
+    "definition": {
+      "commands": [
+        {
+          "commandName": "identify",
+          "nparams": 0
+        },
+        {
+          "commandName": "setIntensity",
+          "nparams": 1
+        },
+        {
+          "commandName": "setName",
+          "nparams": 1
+        }
+      ],
+      "states": [
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:AvailabilityState"
+        },
+        {
+          "type": "ContinuousState",
+          "qualifiedName": "core:IntensityState"
+        },
+        {
+          "type": "ContinuousState",
+          "qualifiedName": "core:LightIntensityState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:NameState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:RemovableState"
+        },
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:StatusState"
+        }
+      ],
+      "dataProperties": [],
+      "widgetName": "DynamicLight",
+      "uiProfiles": ["StatefulLightDimmer", "StatefulDimmable", "Dimmable"],
+      "uiClass": "Light",
+      "qualifiedName": "ogp:Light",
+      "type": "ACTUATOR"
+    },
+    "sensors": [],
+    "creationTime": 1706707936000,
+    "lastUpdateTime": 1706707936000,
+    "shortcut": false,
+    "attributes": [
+      {
+        "name": "core:Technology",
+        "type": 3,
+        "value": "BoxTHmini"
+      },
+      {
+        "name": "core:Manufacturer",
+        "type": 3,
+        "value": "Overkiz"
+      },
+      {
+        "name": "core:SubType",
+        "type": 3,
+        "value": "status"
+      },
+      {
+        "name": "core:ManufacturerReference",
+        "type": 3,
+        "value": "ledBox"
+      },
+      {
+        "name": "ogp:Features",
+        "type": 10,
+        "value": [
+          {
+            "name": "dimming"
+          },
+          {
+            "name": "identification"
+          }
+        ]
+      }
+    ],
+    "available": true,
+    "enabled": true,
+    "placeOID": "407def34-1f4b-4e18-bce8-a7eb5f4b505f",
+    "type": 1,
+    "widget": "DynamicLight",
+    "uiClass": "Light"
+  },
+  {
+    "_events": {},
+    "_eventsCount": 0,
+    "oid": "fa7a4b81-0518-41d7-bdad-67b3775285ec",
+    "deviceURL": "ogp://2102-2972-4350/1626337",
+    "label": "Bedroom Blind dx",
+    "controllableName": "ogp:Blind",
+    "states": [
+      {
+        "name": "core:NameState",
+        "type": 3,
+        "value": "Bedroom Blind dx"
+      },
+      {
+        "name": "core:AvailabilityState",
+        "type": 3,
+        "value": "available"
+      },
+      {
+        "name": "core:StatusState",
+        "type": 3,
+        "value": "available"
+      }
+    ],
+    "pendingUpdate": {},
+    "definition": {
+      "commands": [
+        {
+          "commandName": "close",
+          "nparams": 0
+        },
+        {
+          "commandName": "goToAlias",
+          "nparams": 1
+        },
+        {
+          "commandName": "identify",
+          "nparams": 0
+        },
+        {
+          "commandName": "open",
+          "nparams": 0
+        },
+        {
+          "commandName": "saveAlias",
+          "nparams": 1
+        },
+        {
+          "commandName": "setName",
+          "nparams": 1
+        },
+        {
+          "commandName": "setNodeDefinition",
+          "nparams": 3
+        },
+        {
+          "commandName": "stop",
+          "nparams": 0
+        }
+      ],
+      "states": [
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:AvailabilityState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:NameState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:RemovableState"
+        },
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:StatusState"
+        }
+      ],
+      "dataProperties": [],
+      "widgetName": "DynamicScreen",
+      "uiProfiles": ["OpenClose"],
+      "uiClass": "Screen",
+      "qualifiedName": "ogp:Blind",
+      "type": "ACTUATOR"
+    },
+    "sensors": [],
+    "creationTime": 1706771787000,
+    "lastUpdateTime": 1706771787000,
+    "shortcut": false,
+    "attributes": [
+      {
+        "name": "core:SupportedAliases",
+        "type": 10,
+        "value": [
+          {
+            "id": "1",
+            "type": "favorite1",
+            "features": ["openClose"]
+          }
+        ]
+      },
+      {
+        "name": "core:ManufacturerReference",
+        "type": 3,
+        "value": "blind"
+      },
+      {
+        "name": "core:Technology",
+        "type": 3,
+        "value": "rts"
+      },
+      {
+        "name": "ogp:Features",
+        "type": 10,
+        "value": [
+          {
+            "name": "openClose",
+            "stateLess": true
+          },
+          {
+            "name": "stop",
+            "stateLess": true
+          },
+          {
+            "name": "identification"
+          },
+          {
+            "name": "alternativeTyping"
+          },
+          {
+            "name": "alias",
+            "stateLess": true
+          }
+        ]
+      },
+      {
+        "name": "core:Manufacturer",
+        "type": 3,
+        "value": "Somfy"
+      },
+      {
+        "name": "core:SubType",
+        "type": 3,
+        "value": "indoor"
+      },
+      {
+        "name": "core:SupportedAlternativeNodeDefinitions",
+        "type": 10,
+        "value": [
+          {
+            "name": "blind",
+            "subTypes": [
+              {
+                "name": "indoor",
+                "definitions": ["favorite1"]
+              },
+              {
+                "name": "outdoor",
+                "definitions": ["favorite1"]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "available": true,
+    "enabled": true,
+    "placeOID": "2a9a5e87-789d-450b-8498-4588c6e27f1f",
+    "type": 1,
+    "widget": "DynamicScreen",
+    "uiClass": "Screen"
+  },
+  {
+    "_events": {},
+    "_eventsCount": 0,
+    "oid": "1719ef5f-b382-43d7-a39f-834a036ecea2",
+    "deviceURL": "ogp://2102-2972-4350/16777212",
+    "label": "io2way",
+    "controllableName": "ogp:Bridge",
+    "states": [
+      {
+        "name": "core:NameState",
+        "type": 3,
+        "value": "io2way"
+      },
+      {
+        "name": "core:AvailabilityState",
+        "type": 3,
+        "value": "available"
+      },
+      {
+        "name": "core:StatusState",
+        "type": 3,
+        "value": "available"
+      },
+      {
+        "name": "core:FirmwareRevisionState",
+        "type": 3,
+        "value": "dev-A11DABE5C58178BEEC7D6898E2886809"
+      },
+      {
+        "name": "core:FirmwareHashState",
+        "type": 3,
+        "value": "A11DABE5C58178BEEC7D6898E2886809"
+      }
+    ],
+    "pendingUpdate": {},
+    "definition": {
+      "commands": [
+        {
+          "commandName": "discover",
+          "nparams": 0
+        },
+        {
+          "commandName": "joinSetup",
+          "nparams": 0
+        },
+        {
+          "commandName": "sendPrivate",
+          "nparams": 1
+        },
+        {
+          "commandName": "shareSetup",
+          "nparams": 0
+        },
+        {
+          "commandName": "update",
+          "nparams": 0
+        }
+      ],
+      "states": [
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:AvailabilityState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:FirmwareHashState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:FirmwareRevisionState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:NameState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:NewFirmwareAvailableState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private10State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private1State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private2State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private3State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private4State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private5State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private6State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private7State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private8State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private9State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:RemovableState"
+        },
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:StatusState"
+        }
+      ],
+      "dataProperties": [],
+      "widgetName": "DynamicBridge",
+      "uiProfiles": ["Specific"],
+      "uiClass": "ProtocolGateway",
+      "qualifiedName": "ogp:Bridge",
+      "type": "ACTUATOR"
+    },
+    "sensors": [],
+    "creationTime": 1706707936000,
+    "lastUpdateTime": 1706707936000,
+    "shortcut": false,
+    "attributes": [
+      {
+        "name": "ogp:Features",
+        "type": 10,
+        "value": [
+          {
+            "name": "discovery"
+          },
+          {
+            "name": "setupManagement"
+          },
+          {
+            "name": "firmware"
+          },
+          {
+            "name": "private"
+          },
+          {
+            "name": "identification",
+            "commandLess": true
+          }
+        ]
+      },
+      {
+        "name": "core:ManufacturerReference",
+        "type": 3,
+        "value": "bridge"
+      },
+      {
+        "name": "core:Manufacturer",
+        "type": 3,
+        "value": "Overkiz"
+      },
+      {
+        "name": "core:Technology",
+        "type": 3,
+        "value": "io2way"
+      }
+    ],
+    "available": true,
+    "enabled": true,
+    "placeOID": "407def34-1f4b-4e18-bce8-a7eb5f4b505f",
+    "type": 1,
+    "widget": "DynamicBridge",
+    "uiClass": "ProtocolGateway"
+  },
+  {
+    "_events": {},
+    "_eventsCount": 0,
+    "oid": "65f32887-cd06-4933-b700-a6a055389959",
+    "deviceURL": "ogp://2102-2972-4350/16777214",
+    "label": "rts",
+    "controllableName": "ogp:Bridge",
+    "states": [
+      {
+        "name": "core:NameState",
+        "type": 3,
+        "value": "rts"
+      },
+      {
+        "name": "core:AvailabilityState",
+        "type": 3,
+        "value": "available"
+      },
+      {
+        "name": "core:StatusState",
+        "type": 3,
+        "value": "available"
+      }
+    ],
+    "pendingUpdate": {},
+    "definition": {
+      "commands": [
+        {
+          "commandName": "sendPrivate",
+          "nparams": 1
+        },
+        {
+          "commandName": "pair",
+          "nparams": 3
+        }
+      ],
+      "states": [
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:AvailabilityState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:NameState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private10State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private1State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private2State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private3State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private4State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private5State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private6State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private7State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private8State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private9State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:RemovableState"
+        },
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:StatusState"
+        }
+      ],
+      "dataProperties": [],
+      "widgetName": "DynamicBridge",
+      "uiProfiles": ["Specific"],
+      "uiClass": "ProtocolGateway",
+      "qualifiedName": "ogp:Bridge",
+      "type": "ACTUATOR"
+    },
+    "sensors": [],
+    "creationTime": 1706707936000,
+    "lastUpdateTime": 1706707936000,
+    "shortcut": false,
+    "attributes": [
+      {
+        "name": "core:Technology",
+        "type": 3,
+        "value": "rts"
+      },
+      {
+        "name": "core:ManufacturerReference",
+        "type": 3,
+        "value": "bridge"
+      },
+      {
+        "name": "core:Manufacturer",
+        "type": 3,
+        "value": "Overkiz"
+      },
+      {
+        "name": "core:SupportedNodeDefinitions",
+        "type": 10,
+        "value": [
+          {
+            "name": "outlet",
+            "subTypes": [
+              {
+                "name": "default",
+                "definitions": ["favorite1"]
+              }
+            ]
+          },
+          {
+            "name": "light",
+            "subTypes": [
+              {
+                "name": "default",
+                "definitions": ["favorite1"]
+              },
+              {
+                "name": "dimming",
+                "definitions": ["favorite1"]
+              }
+            ]
+          },
+          {
+            "name": "shutter",
+            "subTypes": [
+              {
+                "name": "rolling",
+                "definitions": ["favorite1"]
+              },
+              {
+                "name": "sliding",
+                "definitions": ["favorite1"]
+              },
+              {
+                "name": "swinging",
+                "definitions": ["favorite1"]
+              }
+            ]
+          },
+          {
+            "name": "gate",
+            "subTypes": [
+              {
+                "name": "swinging",
+                "definitions": ["pedestrian"]
+              },
+              {
+                "name": "sliding",
+                "definitions": ["pedestrian"]
+              }
+            ]
+          },
+          {
+            "name": "curtain",
+            "subTypes": [
+              {
+                "name": "single",
+                "definitions": ["favorite1"]
+              },
+              {
+                "name": "dual",
+                "definitions": ["favorite1"]
+              }
+            ]
+          },
+          {
+            "name": "awning",
+            "subTypes": [
+              {
+                "name": "default",
+                "definitions": ["favorite1"]
+              }
+            ]
+          },
+          {
+            "name": "blind",
+            "subTypes": [
+              {
+                "name": "indoor",
+                "definitions": ["favorite1"]
+              },
+              {
+                "name": "outdoor",
+                "definitions": ["favorite1"]
+              }
+            ]
+          },
+          {
+            "name": "venetianBlind",
+            "subTypes": [
+              {
+                "name": "indoor",
+                "definitions": ["favorite1", "tiltOnlyWithFavorite1"]
+              },
+              {
+                "name": "outdoor",
+                "definitions": ["favorite1"]
+              }
+            ]
+          },
+          {
+            "name": "garageDoor",
+            "subTypes": [
+              {
+                "name": "rolling",
+                "definitions": ["ventilation"]
+              },
+              {
+                "name": "sliding",
+                "definitions": ["pedestrian"]
+              }
+            ]
+          },
+          {
+            "name": "pergola",
+            "subTypes": [
+              {
+                "name": "default",
+                "definitions": ["favorite1"]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "ogp:Features",
+        "type": 10,
+        "value": [
+          {
+            "name": "pairing"
+          },
+          {
+            "name": "private"
+          },
+          {
+            "name": "identification",
+            "commandLess": true
+          }
+        ]
+      }
+    ],
+    "available": true,
+    "enabled": true,
+    "placeOID": "407def34-1f4b-4e18-bce8-a7eb5f4b505f",
+    "type": 1,
+    "widget": "DynamicBridge",
+    "uiClass": "ProtocolGateway"
+  },
+  {
+    "_events": {},
+    "_eventsCount": 0,
+    "oid": "4b816a7b-8ec6-4bea-8651-8936c275b78e",
+    "deviceURL": "ogp://2102-2972-4350/16777215",
+    "label": "Connectivity kit-box",
+    "controllableName": "ogp:Gateway",
+    "states": [
+      {
+        "name": "core:NameState",
+        "type": 3,
+        "value": "Connectivity kit-box"
+      },
+      {
+        "name": "core:AvailabilityState",
+        "type": 3,
+        "value": "available"
+      },
+      {
+        "name": "core:StatusState",
+        "type": 3,
+        "value": "available"
+      },
+      {
+        "name": "core:SignalQualityState",
+        "type": 1,
+        "value": 94
+      },
+      {
+        "name": "core:FirmwareRevisionState",
+        "type": 3,
+        "value": "v-2024.4.3-2-d139e5b"
+      },
+      {
+        "name": "core:FirmwareHashState",
+        "type": 3,
+        "value": "2024.4.3-2:d139e5b202bb946f94d60fafa1fe277b41b759a6:6611757c9ab720e10d2c2972048db089"
+      },
+      {
+        "name": "core:NewFirmwareAvailableState",
+        "type": 6,
+        "value": false
+      },
+      {
+        "name": "core:SSIDState",
+        "type": 3,
+        "value": "FibreBox_X6-12A4C7"
+      },
+      {
+        "name": "core:TimezoneState",
+        "type": 3,
+        "value": "Europe/Paris"
+      }
+    ],
+    "pendingUpdate": {},
+    "definition": {
+      "commands": [
+        {
+          "commandName": "reboot",
+          "nparams": 0
+        },
+        {
+          "commandName": "reset",
+          "nparams": 0
+        },
+        {
+          "commandName": "sendPrivate",
+          "nparams": 1
+        },
+        {
+          "commandName": "setTimezone",
+          "nparams": 1
+        },
+        {
+          "commandName": "update",
+          "nparams": 0
+        }
+      ],
+      "states": [
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:AvailabilityState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:ErrorState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:ErrorsState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:FirmwareHashState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:FirmwareRevisionState"
+        },
+        {
+          "eventBased": true,
+          "type": "DataState",
+          "qualifiedName": "core:LocalAccessProofState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:NameState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:NewFirmwareAvailableState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private10State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private1State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private2State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private3State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private4State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private5State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private6State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private7State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private8State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:Private9State"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:RemovableState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:SSIDState"
+        },
+        {
+          "type": "ContinuousState",
+          "qualifiedName": "core:SignalQualityState"
+        },
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:StatusState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:TimezoneState"
+        }
+      ],
+      "dataProperties": [],
+      "widgetName": "DynamicGateway",
+      "uiProfiles": ["Specific"],
+      "uiClass": "ProtocolGateway",
+      "qualifiedName": "ogp:Gateway",
+      "type": "ACTUATOR"
+    },
+    "sensors": [],
+    "creationTime": 1706707936000,
+    "lastUpdateTime": 1706707936000,
+    "shortcut": false,
+    "attributes": [
+      {
+        "name": "core:Technology",
+        "type": 3,
+        "value": "BoxTHmini"
+      },
+      {
+        "name": "ogp:Features",
+        "type": 10,
+        "value": [
+          {
+            "name": "reset"
+          },
+          {
+            "name": "localAccess"
+          },
+          {
+            "name": "firmware"
+          },
+          {
+            "name": "private"
+          },
+          {
+            "name": "identification",
+            "commandLess": true
+          },
+          {
+            "name": "diagnosis"
+          },
+          {
+            "name": "supervision"
+          },
+          {
+            "name": "time"
+          },
+          {
+            "name": "wifi"
+          },
+          {
+            "name": "networkv4"
+          }
+        ]
+      },
+      {
+        "name": "core:Manufacturer",
+        "type": 3,
+        "value": "Overkiz"
+      },
+      {
+        "name": "core:ManufacturerReference",
+        "type": 3,
+        "value": "gateway"
+      },
+      {
+        "name": "core:Private1",
+        "type": 10,
+        "value": [
+          {
+            "supportedPrivateCommands": "scheduledUpdate"
+          }
+        ]
+      }
+    ],
+    "available": true,
+    "enabled": true,
+    "placeOID": "407def34-1f4b-4e18-bce8-a7eb5f4b505f",
+    "type": 1,
+    "widget": "DynamicGateway",
+    "uiClass": "ProtocolGateway"
+  },
+  {
+    "_events": {},
+    "_eventsCount": 0,
+    "oid": "549ccc79-8bc3-4a21-93e6-16b162533f54",
+    "deviceURL": "ogp://2102-2972-4350/214110",
+    "label": "Bedroom Blind sx",
+    "controllableName": "ogp:Blind",
+    "states": [
+      {
+        "name": "core:NameState",
+        "type": 3,
+        "value": "Bedroom Blind sx"
+      },
+      {
+        "name": "core:AvailabilityState",
+        "type": 3,
+        "value": "available"
+      },
+      {
+        "name": "core:StatusState",
+        "type": 3,
+        "value": "available"
+      }
+    ],
+    "pendingUpdate": {},
+    "definition": {
+      "commands": [
+        {
+          "commandName": "close",
+          "nparams": 0
+        },
+        {
+          "commandName": "goToAlias",
+          "nparams": 1
+        },
+        {
+          "commandName": "identify",
+          "nparams": 0
+        },
+        {
+          "commandName": "open",
+          "nparams": 0
+        },
+        {
+          "commandName": "saveAlias",
+          "nparams": 1
+        },
+        {
+          "commandName": "setName",
+          "nparams": 1
+        },
+        {
+          "commandName": "setNodeDefinition",
+          "nparams": 3
+        },
+        {
+          "commandName": "stop",
+          "nparams": 0
+        }
+      ],
+      "states": [
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:AvailabilityState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:NameState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:RemovableState"
+        },
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:StatusState"
+        }
+      ],
+      "dataProperties": [],
+      "widgetName": "DynamicScreen",
+      "uiProfiles": ["OpenClose"],
+      "uiClass": "Screen",
+      "qualifiedName": "ogp:Blind",
+      "type": "ACTUATOR"
+    },
+    "sensors": [],
+    "creationTime": 1706771709000,
+    "lastUpdateTime": 1706771709000,
+    "shortcut": false,
+    "attributes": [
+      {
+        "name": "core:SubType",
+        "type": 3,
+        "value": "indoor"
+      },
+      {
+        "name": "core:Technology",
+        "type": 3,
+        "value": "rts"
+      },
+      {
+        "name": "core:ManufacturerReference",
+        "type": 3,
+        "value": "blind"
+      },
+      {
+        "name": "core:Manufacturer",
+        "type": 3,
+        "value": "Somfy"
+      },
+      {
+        "name": "core:SupportedAlternativeNodeDefinitions",
+        "type": 10,
+        "value": [
+          {
+            "name": "blind",
+            "subTypes": [
+              {
+                "name": "indoor",
+                "definitions": ["favorite1"]
+              },
+              {
+                "name": "outdoor",
+                "definitions": ["favorite1"]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "core:SupportedAliases",
+        "type": 10,
+        "value": [
+          {
+            "id": "1",
+            "type": "favorite1",
+            "features": ["openClose"]
+          }
+        ]
+      },
+      {
+        "name": "ogp:Features",
+        "type": 10,
+        "value": [
+          {
+            "name": "openClose",
+            "stateLess": true
+          },
+          {
+            "name": "stop",
+            "stateLess": true
+          },
+          {
+            "name": "identification"
+          },
+          {
+            "name": "alternativeTyping"
+          },
+          {
+            "name": "alias",
+            "stateLess": true
+          }
+        ]
+      }
+    ],
+    "available": true,
+    "enabled": true,
+    "placeOID": "2a9a5e87-789d-450b-8498-4588c6e27f1f",
+    "type": 1,
+    "widget": "DynamicScreen",
+    "uiClass": "Screen"
+  },
+  {
+    "_events": {},
+    "_eventsCount": 0,
+    "oid": "508349a9-7ae2-4c29-b405-83f1ff67cc27",
+    "deviceURL": "ogp://2102-2972-4350/7515972",
+    "label": "Bedroom Blinds",
+    "controllableName": "ogp:Blind",
+    "states": [
+      {
+        "name": "core:NameState",
+        "type": 3,
+        "value": "Bedroom Blinds"
+      },
+      {
+        "name": "core:AvailabilityState",
+        "type": 3,
+        "value": "available"
+      },
+      {
+        "name": "core:StatusState",
+        "type": 3,
+        "value": "available"
+      }
+    ],
+    "pendingUpdate": {},
+    "definition": {
+      "commands": [
+        {
+          "commandName": "close",
+          "nparams": 0
+        },
+        {
+          "commandName": "goToAlias",
+          "nparams": 1
+        },
+        {
+          "commandName": "identify",
+          "nparams": 0
+        },
+        {
+          "commandName": "open",
+          "nparams": 0
+        },
+        {
+          "commandName": "saveAlias",
+          "nparams": 1
+        },
+        {
+          "commandName": "setName",
+          "nparams": 1
+        },
+        {
+          "commandName": "setNodeDefinition",
+          "nparams": 3
+        },
+        {
+          "commandName": "stop",
+          "nparams": 0
+        }
+      ],
+      "states": [
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:AvailabilityState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:NameState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:RemovableState"
+        },
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:StatusState"
+        }
+      ],
+      "dataProperties": [],
+      "widgetName": "DynamicScreen",
+      "uiProfiles": ["OpenClose"],
+      "uiClass": "Screen",
+      "qualifiedName": "ogp:Blind",
+      "type": "ACTUATOR"
+    },
+    "sensors": [],
+    "creationTime": 1706771609000,
+    "lastUpdateTime": 1706771609000,
+    "shortcut": false,
+    "attributes": [
+      {
+        "name": "core:SupportedAliases",
+        "type": 10,
+        "value": [
+          {
+            "id": "1",
+            "type": "favorite1",
+            "features": ["openClose"]
+          }
+        ]
+      },
+      {
+        "name": "core:SupportedAlternativeNodeDefinitions",
+        "type": 10,
+        "value": [
+          {
+            "name": "blind",
+            "subTypes": [
+              {
+                "name": "indoor",
+                "definitions": ["favorite1"]
+              },
+              {
+                "name": "outdoor",
+                "definitions": ["favorite1"]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "core:Manufacturer",
+        "type": 3,
+        "value": "Somfy"
+      },
+      {
+        "name": "ogp:Features",
+        "type": 10,
+        "value": [
+          {
+            "name": "openClose",
+            "stateLess": true
+          },
+          {
+            "name": "stop",
+            "stateLess": true
+          },
+          {
+            "name": "identification"
+          },
+          {
+            "name": "alternativeTyping"
+          },
+          {
+            "name": "alias",
+            "stateLess": true
+          }
+        ]
+      },
+      {
+        "name": "core:SubType",
+        "type": 3,
+        "value": "indoor"
+      },
+      {
+        "name": "core:ManufacturerReference",
+        "type": 3,
+        "value": "blind"
+      },
+      {
+        "name": "core:Technology",
+        "type": 3,
+        "value": "rts"
+      }
+    ],
+    "available": true,
+    "enabled": true,
+    "placeOID": "2a9a5e87-789d-450b-8498-4588c6e27f1f",
+    "type": 1,
+    "widget": "DynamicScreen",
+    "uiClass": "Screen"
+  },
+  {
+    "_events": {},
+    "_eventsCount": 0,
+    "oid": "7c504c6b-8e4b-4083-a195-664596186606",
+    "deviceURL": "ogp://2102-2972-4350/8069403",
+    "label": "Guest room Blind sx",
+    "controllableName": "ogp:Blind",
+    "states": [
+      {
+        "name": "core:NameState",
+        "type": 3,
+        "value": "Guest room Blind sx"
+      },
+      {
+        "name": "core:AvailabilityState",
+        "type": 3,
+        "value": "available"
+      },
+      {
+        "name": "core:StatusState",
+        "type": 3,
+        "value": "available"
+      }
+    ],
+    "pendingUpdate": {},
+    "definition": {
+      "commands": [
+        {
+          "commandName": "close",
+          "nparams": 0
+        },
+        {
+          "commandName": "goToAlias",
+          "nparams": 1
+        },
+        {
+          "commandName": "identify",
+          "nparams": 0
+        },
+        {
+          "commandName": "open",
+          "nparams": 0
+        },
+        {
+          "commandName": "saveAlias",
+          "nparams": 1
+        },
+        {
+          "commandName": "setName",
+          "nparams": 1
+        },
+        {
+          "commandName": "setNodeDefinition",
+          "nparams": 3
+        },
+        {
+          "commandName": "stop",
+          "nparams": 0
+        }
+      ],
+      "states": [
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:AvailabilityState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:NameState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:RemovableState"
+        },
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:StatusState"
+        }
+      ],
+      "dataProperties": [],
+      "widgetName": "DynamicScreen",
+      "uiProfiles": ["OpenClose"],
+      "uiClass": "Screen",
+      "qualifiedName": "ogp:Blind",
+      "type": "ACTUATOR"
+    },
+    "sensors": [],
+    "creationTime": 1706771260000,
+    "lastUpdateTime": 1706771260000,
+    "shortcut": false,
+    "attributes": [
+      {
+        "name": "core:SupportedAlternativeNodeDefinitions",
+        "type": 10,
+        "value": [
+          {
+            "name": "blind",
+            "subTypes": [
+              {
+                "name": "indoor",
+                "definitions": ["favorite1"]
+              },
+              {
+                "name": "outdoor",
+                "definitions": ["favorite1"]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "core:Manufacturer",
+        "type": 3,
+        "value": "Somfy"
+      },
+      {
+        "name": "ogp:Features",
+        "type": 10,
+        "value": [
+          {
+            "name": "openClose",
+            "stateLess": true
+          },
+          {
+            "name": "stop",
+            "stateLess": true
+          },
+          {
+            "name": "identification"
+          },
+          {
+            "name": "alternativeTyping"
+          },
+          {
+            "name": "alias",
+            "stateLess": true
+          }
+        ]
+      },
+      {
+        "name": "core:ManufacturerReference",
+        "type": 3,
+        "value": "blind"
+      },
+      {
+        "name": "core:SupportedAliases",
+        "type": 10,
+        "value": [
+          {
+            "id": "1",
+            "type": "favorite1",
+            "features": ["openClose"]
+          }
+        ]
+      },
+      {
+        "name": "core:SubType",
+        "type": 3,
+        "value": "indoor"
+      },
+      {
+        "name": "core:Technology",
+        "type": 3,
+        "value": "rts"
+      }
+    ],
+    "available": true,
+    "enabled": true,
+    "placeOID": "b81d6115-d731-4a3e-be4a-e261e6434d6b",
+    "type": 1,
+    "widget": "DynamicScreen",
+    "uiClass": "Screen"
+  },
+  {
+    "_events": {},
+    "_eventsCount": 0,
+    "oid": "1f52263a-92ae-4dfb-98e4-d92c408ab62e",
+    "deviceURL": "ogp://2102-2972-4350/8659479",
+    "label": "Guest room Blinds",
+    "controllableName": "ogp:Blind",
+    "states": [
+      {
+        "name": "core:NameState",
+        "type": 3,
+        "value": "Guest room Blinds"
+      },
+      {
+        "name": "core:AvailabilityState",
+        "type": 3,
+        "value": "available"
+      },
+      {
+        "name": "core:StatusState",
+        "type": 3,
+        "value": "available"
+      }
+    ],
+    "pendingUpdate": {},
+    "definition": {
+      "commands": [
+        {
+          "commandName": "close",
+          "nparams": 0
+        },
+        {
+          "commandName": "goToAlias",
+          "nparams": 1
+        },
+        {
+          "commandName": "identify",
+          "nparams": 0
+        },
+        {
+          "commandName": "open",
+          "nparams": 0
+        },
+        {
+          "commandName": "saveAlias",
+          "nparams": 1
+        },
+        {
+          "commandName": "setName",
+          "nparams": 1
+        },
+        {
+          "commandName": "setNodeDefinition",
+          "nparams": 3
+        },
+        {
+          "commandName": "stop",
+          "nparams": 0
+        }
+      ],
+      "states": [
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:AvailabilityState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:NameState"
+        },
+        {
+          "type": "DataState",
+          "qualifiedName": "core:RemovableState"
+        },
+        {
+          "type": "DiscreteState",
+          "values": ["available", "unavailable"],
+          "qualifiedName": "core:StatusState"
+        }
+      ],
+      "dataProperties": [],
+      "widgetName": "DynamicScreen",
+      "uiProfiles": ["OpenClose"],
+      "uiClass": "Screen",
+      "qualifiedName": "ogp:Blind",
+      "type": "ACTUATOR"
+    },
+    "sensors": [],
+    "creationTime": 1706708319000,
+    "lastUpdateTime": 1706708319000,
+    "shortcut": false,
+    "attributes": [
+      {
+        "name": "core:SupportedAlternativeNodeDefinitions",
+        "type": 10,
+        "value": [
+          {
+            "name": "blind",
+            "subTypes": [
+              {
+                "name": "indoor",
+                "definitions": ["favorite1"]
+              },
+              {
+                "name": "outdoor",
+                "definitions": ["favorite1"]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "core:ManufacturerReference",
+        "type": 3,
+        "value": "blind"
+      },
+      {
+        "name": "ogp:Features",
+        "type": 10,
+        "value": [
+          {
+            "name": "openClose",
+            "stateLess": true
+          },
+          {
+            "name": "stop",
+            "stateLess": true
+          },
+          {
+            "name": "identification"
+          },
+          {
+            "name": "alternativeTyping"
+          },
+          {
+            "name": "alias",
+            "stateLess": true
+          }
+        ]
+      },
+      {
+        "name": "core:SubType",
+        "type": 3,
+        "value": "indoor"
+      },
+      {
+        "name": "core:SupportedAliases",
+        "type": 10,
+        "value": [
+          {
+            "id": "1",
+            "type": "favorite1",
+            "features": ["openClose"]
+          }
+        ]
+      },
+      {
+        "name": "core:Manufacturer",
+        "type": 3,
+        "value": "Somfy"
+      },
+      {
+        "name": "core:Technology",
+        "type": 3,
+        "value": "rts"
+      }
+    ],
+    "available": true,
+    "enabled": true,
+    "placeOID": "b81d6115-d731-4a3e-be4a-e261e6434d6b",
+    "type": 1,
+    "widget": "DynamicScreen",
+    "uiClass": "Screen"
+  }
+]

@@ -82,18 +82,18 @@ describe('TestPlatform', () => {
   } as unknown as Matterbridge;
 
   const mockConfig = {
-    'name': 'matterbridge-somfy-tahoma',
-    'type': 'DynamicPlatform',
-    'username': 'None',
-    'password': 'None',
-    'service': 'somfy_europe',
-    'movementDuration': {
-      'Device1': 5,
+    name: 'matterbridge-somfy-tahoma',
+    type: 'DynamicPlatform',
+    username: 'None',
+    password: 'None',
+    service: 'somfy_europe',
+    movementDuration: {
+      Device1: 5,
     },
-    'blackList': [],
-    'whiteList': [],
-    'debug': false,
-    'unregisterOnShutdown': false,
+    blackList: [],
+    whiteList: [],
+    debug: false,
+    unregisterOnShutdown: false,
   } as PlatformConfig;
 
   const mockDevices = [
