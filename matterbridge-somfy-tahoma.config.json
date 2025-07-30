@@ -1,0 +1,12 @@
+{
+  "name": "matterbridge-somfy-tahoma",
+  "type": "DynamicPlatform",
+  "username": "",
+  "password": "",
+  "service": "somfy_europe",
+  "blackList": [],
+  "whiteList": [],
+  "movementDuration": {},
+  "debug": false,
+  "unregisterOnShutdown": false
+}

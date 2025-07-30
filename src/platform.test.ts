@@ -1,18 +1,51 @@
 /* eslint-disable no-console */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
+const MATTER_PORT = 6002;
+const NAME = 'Platform';
+const HOMEDIR = path.join('jest', NAME);
+
+process.argv = ['node', 'platform.test.js', '-novirtual', '-frontend', '0', '-homedir', HOMEDIR, '-port', MATTER_PORT.toString()];
+
+import { rmSync, promises as fs } from 'node:fs';
+import path from 'node:path';
+
+import { jest } from '@jest/globals';
+import { Client, Device } from 'overkiz-client';
 import { Matterbridge, MatterbridgeEndpoint, PlatformConfig } from 'matterbridge';
 import { AnsiLogger, BLUE, CYAN, ign, LogLevel, nf, rs, TimestampFormat, YELLOW } from 'matterbridge/logger';
 import { wait } from 'matterbridge/utils';
 import { Endpoint, ServerNode, LogLevel as Level, LogFormat as Format, Lifecycle, MdnsService } from 'matterbridge/matter';
 import { AggregatorEndpoint } from 'matterbridge/matter/endpoints';
 import { WindowCovering, WindowCoveringCluster } from 'matterbridge/matter/clusters';
-import { SomfyTahomaPlatform } from './platform';
 
-import { jest } from '@jest/globals';
-import { Client, Device } from 'overkiz-client';
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
+import { SomfyTahomaPlatform } from './platform.ts';
+
+let loggerLogSpy: jest.SpiedFunction<typeof AnsiLogger.prototype.log>;
+let consoleLogSpy: jest.SpiedFunction<typeof console.log>;
+let consoleDebugSpy: jest.SpiedFunction<typeof console.log>;
+let consoleInfoSpy: jest.SpiedFunction<typeof console.log>;
+let consoleWarnSpy: jest.SpiedFunction<typeof console.log>;
+let consoleErrorSpy: jest.SpiedFunction<typeof console.log>;
+const debug = false; // Set to true to enable debug logs
+
+if (!debug) {
+  loggerLogSpy = jest.spyOn(AnsiLogger.prototype, 'log').mockImplementation((level: string, message: string, ...parameters: any[]) => {});
+  consoleLogSpy = jest.spyOn(console, 'log').mockImplementation((...args: any[]) => {});
+  consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation((...args: any[]) => {});
+  consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation((...args: any[]) => {});
+  consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation((...args: any[]) => {});
+  consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation((...args: any[]) => {});
+} else {
+  loggerLogSpy = jest.spyOn(AnsiLogger.prototype, 'log');
+  consoleLogSpy = jest.spyOn(console, 'log');
+  consoleDebugSpy = jest.spyOn(console, 'debug');
+  consoleInfoSpy = jest.spyOn(console, 'info');
+  consoleWarnSpy = jest.spyOn(console, 'warn');
+  consoleErrorSpy = jest.spyOn(console, 'error');
+}
+
+// Cleanup the test environment
+rmSync(HOMEDIR, { recursive: true, force: true });
 
 describe('TestPlatform', () => {
   let matterbridge: Matterbridge;
@@ -21,13 +54,6 @@ describe('TestPlatform', () => {
   let device: MatterbridgeEndpoint;
 
   let somfyPlatform: SomfyTahomaPlatform;
-
-  let loggerLogSpy: jest.SpiedFunction<(level: LogLevel, message: string, ...parameters: any[]) => void>;
-  let consoleLogSpy: jest.SpiedFunction<typeof console.log>;
-  let consoleDebugSpy: jest.SpiedFunction<typeof console.log>;
-  let consoleInfoSpy: jest.SpiedFunction<typeof console.log>;
-  let consoleWarnSpy: jest.SpiedFunction<typeof console.log>;
-  let consoleErrorSpy: jest.SpiedFunction<typeof console.log>;
 
   let clientConnectSpy: jest.SpiedFunction<(user: string, password: string) => Promise<void>>;
   let clientGetDevicesSpy: jest.SpiedFunction<() => Promise<Device[]>>;
@@ -55,11 +81,11 @@ describe('TestPlatform', () => {
   } as unknown as AnsiLogger;
 
   const mockMatterbridge = {
-    matterbridgeDirectory: './jest/matterbridge',
-    matterbridgePluginDirectory: './jest/plugins',
+    homeDirectory: path.join(HOMEDIR),
+    matterbridgeDirectory: path.join(HOMEDIR, '.matterbridge'),
+    matterbridgePluginDirectory: path.join(HOMEDIR, 'Matterbridge'),
     systemInformation: { ipv4Address: undefined, ipv6Address: undefined, osRelease: 'xx.xx.xx.xx.xx.xx', nodeVersion: '22.1.10' },
     matterbridgeVersion: '3.0.0',
-    edge: true,
     log: mockLog,
     getDevices: jest.fn(() => {
       // console.log('getDevices called');
@@ -82,18 +108,18 @@ describe('TestPlatform', () => {
   } as unknown as Matterbridge;
 
   const mockConfig = {
-    'name': 'matterbridge-somfy-tahoma',
-    'type': 'DynamicPlatform',
-    'username': 'None',
-    'password': 'None',
-    'service': 'somfy_europe',
-    'movementDuration': {
-      'Device1': 5,
+    name: 'matterbridge-somfy-tahoma',
+    type: 'DynamicPlatform',
+    username: 'None',
+    password: 'None',
+    service: 'somfy_europe',
+    movementDuration: {
+      Device1: 5,
     },
-    'blackList': [],
-    'whiteList': [],
-    'debug': false,
-    'unregisterOnShutdown': false,
+    blackList: [],
+    whiteList: [],
+    debug: false,
+    unregisterOnShutdown: false,
   } as PlatformConfig;
 
   const mockDevices = [
@@ -109,39 +135,16 @@ describe('TestPlatform', () => {
   ];
 
   beforeAll(async () => {
-    // Spy on and mock the AnsiLogger.log method
-    loggerLogSpy = jest.spyOn(AnsiLogger.prototype, 'log').mockImplementation((level: string, message: string, ...parameters: any[]) => {
-      //
-    });
-    // Spy on and mock console.log
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation((...args: any[]) => {
-      //
-    });
-    // Spy on and mock console.debug
-    consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation((...args: any[]) => {
-      //
-    });
-    // Spy on and mock console.info
-    consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation((...args: any[]) => {
-      //
-    });
-    // Spy on and mock console.warn
-    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation((...args: any[]) => {
-      //
-    });
-    // Spy on and mock console.error
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation((...args: any[]) => {
-      //
-    });
-
     // Create a MatterbridgeEdge instance
     matterbridge = await Matterbridge.loadInstance(false);
-    matterbridge.log = new AnsiLogger({ logName: 'Matterbridge', logTimestampFormat: TimestampFormat.TIME_MILLIS, logLevel: LogLevel.DEBUG });
+    matterbridge.homeDirectory = path.join(HOMEDIR);
+    matterbridge.matterbridgeDirectory = path.join(HOMEDIR, '.matterbridge');
+    matterbridge.matterbridgePluginDirectory = path.join(HOMEDIR, 'Matterbridge');
 
     // Setup matter environment
     matterbridge.environment.vars.set('log.level', Level.INFO);
     matterbridge.environment.vars.set('log.format', Format.ANSI);
-    matterbridge.environment.vars.set('path.root', 'matterstorage');
+    matterbridge.environment.vars.set('path.root', path.join(HOMEDIR, '.matterbridge', 'matterstorage'));
     matterbridge.environment.vars.set('runtime.signals', false);
     matterbridge.environment.vars.set('runtime.exitcode', false);
     await (matterbridge as any).startMatterStorage();
