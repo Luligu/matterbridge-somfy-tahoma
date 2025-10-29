@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 
-const MATTER_PORT = 6002;
+const MATTER_PORT = 6000;
 const NAME = 'Platform';
 const HOMEDIR = path.join('jest', NAME);
 
@@ -11,14 +11,14 @@ import path from 'node:path';
 
 import { jest } from '@jest/globals';
 import { Client, Device } from 'overkiz-client';
-import { Matterbridge, MatterbridgeEndpoint, PlatformConfig } from 'matterbridge';
-import { AnsiLogger, BLUE, CYAN, ign, LogLevel, nf, rs, TimestampFormat, YELLOW } from 'matterbridge/logger';
+import { Matterbridge, MatterbridgeEndpoint } from 'matterbridge';
+import { AnsiLogger, BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
 import { wait } from 'matterbridge/utils';
 import { Endpoint, ServerNode, LogLevel as Level, LogFormat as Format, Lifecycle, MdnsService } from 'matterbridge/matter';
 import { AggregatorEndpoint } from 'matterbridge/matter/endpoints';
 import { WindowCovering, WindowCoveringCluster } from 'matterbridge/matter/clusters';
 
-import { SomfyTahomaPlatform } from './platform.ts';
+import initializePlugin, { SomfyTahomaPlatform, SomfyTahomaPlatformConfig } from './module.js';
 
 let loggerLogSpy: jest.SpiedFunction<typeof AnsiLogger.prototype.log>;
 let consoleLogSpy: jest.SpiedFunction<typeof console.log>;
@@ -85,7 +85,7 @@ describe('TestPlatform', () => {
     matterbridgeDirectory: path.join(HOMEDIR, '.matterbridge'),
     matterbridgePluginDirectory: path.join(HOMEDIR, 'Matterbridge'),
     systemInformation: { ipv4Address: undefined, ipv6Address: undefined, osRelease: 'xx.xx.xx.xx.xx.xx', nodeVersion: '22.1.10' },
-    matterbridgeVersion: '3.0.0',
+    matterbridgeVersion: '3.3.0',
     log: mockLog,
     getDevices: jest.fn(() => {
       // console.log('getDevices called');
@@ -107,20 +107,21 @@ describe('TestPlatform', () => {
     }),
   } as unknown as Matterbridge;
 
-  const mockConfig = {
+  const mockConfig: SomfyTahomaPlatformConfig = {
     name: 'matterbridge-somfy-tahoma',
     type: 'DynamicPlatform',
+    version: '1.4.0',
     username: 'None',
     password: 'None',
     service: 'somfy_europe',
     movementDuration: {
-      Device1: 5,
+      Device1: 2,
     },
     blackList: [],
     whiteList: [],
     debug: false,
     unregisterOnShutdown: false,
-  } as PlatformConfig;
+  };
 
   const mockDevices = [
     {
@@ -203,10 +204,16 @@ describe('TestPlatform', () => {
     expect(aggregator?.construction.status).toBe(Lifecycle.Status.Active);
   });
 
+  it('should return an instance of SomfyTahomaPlatform', async () => {
+    const result = initializePlugin(mockMatterbridge, mockLog, mockConfig);
+    expect(result).toBeInstanceOf(SomfyTahomaPlatform);
+    await result.onShutdown();
+  });
+
   it('should not initialize platform without username and password', () => {
-    mockConfig.username = undefined;
-    mockConfig.password = undefined;
-    mockConfig.service = undefined;
+    mockConfig.username = '';
+    mockConfig.password = '';
+    mockConfig.service = '';
     somfyPlatform = new SomfyTahomaPlatform(mockMatterbridge, mockLog, mockConfig);
     expect(mockLog.info).toHaveBeenCalledWith('Initializing platform:', mockConfig.name);
     expect(mockLog.error).toHaveBeenCalledWith('No service or username or password provided for:', mockConfig.name);
@@ -229,25 +236,10 @@ describe('TestPlatform', () => {
     expect(mockLog.warn).toHaveBeenCalledWith('TaHoma service disconnected');
   });
 
-  it('should validate version', () => {
-    mockMatterbridge.matterbridgeVersion = '1.5.4';
-    expect(somfyPlatform.verifyMatterbridgeVersion('1.5.3')).toBe(true);
-    expect(somfyPlatform.verifyMatterbridgeVersion('1.5.4')).toBe(true);
-    expect(somfyPlatform.verifyMatterbridgeVersion('2.0.0')).toBe(false);
-  });
-
-  it('should validate version beta', () => {
-    mockMatterbridge.matterbridgeVersion = '1.5.4-dev.1';
-    expect(somfyPlatform.verifyMatterbridgeVersion('1.5.3')).toBe(true);
-    expect(somfyPlatform.verifyMatterbridgeVersion('1.5.4')).toBe(true);
-    expect(somfyPlatform.verifyMatterbridgeVersion('2.0.0')).toBe(false);
-    mockMatterbridge.matterbridgeVersion = '1.5.5';
-  });
-
   it('should throw because of version', () => {
     mockMatterbridge.matterbridgeVersion = '1.5.4';
     expect(() => new SomfyTahomaPlatform(mockMatterbridge, mockLog, mockConfig)).toThrow();
-    mockMatterbridge.matterbridgeVersion = '3.0.0';
+    mockMatterbridge.matterbridgeVersion = '3.3.0';
   });
 
   it('should call onStart with reason', async () => {
@@ -289,7 +281,7 @@ describe('TestPlatform', () => {
     const errorMessage = 'Error writing file';
     jest.spyOn(fs, 'writeFile').mockRejectedValueOnce(new Error(errorMessage));
     await (somfyPlatform as any).discoverDevices();
-    await wait(2000);
+    await wait(1000);
     expect(mockLog.error).toHaveBeenCalled();
   });
 
@@ -337,7 +329,7 @@ describe('TestPlatform', () => {
     (somfyPlatform as any).tahomaDevices = [];
     (somfyPlatform as any).bridgedDevices = [];
     (somfyPlatform as any).covers.clear();
-    (somfyPlatform as any)._registeredEndpointsByName.clear();
+    (somfyPlatform as any).registeredEndpointsByName.clear();
   });
 
   it('should discover devices with uiClass Screen', async () => {
@@ -360,7 +352,7 @@ describe('TestPlatform', () => {
     (somfyPlatform as any).tahomaDevices = [];
     (somfyPlatform as any).bridgedDevices = [];
     (somfyPlatform as any).covers.clear();
-    (somfyPlatform as any)._registeredEndpointsByName.clear();
+    (somfyPlatform as any).registeredEndpointsByName.clear();
   });
 
   it('should discover devices with command "open", "close" and "stop"', async () => {
@@ -399,7 +391,7 @@ describe('TestPlatform', () => {
     await device.executeCommandHandler('identify', { identifyTime: 1 });
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}identify${rs}${nf} called identifyTime:1`);
 
-    device.setWindowCoveringCurrentTargetStatus(0, 0, WindowCovering.MovementStatus.Stopped);
+    await device.setWindowCoveringCurrentTargetStatus(0, 0, WindowCovering.MovementStatus.Stopped);
 
     // With Matter 0=open 10000=close
 
@@ -407,7 +399,7 @@ describe('TestPlatform', () => {
     await device.executeCommandHandler('downOrClose');
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}downOrClose${rs}${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 0 to 10000...`);
-    await wait(6000);
+    await wait(3000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at 10000`);
     expect(device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(10000);
 
@@ -415,7 +407,7 @@ describe('TestPlatform', () => {
     await device.executeCommandHandler('upOrOpen');
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}upOrOpen${rs}${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 10000 to 0...`);
-    await wait(6000);
+    await wait(3000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at 0`);
     expect(device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(0);
 
@@ -431,7 +423,7 @@ describe('TestPlatform', () => {
     await wait(1000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}5000${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 0 to 5000...`);
-    await wait(4000);
+    await wait(2000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at 5000`);
     expect(device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(5000);
 
@@ -443,15 +435,12 @@ describe('TestPlatform', () => {
     await device.executeCommandHandler('downOrClose');
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Stopping current movement.`);
     await device.executeCommandHandler('downOrClose');
-    await wait(5000);
+    await wait(3000);
     expect(device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(10000);
 
     await device.executeCommandHandler('upOrOpen');
-    await wait(1000);
     await device.executeCommandHandler('stopMotion');
-    await wait(1000);
     await device.executeCommandHandler('downOrClose');
-    await wait(1000);
     await device.executeCommandHandler('upOrOpen');
     await device.executeCommandHandler('stopMotion');
 
@@ -459,7 +448,7 @@ describe('TestPlatform', () => {
     (somfyPlatform as any).tahomaDevices = [];
     (somfyPlatform as any).bridgedDevices = [];
     (somfyPlatform as any).covers.clear();
-    (somfyPlatform as any)._registeredEndpointsByName.clear();
+    (somfyPlatform as any).registeredEndpointsByName.clear();
   }, 120000);
 
   it('should discover devices with command "rollOut", "rollUp" and "stop"', async () => {
@@ -485,7 +474,7 @@ describe('TestPlatform', () => {
     (somfyPlatform as any).tahomaDevices = [];
     (somfyPlatform as any).bridgedDevices = [];
     (somfyPlatform as any).covers.clear();
-    (somfyPlatform as any)._registeredEndpointsByName.clear();
+    (somfyPlatform as any).registeredEndpointsByName.clear();
   });
 
   it('should discover devices with command "down", "up" and "stop"', async () => {

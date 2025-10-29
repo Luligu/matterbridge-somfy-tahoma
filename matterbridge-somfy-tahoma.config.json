@@ -1,6 +1,7 @@
 {
   "name": "matterbridge-somfy-tahoma",
   "type": "DynamicPlatform",
+  "version": "1.4.0",
   "username": "",
   "password": "",
   "service": "somfy_europe",
