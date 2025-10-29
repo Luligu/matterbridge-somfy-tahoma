@@ -1,5 +1,5 @@
 /**
- * This file contains the class WebhooksPlatform.
+ * This file contains the class SomfyTahomaPlatform.
  *
  * @file module.ts
  * @author Luca Liguori
