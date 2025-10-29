@@ -34,6 +34,7 @@ import {
   stopMatterbridgeEnvironment,
   removeAllBridgedEndpointsSpy,
   setDebug,
+  flushAsync,
 } from './utils/jestHelpers.js';
 
 // Setup the test environment
@@ -241,6 +242,7 @@ describe('TestPlatform', () => {
     matterbridge.devices.clear();
     expect(aggregator.parts.size).toBe(0);
     expect(matterbridge.devices.size).toBe(0);
+    await flushAsync();
   });
 
   it('should discover devices with uiClass Screen', async () => {
@@ -267,6 +269,7 @@ describe('TestPlatform', () => {
     matterbridge.devices.clear();
     expect(aggregator.parts.size).toBe(0);
     expect(matterbridge.devices.size).toBe(0);
+    await flushAsync();
   });
 
   it('should discover devices with command "open", "close" and "stop"', async () => {
@@ -366,6 +369,7 @@ describe('TestPlatform', () => {
     matterbridge.devices.clear();
     expect(aggregator.parts.size).toBe(0);
     expect(matterbridge.devices.size).toBe(0);
+    await flushAsync();
   }, 120000);
 
   it('should discover devices with command "rollOut", "rollUp" and "stop"', async () => {
@@ -395,6 +399,7 @@ describe('TestPlatform', () => {
     matterbridge.devices.clear();
     expect(aggregator.parts.size).toBe(0);
     expect(matterbridge.devices.size).toBe(0);
+    await flushAsync();
   });
 
   it('should discover devices with command "down", "up" and "stop"', async () => {
