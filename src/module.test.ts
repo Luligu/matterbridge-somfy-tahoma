@@ -437,7 +437,6 @@ describe('TestPlatform', () => {
 
   it('should call onShutdown with reason', async () => {
     expect(aggregator.parts.size).toBe(1);
-    setDebug(true);
     const client = (somfyPlatform as any).tahomaClient;
     (somfyPlatform as any).tahomaClient = undefined;
     await somfyPlatform.onShutdown('Test reason');
