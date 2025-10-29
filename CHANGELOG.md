@@ -11,10 +11,10 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - [package]: Updated dependencies.
-- [package]: Bumped platform to v.1.0.0.
+- [package]: Bumped platform to v.1.4.0.
 - [package]: Bumped package to automator v.2.0.10
 - [package]: Added default config.
-- [platform]: Require matterbridge v.3.3.0.
+- [platform]: Required matterbridge v.3.3.0.
 - [platform]: Updated to new signature PlatformMatterbridge.
 - [jest]: Bumped jestHelpers to v.1.0.10.
 - [workflows]: Ignore any .md in build.yaml.
