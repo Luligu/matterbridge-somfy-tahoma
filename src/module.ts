@@ -1,10 +1,32 @@
+/**
+ * This file contains the class SomfyTahomaPlatform.
+ *
+ * @file module.ts
+ * @author Luca Liguori
+ * @version 1.4.0
+ * @license Apache-2.0
+ *
+ * Copyright 2025, 2026, 2027 Luca Liguori.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 
-import { PlatformConfig, Matterbridge, MatterbridgeDynamicPlatform, bridgedNode, powerSource, MatterbridgeEndpoint, coverDevice } from 'matterbridge';
+import { PlatformConfig, MatterbridgeDynamicPlatform, bridgedNode, powerSource, MatterbridgeEndpoint, coverDevice, PlatformMatterbridge } from 'matterbridge';
 import { AnsiLogger, BLUE, debugStringify, rs, CYAN, ign, nf, YELLOW } from 'matterbridge/logger';
-import { NodeStorageManager } from 'matterbridge/storage';
-import { isValidNumber, isValidString } from 'matterbridge/utils';
+import { inspectError, isValidNumber, isValidString } from 'matterbridge/utils';
 import { WindowCovering } from 'matterbridge/matter/clusters';
 import { Action, Client, Command, Device, Execution } from 'overkiz-client';
 
@@ -22,43 +44,55 @@ interface Cover {
   commandTimeout?: NodeJS.Timeout;
 }
 
+export type SomfyTahomaPlatformConfig = PlatformConfig & {
+  username: string;
+  password: string;
+  service: string;
+  whiteList: string[];
+  blackList: string[];
+  movementDuration: MovementDuration;
+};
+
+/**
+ * This is the standard interface for Matterbridge plugins.
+ * Each plugin should export a default function that follows this signature.
+ *
+ * @param {PlatformMatterbridge} matterbridge - An instance of MatterBridge. This is the main interface for interacting with the MatterBridge system.
+ * @param {AnsiLogger} log - An instance of AnsiLogger. This is used for logging messages in a format that can be displayed with ANSI color codes.
+ * @param {PlatformConfig} config - The platform configuration.
+ * @returns {SomfyTahomaPlatform} - An instance of the SomfyTahomaPlatform. This is the main interface for interacting with the Somfy Tahoma system.
+ */
+export default function initializePlugin(matterbridge: PlatformMatterbridge, log: AnsiLogger, config: SomfyTahomaPlatformConfig): SomfyTahomaPlatform {
+  return new SomfyTahomaPlatform(matterbridge, log, config);
+}
+
 export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   private tahomaDevices: Device[] = [];
   private bridgedDevices: MatterbridgeEndpoint[] = [];
   covers = new Map<string, Cover>();
-
-  // NodeStorageManager
-  private nodeStorageManager: NodeStorageManager;
 
   // TaHoma
   private tahomaClient?: Client;
   private movementDuration: MovementDuration = {};
   private connected = false;
 
-  constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
+  constructor(matterbridge: PlatformMatterbridge, log: AnsiLogger, config: SomfyTahomaPlatformConfig) {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.0.0')) {
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.3.0')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "3.0.0". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend."`,
+        `This plugin requires Matterbridge version >= "3.3.0". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend."`,
       );
     }
 
     this.log.info('Initializing platform:', this.config.name);
 
-    if (config.movementDuration) this.movementDuration = config.movementDuration as MovementDuration;
+    if (config.movementDuration) this.movementDuration = config.movementDuration;
 
-    // create NodeStorageManager
-    this.nodeStorageManager = new NodeStorageManager({
-      dir: path.join(matterbridge.matterbridgePluginDirectory, 'matterbridge-somfy-tahoma'),
-      logging: false,
-    });
-
-    if (!isValidString(this.config.username) || !isValidString(this.config.password) || !isValidString(this.config.service)) {
+    if (!isValidString(this.config.username, 1) || !isValidString(this.config.password, 1) || !isValidString(this.config.service, 1)) {
       this.log.error('No service or username or password provided for:', this.config.name);
       return;
-      // throw new Error(`No service or username or password provided for ${this.config.name}`);
     }
     this.log.info('Finished initializing platform:', this.config.name);
 
@@ -82,6 +116,8 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   }
 
   override async onStart(reason?: string) {
+    await this.ready;
+
     this.log.info('onStart called with reason:', reason ?? 'none');
     if (!this.tahomaClient) {
       this.log.error('TaHoma service not created');
@@ -89,9 +125,8 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     }
     try {
       await this.tahomaClient.connect(this.config.username as string, this.config.password as string);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      this.log.error('Error connecting to TaHoma service:', error.response?.data);
+    } catch (error) {
+      inspectError(this.log, 'Error connecting to TaHoma service', error);
       return;
     }
     await this.discoverDevices();
@@ -144,9 +179,8 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     let devices: Device[] = [];
     try {
       devices = await this.tahomaClient.getDevices();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      this.log.error('Error discovering TaHoma devices:', error.response?.data);
+    } catch (error) {
+      inspectError(this.log, 'Error discovering TaHoma devices', error);
       return;
     }
 
@@ -163,7 +197,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         return;
       })
       .catch((error) => {
-        this.log.error(`Error writing devices to ${fileName}:`, error);
+        inspectError(this.log, `Error writing devices to ${fileName}`, error);
       });
 
     for (const device of devices) {
@@ -300,9 +334,10 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     log.info(`Moving from ${currentPosition} to ${targetPosition}...`);
 
     // Stop movement if already moving
-    if ((await cover.movementStatus) !== Stopped) {
+    if (cover.movementStatus !== Stopped) {
       log.info('Stopping current movement.');
       clearInterval(cover.moveInterval);
+      cover.moveInterval = undefined;
       await cover.bridgedDevice.setWindowCoveringTargetAsCurrentAndStopped();
       await this.sendCommand('stop', cover.tahomaDevice, true);
       cover.movementStatus = Stopped;
@@ -311,6 +346,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     // Return if already at target position
     if (targetPosition === currentPosition) {
       clearInterval(cover.moveInterval);
+      cover.moveInterval = undefined;
       await cover.bridgedDevice.setWindowCoveringTargetAsCurrentAndStopped();
       cover.movementStatus = Stopped;
       log.info(`Moving from ${currentPosition} to ${targetPosition}. No movement needed.`);
@@ -320,8 +356,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     const movement = targetPosition - currentPosition;
     const movementSeconds = Math.abs((movement * cover.movementDuration) / 10000);
     log.debug(`Moving from ${currentPosition} to ${targetPosition} in ${movementSeconds} seconds. Movement requested ${movement}`);
-    cover.bridgedDevice.setAttribute(WindowCovering.Cluster.id, 'targetPositionLiftPercent100ths', targetPosition, log);
-
+    await cover.bridgedDevice.setAttribute(WindowCovering.Cluster.id, 'targetPositionLiftPercent100ths', targetPosition, log);
     await cover.bridgedDevice.setWindowCoveringStatus(targetPosition > currentPosition ? WindowCovering.MovementStatus.Closing : WindowCovering.MovementStatus.Opening);
     cover.movementStatus = targetPosition > currentPosition ? Closing : Opening;
     await this.sendCommand(targetPosition > currentPosition ? 'close' : 'open', cover.tahomaDevice, true);
@@ -357,7 +392,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       const _execution = new Execution('Sending ' + command, _action);
       await this.tahomaClient?.execute(highPriority ? 'apply/highPriority' : 'apply', _execution);
     } catch (error) {
-      this.log.error(`Error sending command: ${error instanceof Error ? error.message : error}`);
+      inspectError(this.log, `Error sending command ${command} to ${device.label}`, error);
     }
   }
 }
