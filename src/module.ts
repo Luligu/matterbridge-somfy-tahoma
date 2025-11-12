@@ -256,13 +256,14 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.debug(`- states ${debugStringify(device.states)}`);
       this.log.debug(`- duration ${duration}`);
 
-      const cover = new MatterbridgeEndpoint([coverDevice, bridgedNode, powerSource], { uniqueStorageKey: device.label }, this.config.debug as boolean);
+      const cover = new MatterbridgeEndpoint([coverDevice, bridgedNode, powerSource], { id: device.label }, this.config.debug as boolean);
       cover.createDefaultIdentifyClusterServer();
       cover.createDefaultGroupsClusterServer();
       // cover.createDefaultScenesClusterServer();
       cover.createDefaultWindowCoveringClusterServer();
       cover.createDefaultBridgedDeviceBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', device.definition.uiClass);
-      cover.createDefaultPowerSourceWiredClusterServer();
+      if (device.states.find((s) => s.name === 'core:BatteryDiscreteLevelState')) cover.createDefaultPowerSourceRechargeableBatteryClusterServer();
+      else cover.createDefaultPowerSourceWiredClusterServer();
       await this.registerDevice(cover);
       this.bridgedDevices.push(cover);
       this.covers.set(device.label, { tahomaDevice: device, bridgedDevice: cover, movementStatus: Stopped, movementDuration: duration });
