@@ -6,7 +6,7 @@ If you like this project and find it useful, please consider giving it a star on
 
 All notable changes to this project will be documented in this file.
 
-## [1.4.1] - 2025-11-12
+## [1.4.1] - 2025-11-14
 
 ### Changed
 

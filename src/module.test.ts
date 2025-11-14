@@ -131,7 +131,7 @@ describe('TestPlatform', () => {
     config.password = 'None';
     config.service = 'somfy_europe';
     somfyPlatform = new SomfyTahomaPlatform(matterbridge, log, config);
-    addMatterbridgePlatform(somfyPlatform, 'matterbridge-somfy-tahoma');
+    addMatterbridgePlatform(somfyPlatform);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Initializing platform:', config.name);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Finished initializing platform:', config.name);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Starting client Tahoma service somfy_europe with user None password: None');
