@@ -67,22 +67,22 @@ export default function initializePlugin(matterbridge: PlatformMatterbridge, log
 }
 
 export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
-  private tahomaDevices: Device[] = [];
-  private bridgedDevices: MatterbridgeEndpoint[] = [];
+  tahomaDevices: Device[] = [];
+  bridgedDevices: MatterbridgeEndpoint[] = [];
   covers = new Map<string, Cover>();
 
   // TaHoma
-  private tahomaClient?: Client;
-  private movementDuration: MovementDuration = {};
-  private connected = false;
+  tahomaClient?: Client;
+  movementDuration: MovementDuration = {};
+  connected = false;
 
   constructor(matterbridge: PlatformMatterbridge, log: AnsiLogger, config: SomfyTahomaPlatformConfig) {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.3.0')) {
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.4.0')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "3.3.0". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend."`,
+        `This plugin requires Matterbridge version >= "3.4.0". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend."`,
       );
     }
 
@@ -170,7 +170,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices();
   }
 
-  private async discoverDevices() {
+  async discoverDevices() {
     // TaHoma
     if (!this.tahomaClient) {
       this.log.error('TaHoma service not created');
@@ -328,7 +328,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   }
 
   // With Matter 0=open 10000=close
-  private async moveToPosition(cover: Cover, targetPosition: number) {
+  async moveToPosition(cover: Cover, targetPosition: number) {
     const log = cover.bridgedDevice.log;
     let currentPosition = cover.bridgedDevice.getAttribute(WindowCovering.Cluster.id, 'currentPositionLiftPercent100ths', log);
     if (!isValidNumber(currentPosition, 0, 10000)) return;
@@ -379,7 +379,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     }, 1000);
   }
 
-  private async sendCommand(command: string, device: Device, highPriority = false) {
+  async sendCommand(command: string, device: Device, highPriority = false) {
     if (command === 'open' && !device.commands.includes('open') && device.commands.includes('rollOut')) command = 'rollOut';
     if (command === 'close' && !device.commands.includes('close') && device.commands.includes('rollUp')) command = 'rollUp';
 

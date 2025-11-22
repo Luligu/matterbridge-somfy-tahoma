@@ -32,15 +32,25 @@ import {
 
 import initializePlugin, { SomfyTahomaPlatform, SomfyTahomaPlatformConfig } from './module.js';
 
+// Spy on the Client.connect method
+const clientConnectSpy = jest.spyOn(Client.prototype, 'connect').mockImplementation((user: string, password: string) => {
+  // console.error(`Mocked Client.connect(${user}, ${password})`);
+  return Promise.resolve();
+});
+const clientGetDevicesSpy = jest.spyOn(Client.prototype, 'getDevices').mockImplementation(() => {
+  // console.error(`Mocked Client.getDevices()`);
+  return Promise.resolve([]);
+});
+const clientExecuteSpy = jest.spyOn(Client.prototype, 'execute').mockImplementation((oid: any, execution: any) => {
+  // console.error(`Mocked Client.execute(${oid}, ${execution})`);
+  return Promise.resolve();
+});
+
 // Setup the test environment
 await setupTest(NAME, false);
 
 describe('TestPlatform', () => {
   let somfyPlatform: SomfyTahomaPlatform;
-
-  let clientConnectSpy: jest.SpiedFunction<(user: string, password: string) => Promise<void>>;
-  let clientGetDevicesSpy: jest.SpiedFunction<() => Promise<Device[]>>;
-  let clientExecuteSpy: jest.SpiedFunction<(oid: any, execution: any) => Promise<any>>;
 
   const config: SomfyTahomaPlatformConfig = {
     name: 'matterbridge-somfy-tahoma',
@@ -74,20 +84,6 @@ describe('TestPlatform', () => {
     // Create Matterbridge environment
     await createMatterbridgeEnvironment(NAME);
     await startMatterbridgeEnvironment(MATTER_PORT);
-
-    // Spy on the Client.connect method
-    clientConnectSpy = jest.spyOn(Client.prototype, 'connect').mockImplementation((user: string, password: string) => {
-      // console.error(`Mocked Client.connect(${user}, ${password})`);
-      return Promise.resolve();
-    });
-    clientGetDevicesSpy = jest.spyOn(Client.prototype, 'getDevices').mockImplementation(() => {
-      // console.error(`Mocked Client.getDevices()`);
-      return Promise.resolve([]);
-    });
-    clientExecuteSpy = jest.spyOn(Client.prototype, 'execute').mockImplementation((oid: any, execution: any) => {
-      // console.error(`Mocked Client.execute(${oid}, ${execution})`);
-      return Promise.resolve();
-    });
   });
 
   beforeEach(async () => {
@@ -133,8 +129,8 @@ describe('TestPlatform', () => {
   });
 
   it('should receive tahomaClient events', () => {
-    (somfyPlatform as any).tahomaClient?.emit('connect');
-    (somfyPlatform as any).tahomaClient?.emit('disconnect');
+    somfyPlatform.tahomaClient?.emit('connect');
+    somfyPlatform.tahomaClient?.emit('disconnect');
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'TaHoma service connected');
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.WARN, 'TaHoma service disconnected');
   });
@@ -142,7 +138,7 @@ describe('TestPlatform', () => {
   it('should throw because of version', () => {
     matterbridge.matterbridgeVersion = '1.5.4';
     expect(() => new SomfyTahomaPlatform(matterbridge, log, config)).toThrow();
-    matterbridge.matterbridgeVersion = '3.3.0';
+    matterbridge.matterbridgeVersion = '3.4.0';
   });
 
   it('should call onStart with reason', async () => {
@@ -152,12 +148,12 @@ describe('TestPlatform', () => {
   });
 
   it('should call onStart with reason and log error', async () => {
-    const client = (somfyPlatform as any).tahomaClient;
-    (somfyPlatform as any).tahomaClient = undefined;
+    const client = somfyPlatform.tahomaClient;
+    somfyPlatform.tahomaClient = undefined;
     await somfyPlatform.onStart();
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, 'TaHoma service not created');
     expect(clientConnectSpy).not.toHaveBeenCalledWith('None', 'None');
-    (somfyPlatform as any).tahomaClient = client;
+    somfyPlatform.tahomaClient = client;
   });
 
   it('should call onStart with reason and log error if connect throws', async () => {
@@ -172,18 +168,18 @@ describe('TestPlatform', () => {
   });
 
   it('should discover devices and log error', async () => {
-    const client = (somfyPlatform as any).tahomaClient;
-    (somfyPlatform as any).tahomaClient = undefined;
-    await (somfyPlatform as any).discoverDevices();
+    const client = somfyPlatform.tahomaClient;
+    somfyPlatform.tahomaClient = undefined;
+    await somfyPlatform.discoverDevices();
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, 'TaHoma service not created');
-    (somfyPlatform as any).tahomaClient = client;
+    somfyPlatform.tahomaClient = client;
   });
 
   it('should log an error if writeFile fails', async () => {
     const fileName = path.join(matterbridge.matterbridgePluginDirectory, 'matterbridge-somfy-tahoma', 'devices.json');
     const errorMessage = 'Error writing file';
     jest.spyOn(fs, 'writeFile').mockRejectedValueOnce(new Error(errorMessage));
-    await (somfyPlatform as any).discoverDevices();
+    await somfyPlatform.discoverDevices();
     await wait(1000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, expect.anything());
   });
@@ -192,7 +188,7 @@ describe('TestPlatform', () => {
     clientGetDevicesSpy.mockImplementationOnce(() => {
       throw new Error('Error getting devices from TaHoma service');
     });
-    await (somfyPlatform as any).discoverDevices();
+    await somfyPlatform.discoverDevices();
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, expect.stringContaining('Error discovering TaHoma devices'));
   });
 
@@ -201,17 +197,17 @@ describe('TestPlatform', () => {
     clientGetDevicesSpy.mockImplementationOnce(() => {
       return Promise.resolve(mockDevices);
     });
-    await (somfyPlatform as any).discoverDevices();
+    await somfyPlatform.discoverDevices();
     expect(addBridgedEndpointSpy).toHaveBeenCalledTimes(0);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma devices`);
-    expect((somfyPlatform as any).tahomaDevices).toHaveLength(1);
+    expect(somfyPlatform.tahomaDevices).toHaveLength(1);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma screens`);
-    expect((somfyPlatform as any).bridgedDevices).toHaveLength(0);
-    expect((somfyPlatform as any).covers.size).toBe(0);
+    expect(somfyPlatform.bridgedDevices).toHaveLength(0);
+    expect(somfyPlatform.covers.size).toBe(0);
     somfyPlatform.config.blackList = [];
-    (somfyPlatform as any).tahomaDevices = [];
-    (somfyPlatform as any).bridgedDevices = [];
-    (somfyPlatform as any).covers.clear();
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.bridgedDevices = [];
+    somfyPlatform.covers.clear();
   });
 
   it('should discover devices with uniqueName Blind', async () => {
@@ -220,19 +216,19 @@ describe('TestPlatform', () => {
     clientGetDevicesSpy.mockImplementationOnce(() => {
       return Promise.resolve(mockDevices);
     });
-    await (somfyPlatform as any).discoverDevices();
+    await somfyPlatform.discoverDevices();
     expect(addBridgedEndpointSpy).toHaveBeenCalledTimes(1);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma devices`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `- added with uniqueName`);
-    expect((somfyPlatform as any).tahomaDevices).toHaveLength(1);
+    expect(somfyPlatform.tahomaDevices).toHaveLength(1);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma screens`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Adding device: ${BLUE}${mockDevices[0].label}${rs}`);
-    expect((somfyPlatform as any).bridgedDevices).toHaveLength(1);
-    expect((somfyPlatform as any).covers.size).toBe(1);
+    expect(somfyPlatform.bridgedDevices).toHaveLength(1);
+    expect(somfyPlatform.covers.size).toBe(1);
     console.log('Deleting device');
-    (somfyPlatform as any).tahomaDevices = [];
-    (somfyPlatform as any).bridgedDevices = [];
-    (somfyPlatform as any).covers.clear();
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.bridgedDevices = [];
+    somfyPlatform.covers.clear();
     await somfyPlatform.unregisterAllDevices();
     matterbridge.devices.clear();
     expect(aggregator.parts.size).toBe(0);
@@ -247,19 +243,19 @@ describe('TestPlatform', () => {
     clientGetDevicesSpy.mockImplementationOnce(() => {
       return Promise.resolve(mockDevices);
     });
-    await (somfyPlatform as any).discoverDevices();
+    await somfyPlatform.discoverDevices();
     expect(addBridgedEndpointSpy).toHaveBeenCalledTimes(1);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma devices`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `- added with uiClass`);
-    expect((somfyPlatform as any).tahomaDevices).toHaveLength(1);
+    expect(somfyPlatform.tahomaDevices).toHaveLength(1);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma screens`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Adding device: ${BLUE}${mockDevices[0].label}${rs}`);
-    expect((somfyPlatform as any).bridgedDevices).toHaveLength(1);
-    expect((somfyPlatform as any).covers.size).toBe(1);
+    expect(somfyPlatform.bridgedDevices).toHaveLength(1);
+    expect(somfyPlatform.covers.size).toBe(1);
     console.log('Deleting device');
-    (somfyPlatform as any).tahomaDevices = [];
-    (somfyPlatform as any).bridgedDevices = [];
-    (somfyPlatform as any).covers.clear();
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.bridgedDevices = [];
+    somfyPlatform.covers.clear();
     await somfyPlatform.unregisterAllDevices();
     matterbridge.devices.clear();
     expect(aggregator.parts.size).toBe(0);
@@ -274,28 +270,28 @@ describe('TestPlatform', () => {
     clientGetDevicesSpy.mockImplementationOnce(() => {
       return Promise.resolve(mockDevices);
     });
-    await (somfyPlatform as any).discoverDevices();
+    await somfyPlatform.discoverDevices();
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma devices`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `- added with commands "open", "close" and "stop"`);
-    expect((somfyPlatform as any).tahomaDevices).toHaveLength(1);
+    expect(somfyPlatform.tahomaDevices).toHaveLength(1);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma screens`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Adding device: ${BLUE}${mockDevices[0].label}${rs}`);
-    expect((somfyPlatform as any).bridgedDevices).toHaveLength(1);
-    expect((somfyPlatform as any).covers.size).toBe(1);
+    expect(somfyPlatform.bridgedDevices).toHaveLength(1);
+    expect(somfyPlatform.covers.size).toBe(1);
 
-    (somfyPlatform as any).sendCommand('identify', mockDevices[0]);
+    somfyPlatform.sendCommand('identify', mockDevices[0]);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Sending command ${YELLOW}identify${nf} highPriority false`);
-    (somfyPlatform as any).sendCommand('open', mockDevices[0]);
+    somfyPlatform.sendCommand('open', mockDevices[0]);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Sending command ${YELLOW}open${nf} highPriority false`);
-    (somfyPlatform as any).sendCommand('stop', mockDevices[0]);
+    somfyPlatform.sendCommand('stop', mockDevices[0]);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Sending command ${YELLOW}stop${nf} highPriority false`);
-    (somfyPlatform as any).sendCommand('close', mockDevices[0]);
+    somfyPlatform.sendCommand('close', mockDevices[0]);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Sending command ${YELLOW}close${nf} highPriority false`);
 
     clientExecuteSpy.mockImplementationOnce(() => {
       throw new Error('Error executing command');
     });
-    (somfyPlatform as any).sendCommand('close', mockDevices[0]);
+    somfyPlatform.sendCommand('close', mockDevices[0]);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, expect.stringContaining(`Error sending command`));
 
     const device = somfyPlatform.covers.get('Device1')?.bridgedDevice;
@@ -357,9 +353,9 @@ describe('TestPlatform', () => {
     await device.executeCommandHandler('upOrOpen');
     await device.executeCommandHandler('stopMotion');
 
-    (somfyPlatform as any).tahomaDevices = [];
-    (somfyPlatform as any).bridgedDevices = [];
-    (somfyPlatform as any).covers.clear();
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.bridgedDevices = [];
+    somfyPlatform.covers.clear();
     await somfyPlatform.unregisterAllDevices();
     matterbridge.devices.clear();
     expect(aggregator.parts.size).toBe(0);
@@ -375,21 +371,21 @@ describe('TestPlatform', () => {
     clientGetDevicesSpy.mockImplementationOnce(() => {
       return Promise.resolve(mockDevices);
     });
-    await (somfyPlatform as any).discoverDevices();
+    await somfyPlatform.discoverDevices();
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma devices`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `- added with commands "rollOut", "rollUp" and "stop"`);
-    expect((somfyPlatform as any).tahomaDevices).toHaveLength(1);
+    expect(somfyPlatform.tahomaDevices).toHaveLength(1);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma screens`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Adding device: ${BLUE}${mockDevices[0].label}${rs}`);
-    expect((somfyPlatform as any).bridgedDevices).toHaveLength(1);
-    expect((somfyPlatform as any).covers.size).toBe(1);
-    (somfyPlatform as any).sendCommand('identify', mockDevices[0]);
-    (somfyPlatform as any).sendCommand('open', mockDevices[0]);
-    (somfyPlatform as any).sendCommand('stop', mockDevices[0]);
-    (somfyPlatform as any).sendCommand('close', mockDevices[0]);
-    (somfyPlatform as any).tahomaDevices = [];
-    (somfyPlatform as any).bridgedDevices = [];
-    (somfyPlatform as any).covers.clear();
+    expect(somfyPlatform.bridgedDevices).toHaveLength(1);
+    expect(somfyPlatform.covers.size).toBe(1);
+    somfyPlatform.sendCommand('identify', mockDevices[0]);
+    somfyPlatform.sendCommand('open', mockDevices[0]);
+    somfyPlatform.sendCommand('stop', mockDevices[0]);
+    somfyPlatform.sendCommand('close', mockDevices[0]);
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.bridgedDevices = [];
+    somfyPlatform.covers.clear();
     await somfyPlatform.unregisterAllDevices();
     matterbridge.devices.clear();
     expect(aggregator.parts.size).toBe(0);
@@ -405,18 +401,18 @@ describe('TestPlatform', () => {
     clientGetDevicesSpy.mockImplementationOnce(() => {
       return Promise.resolve(mockDevices);
     });
-    await (somfyPlatform as any).discoverDevices();
+    await somfyPlatform.discoverDevices();
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma devices`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `- added with commands "down", "up" and "stop"`);
-    expect((somfyPlatform as any).tahomaDevices).toHaveLength(1);
+    expect(somfyPlatform.tahomaDevices).toHaveLength(1);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma screens`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Adding device: ${BLUE}${mockDevices[0].label}${rs}`);
-    expect((somfyPlatform as any).bridgedDevices).toHaveLength(1);
-    expect((somfyPlatform as any).covers.size).toBe(1);
-    (somfyPlatform as any).sendCommand('identify', mockDevices[0]);
-    (somfyPlatform as any).sendCommand('open', mockDevices[0]);
-    (somfyPlatform as any).sendCommand('stop', mockDevices[0]);
-    (somfyPlatform as any).sendCommand('close', mockDevices[0]);
+    expect(somfyPlatform.bridgedDevices).toHaveLength(1);
+    expect(somfyPlatform.covers.size).toBe(1);
+    somfyPlatform.sendCommand('identify', mockDevices[0]);
+    somfyPlatform.sendCommand('open', mockDevices[0]);
+    somfyPlatform.sendCommand('stop', mockDevices[0]);
+    somfyPlatform.sendCommand('close', mockDevices[0]);
     expect(somfyPlatform.size()).toBe(1);
     expect(aggregator.parts.size).toBe(1);
     expect(matterbridge.devices.size).toBe(1);
@@ -429,21 +425,21 @@ describe('TestPlatform', () => {
   });
 
   it('should call onConfigure and log error', async () => {
-    const client = (somfyPlatform as any).tahomaClient;
-    (somfyPlatform as any).tahomaClient = undefined;
+    const client = somfyPlatform.tahomaClient;
+    somfyPlatform.tahomaClient = undefined;
     await somfyPlatform.onConfigure();
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onConfigure called');
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, 'TaHoma service not created');
-    (somfyPlatform as any).tahomaClient = client;
+    somfyPlatform.tahomaClient = client;
   });
 
   it('should call onShutdown with reason', async () => {
     expect(aggregator.parts.size).toBe(1);
-    const client = (somfyPlatform as any).tahomaClient;
-    (somfyPlatform as any).tahomaClient = undefined;
+    const client = somfyPlatform.tahomaClient;
+    somfyPlatform.tahomaClient = undefined;
     await somfyPlatform.onShutdown('Test reason');
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onShutdown called with reason:', 'Test reason');
-    (somfyPlatform as any).tahomaClient = client;
+    somfyPlatform.tahomaClient = client;
     expect(somfyPlatform.size()).toBe(0); // destroy called from onShutdown
     expect(aggregator.parts.size).toBe(1);
     expect(matterbridge.devices.size).toBe(1);
@@ -451,15 +447,15 @@ describe('TestPlatform', () => {
   });
 
   it('should call onShutdown with reason and call unregisterAll', async () => {
-    const client = (somfyPlatform as any).tahomaClient;
-    (somfyPlatform as any).tahomaClient = undefined;
+    const client = somfyPlatform.tahomaClient;
+    somfyPlatform.tahomaClient = undefined;
     somfyPlatform.name = config.name as string;
     config.unregisterOnShutdown = true;
     await somfyPlatform.onShutdown();
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onShutdown called with reason:', 'none');
     expect(removeAllBridgedEndpointsSpy).toHaveBeenCalledWith(config.name, 0);
-    expect((somfyPlatform as any).tahomaClient).toBeUndefined();
-    (somfyPlatform as any).tahomaClient = client;
+    expect(somfyPlatform.tahomaClient).toBeUndefined();
+    somfyPlatform.tahomaClient = client;
     config.unregisterOnShutdown = false;
     expect(somfyPlatform.size()).toBe(0);
     expect(aggregator.parts.size).toBe(0);

@@ -11,7 +11,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - [package]: Updated dependencies.
-- [package]: Updated test to the current Matterbridge signatures.
+- [package]: Updated test to the current Matterbridge version.
+- [platform]: Required matterbridge v.3.4.0.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
   <img src="yellow-button.png" alt="Buy me a coffee" width="120">
