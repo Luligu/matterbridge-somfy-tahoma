@@ -102,7 +102,7 @@ describe('TestPlatform', () => {
     // Restore all mocks
     jest.restoreAllMocks();
 
-    logKeepAlives();
+    // logKeepAlives();
   });
 
   it('should return an instance of SomfyTahomaPlatform', async () => {
