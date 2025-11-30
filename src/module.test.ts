@@ -28,6 +28,7 @@ import {
   stopMatterbridgeEnvironment,
   removeAllBridgedEndpointsSpy,
   flushAsync,
+  logKeepAlives,
 } from 'matterbridge/jestutils';
 
 import initializePlugin, { SomfyTahomaPlatform, SomfyTahomaPlatformConfig } from './module.js';
@@ -100,6 +101,8 @@ describe('TestPlatform', () => {
 
     // Restore all mocks
     jest.restoreAllMocks();
+
+    logKeepAlives();
   });
 
   it('should return an instance of SomfyTahomaPlatform', async () => {
@@ -108,13 +111,14 @@ describe('TestPlatform', () => {
     await result.onShutdown();
   });
 
-  it('should not initialize platform without username and password', () => {
+  it('should not initialize platform without username and password', async () => {
     config.username = '';
     config.password = '';
     config.service = '';
     somfyPlatform = new SomfyTahomaPlatform(matterbridge, log, config);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Initializing platform:', config.name);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, 'No service or username or password provided for:', config.name);
+    await somfyPlatform.onShutdown();
   });
 
   it('should initialize platform with config name', () => {

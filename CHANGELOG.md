@@ -6,13 +6,14 @@ If you like this project and find it useful, please consider giving it a star on
 
 All notable changes to this project will be documented in this file.
 
-## [1.4.2] - 2025-11-25
+## [1.4.2] - 2025-11-30
 
 ### Changed
 
 - [package]: Updated dependencies.
-- [package]: Updated test to the current Matterbridge version.
-- [platform]: Required matterbridge v.3.4.0.
+- [package]: Updated to the current Matterbridge signatures.
+- [package]: Required matterbridge v.3.4.0.
+- [package]: Updated to the Matterbridge Jest module.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
   <img src="yellow-button.png" alt="Buy me a coffee" width="120">
