@@ -26,15 +26,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: Clean cache
-        run: npm cache clean --force
-
-      - name: Verify Node.js version
-        run: node -v
-
-      - name: Verify Npm version
-        run: npm -v
+          registry-url: 'https://registry.npmjs.org'
+          cache: npm
 
       - name: Clone matterbridge repo
         run: git clone --depth 1 --single-branch --no-tags https://github.com/Luligu/matterbridge.git ../matterbridge
@@ -52,16 +45,16 @@ jobs:
         run: npm link --no-fund --no-audit
 
       - name: Install plugin dependencies
-        run: npm ci
+        run: npm ci --no-fund --no-audit
 
       - name: Link matterbridge in the project
-        run: npm link matterbridge
+        run: npm link matterbridge --no-fund --no-audit
+
+      - name: Build the plugin
+        run: npm run build
 
       - name: Lint the plugin
         run: npm run lint
 
       - name: Test the plugin
         run: npm run test -- --forceExit
-
-      - name: Build the plugin
-        run: npm run build

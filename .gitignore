@@ -2,6 +2,7 @@
 # This file specifies intentionally untracked directories and files that Git should ignore.
 
 # Specific directories that should be ignored
+.cache/
 .vscode/
 coverage/
 dist/
