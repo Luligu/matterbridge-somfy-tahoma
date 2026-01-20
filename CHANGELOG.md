@@ -1,10 +1,39 @@
-# <img src="matterbridge.svg" alt="Matterbridge Logo" width="64px" height="64px">&nbsp;&nbsp;&nbsp;Matterbridge somfy tahoma plugin changelog
+# <img src="https://matterbridge.io/assets/matterbridge.svg" alt="Matterbridge Logo" width="64px" height="64px">&nbsp;&nbsp;&nbsp;Matterbridge somfy tahoma plugin changelog
 
 # Changelog
 
 If you like this project and find it useful, please consider giving it a star on GitHub at https://github.com/Luligu/matterbridge-somfy-tahoma and sponsoring it.
 
 All notable changes to this project will be documented in this file.
+
+## [1.4.3] - 2026-01-20
+
+### Added
+
+- [matter]: Conformance to Matter 1.4.2 and matterbridge 3.5.x.
+- [thermostat]: Conformance to Matter 1.4.2.
+
+### Changed
+
+- [package]: Updated dependencies.
+- [package]: Updated package to automator v. 3.0.0.
+- [package]: Refactored Dev Container to use Matterbridge mDNS reflector.
+- [package]: Requires Matterbridge v.3.5.0.
+
+<a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
+
+## [1.4.2] - 2025-11-30
+
+### Changed
+
+- [package]: Updated dependencies.
+- [package]: Updated to the current Matterbridge signatures.
+- [package]: Required matterbridge v.3.4.0.
+- [package]: Updated to the Matterbridge Jest module.
+
+<a href="https://www.buymeacoffee.com/luligugithub">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
+</a>
 
 ## [1.4.1] - 2025-11-14
 
@@ -16,7 +45,7 @@ All notable changes to this project will be documented in this file.
 - [jest]: Updated jestHelpers to v.1.0.12.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.4.0] - 2025-10-29
@@ -38,7 +67,7 @@ All notable changes to this project will be documented in this file.
 - [devcontainer]: Improved performance of first build with shallow clone.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.3.0] - 2025-07-30
@@ -64,7 +93,7 @@ All notable changes to this project will be documented in this file.
 - [logger]: Bumped `node-ansi-logger` to 3.1.1.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.2.5] - 2025-05-03
@@ -77,7 +106,7 @@ All notable changes to this project will be documented in this file.
 - [package]: Updated dependencies.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.2.4] - 2025-03-11
@@ -95,7 +124,7 @@ All notable changes to this project will be documented in this file.
 - [package]: Updated dependencies.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.2.3] - 2025-02-02
@@ -107,7 +136,7 @@ All notable changes to this project will be documented in this file.
 - [package]: Updated dependencies.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.2.2] - 2024-12-23
@@ -124,7 +153,7 @@ All notable changes to this project will be documented in this file.
 - [package]: Updated dependencies.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.2.1] - 2024-12-02
@@ -146,7 +175,7 @@ All notable changes to this project will be documented in this file.
 - [somfy]: Fixed stop sent when the target is fully open or fully closed.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.2.0] - 2024-12-02
@@ -168,7 +197,7 @@ All notable changes to this project will be documented in this file.
 - [somfy]: Fixed stop sent when the target is fully open or fully closed.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.1.1] - 2024-10-12
@@ -178,7 +207,7 @@ All notable changes to this project will be documented in this file.
 - [somfy]: Fixed Awning commands "rollOut" and "rollUp".
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.1.0] - 2024-10-12
@@ -191,7 +220,7 @@ All notable changes to this project will be documented in this file.
 - [somfy]: Blinds are now added also if they support the command "down", "up" and "stop".
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.0.22] - 2024-10-01
@@ -202,7 +231,7 @@ All notable changes to this project will be documented in this file.
 - [package]: Updated dependencies.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.0.21] - 2024-09-23
@@ -212,7 +241,7 @@ All notable changes to this project will be documented in this file.
 - [package]: Updated dependencies.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.0.20] - 2024-09-05
@@ -222,7 +251,7 @@ All notable changes to this project will be documented in this file.
 - [package]: Updated dependencies.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.0.19] - 2024-08-22
@@ -232,7 +261,7 @@ All notable changes to this project will be documented in this file.
 - [package]: Updated dependencies.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.0.18] - 2024-08-19
@@ -247,7 +276,7 @@ All notable changes to this project will be documented in this file.
 - [package]: Fixed dependencies.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.0.17] - 2024-07-28
@@ -261,7 +290,7 @@ All notable changes to this project will be documented in this file.
 - [somfy]: Added support for uniqueName = Shutter.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.0.16] - 2024-07-23
@@ -274,7 +303,7 @@ All notable changes to this project will be documented in this file.
 - [somfy]: Execute commands async.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.0.15] - 2024-07-10
@@ -285,7 +314,7 @@ All notable changes to this project will be documented in this file.
 - [imports]: Updated matterbridge imports.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.0.14] - 2024-07-02
@@ -295,7 +324,7 @@ All notable changes to this project will be documented in this file.
 - [package]: Update dependencies
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.0.13] - 2024-06-30
@@ -306,7 +335,7 @@ All notable changes to this project will be documented in this file.
 - [package]: Updated eslint to 9.6.0
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.0.12] - 2024-06-21
@@ -317,7 +346,7 @@ All notable changes to this project will be documented in this file.
 - [schema]: Added plugin debug option.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.0.11] - 2024-06-19
@@ -328,7 +357,7 @@ All notable changes to this project will be documented in this file.
 - [schema]: Added schema to the root directory of the plugin.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.0.10] - 2024-06-16
@@ -338,7 +367,7 @@ All notable changes to this project will be documented in this file.
 - [dependencies]: Update dependencies
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 ## [1.0.9] - 2024-06-01
@@ -349,7 +378,7 @@ All notable changes to this project will be documented in this file.
 - [matterbridge]: Adapted the code to the new start mode of Matterbridge.
 
 <a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="yellow-button.png" alt="Buy me a coffee" width="120">
+  <img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120">
 </a>
 
 <!-- Commented out section
