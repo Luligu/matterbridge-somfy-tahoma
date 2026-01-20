@@ -6,16 +6,19 @@ If you like this project and find it useful, please consider giving it a star on
 
 All notable changes to this project will be documented in this file.
 
-## [1.4.3] - Dev branch
+## [1.4.3] - 2026-01-20
 
 ### Added
 
 - [matter]: Conformance to Matter 1.4.2 and matterbridge 3.5.x.
+- [thermostat]: Conformance to Matter 1.4.2.
 
 ### Changed
 
 - [package]: Updated dependencies.
 - [package]: Updated package to automator v. 3.0.0.
+- [package]: Refactored Dev Container to use Matterbridge mDNS reflector.
+- [package]: Requires Matterbridge v.3.5.0.
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
 

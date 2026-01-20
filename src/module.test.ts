@@ -106,6 +106,7 @@ describe('TestPlatform', () => {
   });
 
   it('should return an instance of SomfyTahomaPlatform', async () => {
+    matterbridge.matterbridgeVersion = '3.5.0';
     const result = initializePlugin(matterbridge, log, config);
     expect(result).toBeInstanceOf(SomfyTahomaPlatform);
     await result.onShutdown();
@@ -142,7 +143,7 @@ describe('TestPlatform', () => {
   it('should throw because of version', () => {
     matterbridge.matterbridgeVersion = '1.5.4';
     expect(() => new SomfyTahomaPlatform(matterbridge, log, config)).toThrow();
-    matterbridge.matterbridgeVersion = '3.4.0';
+    matterbridge.matterbridgeVersion = '3.5.0';
   });
 
   it('should call onStart with reason', async () => {
