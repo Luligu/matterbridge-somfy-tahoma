@@ -126,8 +126,6 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     try {
       await this.tahomaClient.connect(this.config.username as string, this.config.password as string);
     } catch (error) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
       inspectError(this.log, 'Error connecting to TaHoma service', error);
       return;
     }
@@ -182,8 +180,6 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     try {
       devices = await this.tahomaClient.getDevices();
     } catch (error) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
       inspectError(this.log, 'Error discovering TaHoma devices', error);
       return;
     }
@@ -201,8 +197,6 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         return;
       })
       .catch((error) => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
         inspectError(this.log, `Error writing devices to ${fileName}`, error);
       });
 
@@ -399,8 +393,6 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       const _execution = new Execution('Sending ' + command, _action);
       await this.tahomaClient?.execute(highPriority ? 'apply/highPriority' : 'apply', _execution);
     } catch (error) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
       inspectError(this.log, `Error sending command ${command} to ${device.label}`, error);
     }
   }
