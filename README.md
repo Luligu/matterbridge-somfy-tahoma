@@ -46,7 +46,7 @@ on Linux (if may need the necessary permissions):
 sudo npm install -g matterbridge --omit=dev
 ```
 
-See the complete guidelines on [Matterbridge](https://github.com/Luligu/matterbridge/blob/main/README.md) for more information.
+See the complete guidelines on [Matterbridge](https://matterbridge.io) for more information.
 
 ### TaHoma bridge
 
