@@ -8,6 +8,12 @@
   "type": "module",
   "main": "dist/module.js",
   "types": "dist/module.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/module.js",
+      "types": "./dist/module.d.ts"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Luligu/matterbridge-somfy-tahoma.git"
