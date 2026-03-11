@@ -28,6 +28,23 @@ If you like this project and find it useful, please consider giving it a star on
 
 # Changelog
 
+## [1.4.6] - 2026-03-12
+
+### Changed
+
+- [package]: Update dependencies.
+- [package]: Bump package to `automator` v.3.1.2.
+- [package]: Bump `eslint` to v.10.0.3.
+- [package]: Add `@eslint/json`.
+- [package]: Add `@eslint/markdown`.
+- [package]: Add `CONTRIBUTING.md`.
+- [package]: Add `STYLEGUIDE.md`.
+- [package]: Bump `typescript-eslint` to v.8.57.0.
+- [package]: Replace `eslint-plugin-import` with `eslint-plugin-simple-import-sort`.
+- [package]: Bump `node-persist-manager` to v.2.0.1.
+
+<a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
+
 ## [1.4.5] - 2026-02-07
 
 ### Changed

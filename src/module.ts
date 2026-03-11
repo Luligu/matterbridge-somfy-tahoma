@@ -21,13 +21,13 @@
  * limitations under the License.
  */
 
-import path from 'node:path';
 import { promises as fs } from 'node:fs';
+import path from 'node:path';
 
-import { PlatformConfig, MatterbridgeDynamicPlatform, bridgedNode, powerSource, MatterbridgeEndpoint, coverDevice, PlatformMatterbridge } from 'matterbridge';
-import { AnsiLogger, BLUE, debugStringify, rs, CYAN, ign, nf, YELLOW } from 'matterbridge/logger';
-import { inspectError, isValidNumber, isValidString } from 'matterbridge/utils';
+import { bridgedNode, coverDevice, MatterbridgeDynamicPlatform, MatterbridgeEndpoint, PlatformConfig, PlatformMatterbridge, powerSource } from 'matterbridge';
+import { AnsiLogger, BLUE, CYAN, debugStringify, ign, jsonStringify, nf, rs, YELLOW } from 'matterbridge/logger';
 import { WindowCovering } from 'matterbridge/matter/clusters';
+import { inspectError, isValidNumber, isValidString } from 'matterbridge/utils';
 import { Action, Client, Command, Device, Execution } from 'overkiz-client';
 
 type MovementDuration = Record<string, number>;
@@ -176,7 +176,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.error('TaHoma service not created');
       return;
     }
-    let devices: Device[] = [];
+    let devices: Device[];
     try {
       devices = await this.tahomaClient.getDevices();
     } catch (error) {
@@ -191,7 +191,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
     // Write the discovered devices to a file
     const fileName = path.join(this.matterbridge.matterbridgePluginDirectory, 'matterbridge-somfy-tahoma', 'devices.json');
-    fs.writeFile(fileName, JSON.stringify(devices, null, 2))
+    fs.writeFile(fileName, jsonStringify(devices))
       .then(() => {
         this.log.debug(`Devices successfully written to ${fileName}`);
         return;

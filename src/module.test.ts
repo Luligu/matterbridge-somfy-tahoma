@@ -10,26 +10,26 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 import { jest } from '@jest/globals';
-import { Client, Device } from 'overkiz-client';
-import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
-import { wait } from 'matterbridge/utils';
-import { WindowCovering, WindowCoveringCluster } from 'matterbridge/matter/clusters';
 import {
   addBridgedEndpointSpy,
   addMatterbridgePlatform,
+  aggregator,
   createMatterbridgeEnvironment,
   destroyMatterbridgeEnvironment,
+  flushAsync,
   log,
   loggerLogSpy,
+  logKeepAlives,
   matterbridge,
-  aggregator,
+  removeAllBridgedEndpointsSpy,
   setupTest,
   startMatterbridgeEnvironment,
   stopMatterbridgeEnvironment,
-  removeAllBridgedEndpointsSpy,
-  flushAsync,
-  logKeepAlives,
 } from 'matterbridge/jestutils';
+import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
+import { WindowCovering, WindowCoveringCluster } from 'matterbridge/matter/clusters';
+import { wait } from 'matterbridge/utils';
+import { Client, Device } from 'overkiz-client';
 
 import initializePlugin, { SomfyTahomaPlatform, SomfyTahomaPlatformConfig } from './module.js';
 
