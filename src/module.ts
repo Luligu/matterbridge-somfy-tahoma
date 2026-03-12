@@ -25,7 +25,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 import { bridgedNode, coverDevice, MatterbridgeDynamicPlatform, MatterbridgeEndpoint, PlatformConfig, PlatformMatterbridge, powerSource } from 'matterbridge';
-import { AnsiLogger, BLUE, CYAN, debugStringify, ign, jsonStringify, nf, rs, YELLOW } from 'matterbridge/logger';
+import { AnsiLogger, BLUE, CYAN, debugStringify, ign, nf, rs, stringify, YELLOW } from 'matterbridge/logger';
 import { WindowCovering } from 'matterbridge/matter/clusters';
 import { inspectError, isValidNumber, isValidString } from 'matterbridge/utils';
 import { Action, Client, Command, Device, Execution } from 'overkiz-client';
@@ -191,7 +191,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
     // Write the discovered devices to a file
     const fileName = path.join(this.matterbridge.matterbridgePluginDirectory, 'matterbridge-somfy-tahoma', 'devices.json');
-    fs.writeFile(fileName, jsonStringify(devices))
+    fs.writeFile(fileName, stringify(devices, false, 0, 0, 0, 0, 0, 0, '"', '"', 2))
       .then(() => {
         this.log.debug(`Devices successfully written to ${fileName}`);
         return;
