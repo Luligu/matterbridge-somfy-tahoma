@@ -28,7 +28,7 @@ import { bridgedNode, coverDevice, MatterbridgeDynamicPlatform, MatterbridgeEndp
 import { AnsiLogger, BLUE, CYAN, debugStringify, ign, nf, rs, stringify, YELLOW } from 'matterbridge/logger';
 import { WindowCovering } from 'matterbridge/matter/clusters';
 import { inspectError, isValidNumber, isValidString } from 'matterbridge/utils';
-import { Action, Client, Command, Device, Execution } from 'overkiz-client';
+import { Action, Client, Command, Device, Execution, State } from 'overkiz-client';
 
 type MovementDuration = Record<string, number>;
 const Stopped = WindowCovering.MovementStatus.Stopped;
@@ -255,6 +255,11 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.debug(`- commands ${debugStringify(device.commands)}`);
       this.log.debug(`- states ${debugStringify(device.states)}`);
       this.log.debug(`- duration ${duration}`);
+
+      // Listen for state changes on the device and log them
+      device.on('states', async (changedStates: State[]) => {
+        this.log.debug(`***Tahoma update for ${device.label}: ${debugStringify(changedStates)}`);
+      });
 
       const cover = new MatterbridgeEndpoint([coverDevice, bridgedNode, powerSource], { id: device.label }, this.config.debug as boolean);
       cover.createDefaultIdentifyClusterServer();

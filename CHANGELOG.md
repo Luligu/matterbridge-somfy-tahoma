@@ -43,6 +43,10 @@ If you like this project and find it useful, please consider giving it a star on
 - [package]: Replace `eslint-plugin-import` with `eslint-plugin-simple-import-sort`.
 - [package]: Bump `node-persist-manager` to v.2.0.1.
 
+## Added
+
+- [somfy]: Add states updates in the log.
+
 ## Fixed
 
 - [somfy]: Fix TypeError: Converting circular structure to JSON.
