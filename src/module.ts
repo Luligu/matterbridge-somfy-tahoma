@@ -258,6 +258,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
       // Listen for state changes on the device and log them
       device.on('states', async (changedStates: State[]) => {
+        // istanbul ignore next -- This is for debugging purposes and is not critical to cover in tests
         this.log.debug(`***Tahoma update for ${device.label}: ${debugStringify(changedStates)}`);
       });
 
