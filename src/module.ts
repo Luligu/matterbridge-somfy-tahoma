@@ -21,14 +21,14 @@
  * limitations under the License.
  */
 
-import path from 'node:path';
 import { promises as fs } from 'node:fs';
+import path from 'node:path';
 
-import { PlatformConfig, MatterbridgeDynamicPlatform, bridgedNode, powerSource, MatterbridgeEndpoint, coverDevice, PlatformMatterbridge } from 'matterbridge';
-import { AnsiLogger, BLUE, debugStringify, rs, CYAN, ign, nf, YELLOW } from 'matterbridge/logger';
-import { inspectError, isValidNumber, isValidString } from 'matterbridge/utils';
+import { bridgedNode, coverDevice, MatterbridgeDynamicPlatform, MatterbridgeEndpoint, PlatformConfig, PlatformMatterbridge, powerSource } from 'matterbridge';
+import { AnsiLogger, BLUE, CYAN, debugStringify, ign, nf, rs, stringify, YELLOW } from 'matterbridge/logger';
 import { WindowCovering } from 'matterbridge/matter/clusters';
-import { Action, Client, Command, Device, Execution } from 'overkiz-client';
+import { inspectError, isValidNumber, isValidString } from 'matterbridge/utils';
+import { Action, Client, Command, Device, Execution, State } from 'overkiz-client';
 
 type MovementDuration = Record<string, number>;
 const Stopped = WindowCovering.MovementStatus.Stopped;
@@ -176,7 +176,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.error('TaHoma service not created');
       return;
     }
-    let devices: Device[] = [];
+    let devices: Device[];
     try {
       devices = await this.tahomaClient.getDevices();
     } catch (error) {
@@ -191,7 +191,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
     // Write the discovered devices to a file
     const fileName = path.join(this.matterbridge.matterbridgePluginDirectory, 'matterbridge-somfy-tahoma', 'devices.json');
-    fs.writeFile(fileName, JSON.stringify(devices, null, 2))
+    fs.writeFile(fileName, stringify(devices, false, 0, 0, 0, 0, 0, 0, '"', '"', 2))
       .then(() => {
         this.log.debug(`Devices successfully written to ${fileName}`);
         return;
@@ -255,6 +255,12 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.debug(`- commands ${debugStringify(device.commands)}`);
       this.log.debug(`- states ${debugStringify(device.states)}`);
       this.log.debug(`- duration ${duration}`);
+
+      // Listen for state changes on the device and log them
+      device.on('states', async (changedStates: State[]) => {
+        // istanbul ignore next -- This is for debugging purposes and is not critical to cover in tests
+        this.log.debug(`***Tahoma update for ${device.label}: ${debugStringify(changedStates)}`);
+      });
 
       const cover = new MatterbridgeEndpoint([coverDevice, bridgedNode, powerSource], { id: device.label }, this.config.debug as boolean);
       cover.createDefaultIdentifyClusterServer();

@@ -10,26 +10,26 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 import { jest } from '@jest/globals';
-import { Client, Device } from 'overkiz-client';
-import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
-import { wait } from 'matterbridge/utils';
-import { WindowCovering, WindowCoveringCluster } from 'matterbridge/matter/clusters';
 import {
   addBridgedEndpointSpy,
   addMatterbridgePlatform,
+  aggregator,
   createMatterbridgeEnvironment,
   destroyMatterbridgeEnvironment,
+  flushAsync,
   log,
   loggerLogSpy,
+  logKeepAlives,
   matterbridge,
-  aggregator,
+  removeAllBridgedEndpointsSpy,
   setupTest,
   startMatterbridgeEnvironment,
   stopMatterbridgeEnvironment,
-  removeAllBridgedEndpointsSpy,
-  flushAsync,
-  logKeepAlives,
 } from 'matterbridge/jestutils';
+import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
+import { WindowCovering, WindowCoveringCluster } from 'matterbridge/matter/clusters';
+import { wait } from 'matterbridge/utils';
+import { Client, Device } from 'overkiz-client';
 
 import initializePlugin, { SomfyTahomaPlatform, SomfyTahomaPlatformConfig } from './module.js';
 
@@ -69,17 +69,46 @@ describe('TestPlatform', () => {
     unregisterOnShutdown: false,
   };
 
-  const mockDevices = [
-    {
-      deviceURL: 'url',
-      label: 'Device1',
-      uniqueName: 'Blind',
-      serialNumber: '123456789',
-      definition: { uiClass: 'Screen' },
-      states: [],
-      commands: ['open', 'close', 'stop'],
-    } as unknown as Device,
-  ];
+  const createMockDevice = ({
+    label = 'Device1',
+    uniqueName = 'Blind',
+    uiClass = 'Screen',
+    commands = ['open', 'close', 'stop'],
+  }: {
+    label?: string;
+    uniqueName?: string;
+    uiClass?: string;
+    commands?: string[];
+  }): Device => {
+    const device = new Device();
+    device.deviceURL = 'url';
+    device.label = label;
+    device.controllableName = `io:${uniqueName}`;
+    device.definition = {
+      type: '',
+      widgetName: '',
+      uiClass,
+      commands: commands.map((commandName) => ({ commandName, nparams: 0 })),
+    };
+    device.states = [];
+    return device;
+  };
+
+  const setMockDevice = ({
+    label = 'Device1',
+    uniqueName = 'Blind',
+    uiClass = 'Screen',
+    commands = ['open', 'close', 'stop'],
+  }: {
+    label?: string;
+    uniqueName?: string;
+    uiClass?: string;
+    commands?: string[];
+  }) => {
+    mockDevices[0] = createMockDevice({ label, uniqueName, uiClass, commands });
+  };
+
+  const mockDevices = [createMockDevice({})];
 
   beforeAll(async () => {
     // Create Matterbridge environment
@@ -90,6 +119,7 @@ describe('TestPlatform', () => {
   beforeEach(async () => {
     // Reset the mock calls before each test
     jest.clearAllMocks();
+    setMockDevice({});
   });
 
   afterEach(async () => {});
@@ -216,8 +246,7 @@ describe('TestPlatform', () => {
   });
 
   it('should discover devices with uniqueName Blind', async () => {
-    (mockDevices[0] as any).label = 'Device1';
-    (mockDevices[0] as any).uniqueName = 'Blind';
+    setMockDevice({ label: 'Device1', uniqueName: 'Blind' });
     clientGetDevicesSpy.mockImplementationOnce(() => {
       return Promise.resolve(mockDevices);
     });
@@ -242,9 +271,7 @@ describe('TestPlatform', () => {
   });
 
   it('should discover devices with uiClass Screen', async () => {
-    (mockDevices[0] as any).label = 'Device1';
-    (mockDevices[0] as any).uniqueName = 'xxx';
-    mockDevices[0].definition.uiClass = 'Screen';
+    setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass: 'Screen' });
     clientGetDevicesSpy.mockImplementationOnce(() => {
       return Promise.resolve(mockDevices);
     });
@@ -269,9 +296,7 @@ describe('TestPlatform', () => {
   });
 
   it('should discover devices with command "open", "close" and "stop"', async () => {
-    (mockDevices[0] as any).label = 'Device1';
-    (mockDevices[0] as any).uniqueName = 'xxx';
-    mockDevices[0].definition.uiClass = 'xxx';
+    setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass: 'xxx', commands: ['open', 'close', 'stop'] });
     clientGetDevicesSpy.mockImplementationOnce(() => {
       return Promise.resolve(mockDevices);
     });
@@ -369,10 +394,7 @@ describe('TestPlatform', () => {
   }, 120000);
 
   it('should discover devices with command "rollOut", "rollUp" and "stop"', async () => {
-    (mockDevices[0] as any).label = 'Device1';
-    (mockDevices[0] as any).uniqueName = 'xxx';
-    (mockDevices[0] as any).definition.uiClass = 'xxx';
-    (mockDevices[0] as any).commands = ['rollOut', 'rollUp', 'stop'];
+    setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass: 'xxx', commands: ['rollOut', 'rollUp', 'stop'] });
     clientGetDevicesSpy.mockImplementationOnce(() => {
       return Promise.resolve(mockDevices);
     });
@@ -399,10 +421,7 @@ describe('TestPlatform', () => {
   });
 
   it('should discover devices with command "down", "up" and "stop"', async () => {
-    (mockDevices[0] as any).label = 'Device1';
-    (mockDevices[0] as any).uniqueName = 'xxx';
-    (mockDevices[0] as any).definition.uiClass = 'xxx';
-    (mockDevices[0] as any).commands = ['down', 'up', 'stop'];
+    setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass: 'xxx', commands: ['down', 'up', 'stop'] });
     clientGetDevicesSpy.mockImplementationOnce(() => {
       return Promise.resolve(mockDevices);
     });
