@@ -28,7 +28,7 @@ If you like this project and find it useful, please consider giving it a star on
 
 # Changelog
 
-## [1.4.6] - 2026-03-12
+## [1.4.6] - 2026-03-14
 
 ### Changed
 
