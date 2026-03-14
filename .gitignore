@@ -19,3 +19,4 @@ temp/
 *.log
 
 # Package specific directories and files that should be ignored
+Herve-29-devices.json
