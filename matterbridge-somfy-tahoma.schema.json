@@ -5,27 +5,32 @@
   "required": ["username", "password", "service"],
   "properties": {
     "name": {
+      "title": "Plugin Name",
       "description": "Plugin name",
       "type": "string",
       "readOnly": true,
       "ui:widget": "hidden"
     },
     "type": {
+      "title": "Plugin Type",
       "description": "Plugin type",
       "type": "string",
       "readOnly": true,
       "ui:widget": "hidden"
     },
     "username": {
+      "title": "Username",
       "description": "Username",
       "type": "string"
     },
     "password": {
+      "title": "Password",
       "description": "Password",
       "type": "string",
       "ui:widget": "password"
     },
     "service": {
+      "title": "Service",
       "description": "Service name to connect to",
       "type": "string",
       "oneOf": [
@@ -48,6 +53,7 @@
       ]
     },
     "blackList": {
+      "title": "Black List",
       "description": "The devices in the list will not be exposed.",
       "type": "array",
       "items": {
@@ -57,6 +63,7 @@
       "selectFrom": "name"
     },
     "whiteList": {
+      "title": "White List",
       "description": "Only the devices in the list will be exposed.",
       "type": "array",
       "items": {
@@ -66,6 +73,7 @@
       "selectFrom": "name"
     },
     "movementDuration": {
+      "title": "Movement Duration",
       "description": "Set the duration in seconds of the full movement for each device. Enter in the first field the name of the device and in the second field the duration in seconds.",
       "type": "object",
       "uniqueItems": true,
@@ -75,11 +83,14 @@
       }
     },
     "debug": {
+      "title": "Enable Debug",
+
       "description": "Enable the debug for the plugin (development only)",
       "type": "boolean",
       "default": false
     },
     "unregisterOnShutdown": {
+      "title": "Unregister On Shutdown",
       "description": "Unregister all devices on shutdown (development only)",
       "type": "boolean",
       "default": false,

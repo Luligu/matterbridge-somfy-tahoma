@@ -27,7 +27,7 @@ import {
   stopMatterbridgeEnvironment,
 } from 'matterbridge/jestutils';
 import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
-import { WindowCovering, WindowCoveringCluster } from 'matterbridge/matter/clusters';
+import { Identify, WindowCovering, WindowCoveringCluster } from 'matterbridge/matter/clusters';
 import { wait } from 'matterbridge/utils';
 import { Client, Device } from 'overkiz-client';
 
@@ -136,7 +136,6 @@ describe('TestPlatform', () => {
   });
 
   it('should return an instance of SomfyTahomaPlatform', async () => {
-    matterbridge.matterbridgeVersion = '3.5.0';
     const result = initializePlugin(matterbridge, log, config);
     expect(result).toBeInstanceOf(SomfyTahomaPlatform);
     await result.onShutdown();
@@ -171,9 +170,10 @@ describe('TestPlatform', () => {
   });
 
   it('should throw because of version', () => {
+    const savedVersion = matterbridge.matterbridgeVersion;
     matterbridge.matterbridgeVersion = '1.5.4';
     expect(() => new SomfyTahomaPlatform(matterbridge, log, config)).toThrow();
-    matterbridge.matterbridgeVersion = '3.5.0';
+    matterbridge.matterbridgeVersion = savedVersion;
   });
 
   it('should call onStart with reason', async () => {
@@ -327,7 +327,7 @@ describe('TestPlatform', () => {
     const device = somfyPlatform.covers.get('Device1')?.bridgedDevice;
     expect(device).toBeDefined();
     if (!device) return;
-    await device.executeCommandHandler('identify', { identifyTime: 1 });
+    await device.executeCommandHandler('Identify.identify', { identifyTime: 1 }, 'identify', (device.state as any).identify, device);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}identify${rs}${nf} called identifyTime:1`);
 
     await device.setWindowCoveringCurrentTargetStatus(0, 0, WindowCovering.MovementStatus.Stopped);
@@ -335,7 +335,7 @@ describe('TestPlatform', () => {
     // With Matter 0=open 10000=close
 
     jest.clearAllMocks();
-    await device.executeCommandHandler('downOrClose');
+    await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}downOrClose${rs}${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 0 to 10000...`);
     await wait(3000);
@@ -343,7 +343,7 @@ describe('TestPlatform', () => {
     expect(device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(10000);
 
     jest.clearAllMocks();
-    await device.executeCommandHandler('upOrOpen');
+    await device.executeCommandHandler('WindowCovering.upOrOpen', {}, 'windowCovering', (device.state as any).windowCovering, device);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}upOrOpen${rs}${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 10000 to 0...`);
     await wait(3000);
@@ -351,14 +351,14 @@ describe('TestPlatform', () => {
     expect(device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(0);
 
     jest.clearAllMocks();
-    await device.executeCommandHandler('upOrOpen');
+    await device.executeCommandHandler('WindowCovering.upOrOpen', {}, 'windowCovering', (device.state as any).windowCovering, device);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}upOrOpen${rs}${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 0 to 0...`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 0 to 0. No movement needed.`);
     expect(device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(0);
 
     jest.clearAllMocks();
-    await device.executeCommandHandler('goToLiftPercentage', { liftPercent100thsValue: 5000 });
+    await device.executeCommandHandler('WindowCovering.goToLiftPercentage', { liftPercent100thsValue: 5000 }, 'windowCovering', (device.state as any).windowCovering, device);
     await wait(1000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}5000${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 0 to 5000...`);
@@ -367,21 +367,21 @@ describe('TestPlatform', () => {
     expect(device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(5000);
 
     jest.clearAllMocks();
-    await device.executeCommandHandler('goToLiftPercentage', { liftPercent100thsValue: 10000 });
+    await device.executeCommandHandler('WindowCovering.goToLiftPercentage', { liftPercent100thsValue: 10000 }, 'windowCovering', (device.state as any).windowCovering, device);
     await wait(1000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}10000${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 5000 to 10000...`);
-    await device.executeCommandHandler('downOrClose');
+    await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Stopping current movement.`);
-    await device.executeCommandHandler('downOrClose');
+    await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
     await wait(3000);
     expect(device.getAttribute(WindowCoveringCluster.id, 'currentPositionLiftPercent100ths')).toBe(10000);
 
-    await device.executeCommandHandler('upOrOpen');
-    await device.executeCommandHandler('stopMotion');
-    await device.executeCommandHandler('downOrClose');
-    await device.executeCommandHandler('upOrOpen');
-    await device.executeCommandHandler('stopMotion');
+    await device.executeCommandHandler('WindowCovering.upOrOpen', {}, 'windowCovering', (device.state as any).windowCovering, device);
+    await device.executeCommandHandler('WindowCovering.stopMotion', {}, 'windowCovering', (device.state as any).windowCovering, device);
+    await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
+    await device.executeCommandHandler('WindowCovering.upOrOpen', {}, 'windowCovering', (device.state as any).windowCovering, device);
+    await device.executeCommandHandler('WindowCovering.stopMotion', {}, 'windowCovering', (device.state as any).windowCovering, device);
 
     somfyPlatform.tahomaDevices = [];
     somfyPlatform.bridgedDevices = [];
