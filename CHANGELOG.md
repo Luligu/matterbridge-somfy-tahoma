@@ -28,7 +28,7 @@ If you like this project and find it useful, please consider giving it a star on
 
 # Changelog
 
-## [1.4.8] - Dev branch
+## [1.4.8] - 2026-03-22
 
 ## Fixed
 
