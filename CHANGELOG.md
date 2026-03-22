@@ -28,6 +28,14 @@ If you like this project and find it useful, please consider giving it a star on
 
 # Changelog
 
+## [1.4.8] - 2026-03-22
+
+## Fixed
+
+- [commands]: Fix command handler to matterbridge 3.7.0. Thanks 4DkX4.
+
+<a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
+
 ## [1.4.7] - 2026-03-21
 
 ### Added

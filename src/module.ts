@@ -26,14 +26,17 @@ import path from 'node:path';
 
 import { bridgedNode, coverDevice, MatterbridgeDynamicPlatform, MatterbridgeEndpoint, PlatformConfig, PlatformMatterbridge, powerSource } from 'matterbridge';
 import { AnsiLogger, BLUE, CYAN, debugStringify, ign, nf, rs, stringify, YELLOW } from 'matterbridge/logger';
-import { WindowCovering } from 'matterbridge/matter/clusters';
+import { Identify, WindowCovering } from 'matterbridge/matter/clusters';
 import { inspectError, isValidNumber, isValidString } from 'matterbridge/utils';
 import { Action, Client, Command, Device, Execution, State } from 'overkiz-client';
 
-type MovementDuration = Record<string, number>;
-const Stopped = WindowCovering.MovementStatus.Stopped;
-const Opening = WindowCovering.MovementStatus.Opening;
-const Closing = WindowCovering.MovementStatus.Closing;
+export type MovementDuration = Record<string, number>;
+export const Stopped = WindowCovering.MovementStatus.Stopped;
+export const Opening = WindowCovering.MovementStatus.Opening;
+export const Closing = WindowCovering.MovementStatus.Closing;
+export const WC_PERCENT100THS_MIN_OPEN = 0;
+export const WC_PERCENT100THS_MAX_CLOSED = 10000;
+const WindowCoveringCluster = WindowCovering.Cluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift);
 
 interface Cover {
   tahomaDevice: Device;
@@ -263,6 +266,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       });
 
       const cover = new MatterbridgeEndpoint([coverDevice, bridgedNode, powerSource], { id: device.label }, this.config.debug as boolean);
+      cover.createDefaultIdentifyClusterServer(1, Identify.IdentifyType.Actuator);
       cover.createDefaultWindowCoveringClusterServer();
       cover.createDefaultBridgedDeviceBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', device.definition.uiClass);
       if (device.states.find((s) => s.name === 'core:BatteryDiscreteLevelState')) cover.createDefaultPowerSourceRechargeableBatteryClusterServer();
@@ -282,18 +286,43 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       cover.addCommandHandler('WindowCovering.upOrOpen', async () => {
         const cover = this.covers.get(device.label);
         if (!cover) return;
-        cover.bridgedDevice.log.info(`Command ${ign}upOrOpen${rs}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
-        await this.moveToPosition(cover, 0);
+        if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
+        cover.commandTimeout = setTimeout(async () => {
+          cover.commandTimeout = undefined;
+          cover.bridgedDevice.log.info(`Command ${ign}upOrOpen${rs}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
+          await this.moveToPosition(cover, WC_PERCENT100THS_MIN_OPEN);
+        }, 500);
       });
 
       cover.addCommandHandler('WindowCovering.downOrClose', async () => {
         const cover = this.covers.get(device.label);
         if (!cover) return;
-        cover.bridgedDevice.log.info(`Command ${ign}downOrClose${rs}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
-        await this.moveToPosition(cover, 10000);
+        if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
+        cover.commandTimeout = setTimeout(async () => {
+          cover.commandTimeout = undefined;
+          cover.bridgedDevice.log.info(`Command ${ign}downOrClose${rs}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
+          await this.moveToPosition(cover, WC_PERCENT100THS_MAX_CLOSED);
+        }, 500);
       });
 
-      cover.addCommandHandler('WindowCovering.stopMotion', async () => {
+      cover.addCommandHandler('WindowCovering.goToLiftPercentage', async ({ request: { liftPercent100thsValue } }) => {
+        const cover = this.covers.get(device.label);
+        if (!cover) return;
+        if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
+        cover.commandTimeout = setTimeout(async () => {
+          cover.commandTimeout = undefined;
+          cover.bridgedDevice.log.info(`Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}${liftPercent100thsValue}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
+          await this.moveToPosition(cover, liftPercent100thsValue);
+        }, 500);
+      });
+
+      cover.addCommandHandler('WindowCovering.stopMotion', async ({ attributes }) => {
+        attributes.targetPositionLiftPercent100ths = attributes.currentPositionLiftPercent100ths;
+        attributes.operationalStatus = {
+          global: WindowCovering.MovementStatus.Stopped,
+          lift: WindowCovering.MovementStatus.Stopped,
+          tilt: WindowCovering.MovementStatus.Stopped,
+        };
         const cover = this.covers.get(device.label);
         if (!cover) return;
         cover.bridgedDevice.log.info(`Command ${ign}stopMotion${rs}${nf} called for ${CYAN}${cover.tahomaDevice.label}. Status ${cover.movementStatus}`);
@@ -302,24 +331,6 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
           await this.sendCommand('stop', cover.tahomaDevice, true);
         }
         cover.movementStatus = Stopped;
-        await cover.bridgedDevice.setWindowCoveringTargetAsCurrentAndStopped();
-      });
-
-      cover.addCommandHandler('WindowCovering.goToLiftPercentage', async ({ request: { liftPercent100thsValue } }) => {
-        const cover = this.covers.get(device.label);
-        if (!cover) return;
-        await cover.bridgedDevice.setAttribute(
-          WindowCovering.Cluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift),
-          'targetPositionLiftPercent100ths',
-          liftPercent100thsValue,
-          cover.bridgedDevice.log,
-        );
-        if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
-        cover.commandTimeout = setTimeout(async () => {
-          cover.commandTimeout = undefined;
-          cover.bridgedDevice.log.info(`Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}${liftPercent100thsValue}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
-          await this.moveToPosition(cover, liftPercent100thsValue);
-        }, 1000);
       });
     }
   }
@@ -327,11 +338,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   // With Matter 0=open 10000=close
   async moveToPosition(cover: Cover, targetPosition: number) {
     const log = cover.bridgedDevice.log;
-    let currentPosition = cover.bridgedDevice.getAttribute(
-      WindowCovering.Cluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift),
-      'currentPositionLiftPercent100ths',
-      log,
-    ) as number;
+    let currentPosition = cover.bridgedDevice.getAttribute(WindowCoveringCluster, 'currentPositionLiftPercent100ths', log) as number;
     if (!isValidNumber(currentPosition, 0, 10000)) return;
     log.info(`Moving from ${currentPosition} to ${targetPosition}...`);
 
@@ -358,12 +365,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     const movement = targetPosition - currentPosition;
     const movementSeconds = Math.abs((movement * cover.movementDuration) / 10000);
     log.debug(`Moving from ${currentPosition} to ${targetPosition} in ${movementSeconds} seconds. Movement requested ${movement}`);
-    await cover.bridgedDevice.setAttribute(
-      WindowCovering.Cluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift),
-      'targetPositionLiftPercent100ths',
-      targetPosition,
-      log,
-    );
+    await cover.bridgedDevice.setAttribute(WindowCoveringCluster, 'targetPositionLiftPercent100ths', targetPosition, log);
     await cover.bridgedDevice.setWindowCoveringStatus(targetPosition > currentPosition ? WindowCovering.MovementStatus.Closing : WindowCovering.MovementStatus.Opening);
     cover.movementStatus = targetPosition > currentPosition ? Closing : Opening;
     await this.sendCommand(targetPosition > currentPosition ? 'close' : 'open', cover.tahomaDevice, true);
@@ -376,14 +378,14 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         clearInterval(cover.moveInterval);
         await cover.bridgedDevice.setWindowCoveringCurrentTargetStatus(targetPosition, targetPosition, WindowCovering.MovementStatus.Stopped);
         cover.movementStatus = Stopped;
-        if (targetPosition !== 0 && targetPosition !== 10000) await this.sendCommand('stop', cover.tahomaDevice, true);
+        if (targetPosition !== WC_PERCENT100THS_MIN_OPEN && targetPosition !== WC_PERCENT100THS_MAX_CLOSED) await this.sendCommand('stop', cover.tahomaDevice, true);
         log.debug(`Moving stopped at ${targetPosition}`);
       } else {
         log.debug(`Moving from ${currentPosition} to ${targetPosition} difference ${Math.abs(targetPosition - currentPosition)}`);
         await cover.bridgedDevice.setAttribute(
-          WindowCovering.Cluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift),
+          WindowCoveringCluster,
           'currentPositionLiftPercent100ths',
-          Math.max(0, Math.min(currentPosition, 10000)),
+          Math.max(WC_PERCENT100THS_MIN_OPEN, Math.min(currentPosition, WC_PERCENT100THS_MAX_CLOSED)),
           log,
         );
       }
