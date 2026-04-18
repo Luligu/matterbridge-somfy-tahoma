@@ -11,7 +11,7 @@ import path from 'node:path';
 
 import { jest } from '@jest/globals';
 import {
-  addBridgedEndpointSpy,
+  addBridgedEndpointMatterbridgeSpy,
   addMatterbridgePlatform,
   aggregator,
   createMatterbridgeEnvironment,
@@ -21,7 +21,7 @@ import {
   loggerLogSpy,
   logKeepAlives,
   matterbridge,
-  removeAllBridgedEndpointsSpy,
+  removeAllBridgedEndpointsMatterbridgeSpy,
   setDebug,
   setupTest,
   startMatterbridgeEnvironment,
@@ -236,7 +236,7 @@ describe('TestPlatform', () => {
       return Promise.resolve(mockDevices);
     });
     await somfyPlatform.discoverDevices();
-    expect(addBridgedEndpointSpy).toHaveBeenCalledTimes(0);
+    expect(addBridgedEndpointMatterbridgeSpy).toHaveBeenCalledTimes(0);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma devices`);
     expect(somfyPlatform.tahomaDevices).toHaveLength(1);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma screens`);
@@ -254,7 +254,7 @@ describe('TestPlatform', () => {
       return Promise.resolve(mockDevices);
     });
     await somfyPlatform.discoverDevices();
-    expect(addBridgedEndpointSpy).toHaveBeenCalledTimes(1);
+    expect(addBridgedEndpointMatterbridgeSpy).toHaveBeenCalledTimes(1);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma devices`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `- added with uniqueName`);
     expect(somfyPlatform.tahomaDevices).toHaveLength(1);
@@ -279,7 +279,7 @@ describe('TestPlatform', () => {
       return Promise.resolve(mockDevices);
     });
     await somfyPlatform.discoverDevices();
-    expect(addBridgedEndpointSpy).toHaveBeenCalledTimes(1);
+    expect(addBridgedEndpointMatterbridgeSpy).toHaveBeenCalledTimes(1);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma devices`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `- added with uiClass`);
     expect(somfyPlatform.tahomaDevices).toHaveLength(1);
@@ -513,7 +513,7 @@ describe('TestPlatform', () => {
     expect(somfyPlatform.size()).toBe(0); // destroy called from onShutdown
     expect(aggregator.parts.size).toBe(1);
     expect(matterbridge.devices.size).toBe(1);
-    expect(removeAllBridgedEndpointsSpy).toHaveBeenCalledTimes(0);
+    expect(removeAllBridgedEndpointsMatterbridgeSpy).toHaveBeenCalledTimes(0);
   });
 
   it('should call onShutdown with reason and call unregisterAll', async () => {
@@ -523,7 +523,7 @@ describe('TestPlatform', () => {
     config.unregisterOnShutdown = true;
     await somfyPlatform.onShutdown();
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onShutdown called with reason:', 'none');
-    expect(removeAllBridgedEndpointsSpy).toHaveBeenCalledWith(config.name, 0);
+    expect(removeAllBridgedEndpointsMatterbridgeSpy).toHaveBeenCalledWith(config.name, 0);
     expect(somfyPlatform.tahomaClient).toBeUndefined();
     somfyPlatform.tahomaClient = client;
     config.unregisterOnShutdown = false;
