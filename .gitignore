@@ -3,7 +3,9 @@
 
 # Specific directories that should be ignored
 .cache/
-.vscode/
+.vscode/*
+!.vscode/tasks.json
+!.vscode/settings.json
 coverage/
 dist/
 jest/
@@ -19,4 +21,5 @@ temp/
 *.log
 
 # Package specific directories and files that should be ignored
+
 users-logs/
