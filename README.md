@@ -7,10 +7,10 @@
 ![Node.js CI](https://github.com/Luligu/matterbridge-somfy-tahoma/actions/workflows/build.yml/badge.svg)
 ![CodeQL](https://github.com/Luligu/matterbridge-somfy-tahoma/actions/workflows/codeql.yml/badge.svg)
 [![codecov](https://codecov.io/gh/Luligu/matterbridge-somfy-tahoma/branch/main/graph/badge.svg)](https://codecov.io/gh/Luligu/matterbridge-somfy-tahoma)
-[![styled with prettier](https://img.shields.io/badge/styled_with-Prettier-f8bc45.svg?logo=prettier)](https://github.com/prettier/prettier)
-[![linted with eslint](https://img.shields.io/badge/linted_with-ES_Lint-4B32C3.svg?logo=eslint)](https://github.com/eslint/eslint)
+[![styled with prettier](https://img.shields.io/badge/styled_with-Prettier-f8bc45.svg?logo=prettier)](https://prettier.io/)
+[![linted with eslint](https://img.shields.io/badge/linted_with-ES_Lint-4B32C3.svg?logo=eslint)](https://eslint.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![ESM](https://img.shields.io/badge/ESM-Node.js-339933?logo=node.js&logoColor=white)](https://nodejs.org/api/esm.html)
+[![ESM](https://img.shields.io/badge/ESM-Node.js-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![matterbridge.io](https://img.shields.io/badge/matterbridge.io-online-brightgreen)](https://matterbridge.io)
 
 [![powered by](https://img.shields.io/badge/powered%20by-matterbridge-blue)](https://www.npmjs.com/package/matterbridge)
@@ -32,20 +32,6 @@ If you like this project and find it useful, please consider giving it a star on
 
 ### Matterbridge
 
-Follow these steps to install or update Matterbridge if it is not already installed and up to date:
-
-on Windows:
-
-```
-npm install -g matterbridge --omit=dev
-```
-
-on Linux (if may need the necessary permissions):
-
-```
-sudo npm install -g matterbridge --omit=dev
-```
-
 See the complete guidelines on [Matterbridge](https://matterbridge.io) for more information.
 
 ### TaHoma bridge
@@ -55,30 +41,6 @@ A working setup of any of the TaHoma bridges (like the Connectivity kit).
 ## How to install
 
 Open the frontend of matterbridge, select the plugin and install it.
-
-## How to install from the command line
-
-On windows:
-
-```
-cd $HOME\Matterbridge
-npm install -g matterbridge-somfy-tahoma --omit=dev
-matterbridge -add matterbridge-somfy-tahoma
-```
-
-On linux:
-
-```
-cd ~/Matterbridge
-sudo npm install -g matterbridge-somfy-tahoma --omit=dev
-matterbridge -add matterbridge-somfy-tahoma
-```
-
-Then start Matterbridge
-
-```
-matterbridge
-```
 
 ## How to use it
 
@@ -94,7 +56,7 @@ Set for each device the full movement time (the plugin will use that time to syn
 
 These are the config values:
 
-```
+```json
 {
   "name": "matterbridge-somfy-tahoma",
   "type": "DynamicPlatform",
@@ -110,25 +72,11 @@ These are the config values:
 }
 ```
 
-You can edit the config file from the frontend (best option) or
+You can edit the config file from the frontend.
 
-On windows:
+You can then ask Siri
 
-```
-cd $HOME\.matterbridge
-notepad matterbridge-somfy-tahoma.config.json
-```
-
-On linux:
-
-```
-cd ~/.matterbridge
-nano matterbridge-somfy-tahoma.config.json
-```
-
-- You can then ask Siri
-
-```
+```text
 Siri open the Living room blind
 Siri close the Living room blind
 Siri set the Living room blind to 70%
