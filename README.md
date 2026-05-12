@@ -32,20 +32,6 @@ If you like this project and find it useful, please consider giving it a star on
 
 ### Matterbridge
 
-Follow these steps to install or update Matterbridge if it is not already installed and up to date:
-
-on Windows:
-
-```
-npm install -g matterbridge --omit=dev
-```
-
-on Linux (if may need the necessary permissions):
-
-```
-sudo npm install -g matterbridge --omit=dev
-```
-
 See the complete guidelines on [Matterbridge](https://matterbridge.io) for more information.
 
 ### TaHoma bridge
@@ -55,30 +41,6 @@ A working setup of any of the TaHoma bridges (like the Connectivity kit).
 ## How to install
 
 Open the frontend of matterbridge, select the plugin and install it.
-
-## How to install from the command line
-
-On windows:
-
-```
-cd $HOME\Matterbridge
-npm install -g matterbridge-somfy-tahoma --omit=dev
-matterbridge -add matterbridge-somfy-tahoma
-```
-
-On linux:
-
-```
-cd ~/Matterbridge
-sudo npm install -g matterbridge-somfy-tahoma --omit=dev
-matterbridge -add matterbridge-somfy-tahoma
-```
-
-Then start Matterbridge
-
-```
-matterbridge
-```
 
 ## How to use it
 
@@ -94,7 +56,7 @@ Set for each device the full movement time (the plugin will use that time to syn
 
 These are the config values:
 
-```
+```json
 {
   "name": "matterbridge-somfy-tahoma",
   "type": "DynamicPlatform",
@@ -110,25 +72,11 @@ These are the config values:
 }
 ```
 
-You can edit the config file from the frontend (best option) or
+You can edit the config file from the frontend.
 
-On windows:
+You can then ask Siri
 
-```
-cd $HOME\.matterbridge
-notepad matterbridge-somfy-tahoma.config.json
-```
-
-On linux:
-
-```
-cd ~/.matterbridge
-nano matterbridge-somfy-tahoma.config.json
-```
-
-- You can then ask Siri
-
-```
+```text
 Siri open the Living room blind
 Siri close the Living room blind
 Siri set the Living room blind to 70%

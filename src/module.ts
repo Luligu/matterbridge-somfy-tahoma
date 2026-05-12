@@ -260,7 +260,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.debug(`- duration ${duration}`);
 
       // Listen for state changes on the device and log them
-      device.on('states', async (changedStates: State[]) => {
+      device.on('states', (changedStates: State[]) => {
         // istanbul ignore next -- This is for debugging purposes and is not critical to cover in tests
         this.log.debug(`***Tahoma update for ${device.label}: ${debugStringify(changedStates)}`);
       });
@@ -283,10 +283,11 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         await this.sendCommand('identify', device, true);
       });
 
-      cover.addCommandHandler('WindowCovering.upOrOpen', async () => {
+      cover.addCommandHandler('WindowCovering.upOrOpen', () => {
         const cover = this.covers.get(device.label);
         if (!cover) return;
         if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         cover.commandTimeout = setTimeout(async () => {
           cover.commandTimeout = undefined;
           cover.bridgedDevice.log.info(`Command ${ign}upOrOpen${rs}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
@@ -294,10 +295,11 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         }, 500);
       });
 
-      cover.addCommandHandler('WindowCovering.downOrClose', async () => {
+      cover.addCommandHandler('WindowCovering.downOrClose', () => {
         const cover = this.covers.get(device.label);
         if (!cover) return;
         if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         cover.commandTimeout = setTimeout(async () => {
           cover.commandTimeout = undefined;
           cover.bridgedDevice.log.info(`Command ${ign}downOrClose${rs}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
@@ -305,10 +307,11 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         }, 500);
       });
 
-      cover.addCommandHandler('WindowCovering.goToLiftPercentage', async ({ request: { liftPercent100thsValue } }) => {
+      cover.addCommandHandler('WindowCovering.goToLiftPercentage', ({ request: { liftPercent100thsValue } }) => {
         const cover = this.covers.get(device.label);
         if (!cover) return;
         if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         cover.commandTimeout = setTimeout(async () => {
           cover.commandTimeout = undefined;
           cover.bridgedDevice.log.info(`Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}${liftPercent100thsValue}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
@@ -370,6 +373,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     cover.movementStatus = targetPosition > currentPosition ? Closing : Opening;
     await this.sendCommand(targetPosition > currentPosition ? 'close' : 'open', cover.tahomaDevice, true);
 
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     cover.moveInterval = setInterval(async () => {
       log.debug(`Moving interval from ${currentPosition} to ${targetPosition} with movement ${movement}`);
       if (currentPosition === null) return;
@@ -401,10 +405,10 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
     this.log.info(`Sending command ${YELLOW}${command}${nf} highPriority ${highPriority}`);
     try {
-      const _command = new Command(command);
-      const _action = new Action(device.deviceURL, [_command]);
-      const _execution = new Execution('Sending ' + command, _action);
-      await this.tahomaClient?.execute(highPriority ? 'apply/highPriority' : 'apply', _execution);
+      const newCommand = new Command(command);
+      const newAction = new Action(device.deviceURL, [newCommand]);
+      const newExecution = new Execution('Sending ' + command, newAction);
+      await this.tahomaClient?.execute(highPriority ? 'apply/highPriority' : 'apply', newExecution);
     } catch (error) {
       inspectError(this.log, `Error sending command ${command} to ${device.label}`, error);
     }
