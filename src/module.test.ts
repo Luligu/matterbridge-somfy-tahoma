@@ -4,6 +4,8 @@ const NAME = 'Platform';
 const MATTER_PORT = 6000;
 const HOMEDIR = path.join('jest', NAME);
 
+// Warning: the tests in this file are supposed to run sequentially.
+
 process.argv = ['node', 'platform.test.js', '-novirtual', '-frontend', '0', '-homedir', HOMEDIR, '-port', MATTER_PORT.toString()];
 
 import { promises as fs } from 'node:fs';
