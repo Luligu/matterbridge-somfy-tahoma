@@ -36,6 +36,14 @@ If you like this project and find it useful, please consider giving it a star on
 - [package]: Bump package to `automator` v.3.1.10.
 - [package]: Bump `eslint` to v.10.4.0.
 - [package]: Bump `@types/node` to v.25.8.0.
+- [package]: Bump `@eslint/markdown` to v.8.0.2.
+- [package]: Bump `@types/node` to v.25.9.1.
+- [package]: Bump `eslint-plugin-jsdoc` to v.63.0.0.
+- [package]: Bump `ts-jest` to v.29.4.11.
+- [package]: Bump `typescript-eslint` to v.8.59.4.
+- [package]: Update `.devcontainer/devcontainer.json`.
+- [package]: Update `.vscode/settings.json`.
+- [package]: Add `.vscode/extensions.json`.
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
 
