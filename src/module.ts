@@ -151,7 +151,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       const cover = this.covers.get(device.deviceName ?? '');
       const position = device.getAttribute(WindowCovering, 'currentPositionLiftPercent100ths', device.log);
       cover?.bridgedDevice.log.info(
-        `Setting ${device.deviceName} target to ${CYAN}${position ? position / 100 : 'unknown'} %${nf} position and status to stopped. Movement duration: ${CYAN}${cover?.movementDuration}${nf}`,
+        `Setting ${device.deviceName} target to ${CYAN}${isValidNumber(position, 0, 10000) ? position / 100 : 'unknown'} %${nf} position and status to stopped. Movement duration: ${CYAN}${cover?.movementDuration}${nf}`,
       );
       await device.setWindowCoveringTargetAsCurrentAndStopped();
     }
