@@ -180,10 +180,7 @@ describe('TestPlatform', () => {
   });
 
   it('should throw because of version', () => {
-    const savedVersion = matterbridge.matterbridgeVersion;
-    matterbridge.matterbridgeVersion = '1.5.4';
-    expect(() => new SomfyTahomaPlatform(matterbridge, log, config)).toThrow();
-    matterbridge.matterbridgeVersion = savedVersion;
+    expect(() => new SomfyTahomaPlatform({ ...matterbridge, matterbridgeVersion: '1.5.4' }, log, config)).toThrow();
   });
 
   it('should call onStart with reason', async () => {

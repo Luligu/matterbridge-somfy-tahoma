@@ -15,4 +15,4 @@
 - For validation, run the relevant full test file or the matching suite/task for the touched area rather than assuming arbitrary isolated single-test execution is reliable.
 - For Jest tests in this repository, use ESM-safe patterns. Prefer `jest.unstable_mockModule` over `jest.mock`.
 - When behavior changes, update the relevant tests and documentation.
-- Use dedicated instruction files under [.github/instructions](instructions/) when a rule applies only to specific file types or workflows.
+- Use dedicated instruction files under [.github/instructions](instructions/).
