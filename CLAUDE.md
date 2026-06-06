@@ -14,4 +14,4 @@
 - Some tests are intentionally multi-step flows. State may persist across successive steps within a single test flow, but each test unit must remain isolated from other tests.
 - For validation, run the relevant full test file or the matching suite/task for the touched area rather than assuming arbitrary isolated single-test execution is reliable.
 - When behavior changes, update the relevant tests and documentation.
-- Use dedicated instruction files under [.claude/rules](.claude/rules/).
+- Use dedicated instruction files under [.claude/rules](.claude/rules/) when a rule applies only to specific file types or workflows.
