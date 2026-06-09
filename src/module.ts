@@ -21,6 +21,9 @@
  * limitations under the License.
  */
 
+// TODO: Remove when require Matterbridge 3.8.1 or later
+/* eslint-disable @typescript-eslint/no-deprecated */
+
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
