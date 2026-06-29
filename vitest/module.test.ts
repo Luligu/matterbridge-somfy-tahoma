@@ -1,4 +1,4 @@
-const NAME = 'Platform';
+const NAME = 'SomfyTahomaPlatform';
 const MATTER_PORT = 6000;
 
 // Warning: the tests in this file are supposed to run sequentially.
@@ -7,13 +7,12 @@ import { promises as fs } from 'node:fs';
 
 import type { PlatformMatterbridge } from 'matterbridge';
 import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
-import type { Endpoint } from 'matterbridge/matter';
 import { WindowCovering } from 'matterbridge/matter/clusters';
-import type { AggregatorEndpoint } from 'matterbridge/matter/endpoints';
 import { wait } from 'matterbridge/utils';
 import { flushAsync, log, loggerLogSpy, setDebug, setupTest } from 'matterbridge/vitest-utils';
 import {
   addMatterbridge,
+  aggregator,
   createServerNode,
   createTestEnvironment,
   destroyTestEnvironment,
@@ -33,10 +32,9 @@ const clientExecuteSpy = vi.spyOn(Client.prototype, 'execute').mockImplementatio
 // Setup the test environment
 await setupTest(NAME, false);
 
-describe('TestPlatform', () => {
+describe('SomfyTahomaPlatform', () => {
   let matterbridge: PlatformMatterbridge;
   let somfyPlatform: SomfyTahomaPlatform;
-  let aggregator: Endpoint<AggregatorEndpoint>;
 
   const config: SomfyTahomaPlatformConfig = {
     name: 'matterbridge-somfy-tahoma',
@@ -98,7 +96,7 @@ describe('TestPlatform', () => {
   beforeAll(async () => {
     // Create Matterbridge environment
     await createTestEnvironment();
-    [, aggregator] = await createServerNode(MATTER_PORT);
+    await createServerNode(MATTER_PORT);
     await startServerNode();
     matterbridge = getMatterbridge();
   });
