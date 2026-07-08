@@ -1,8 +1,8 @@
 /**
- * This file contains the class SomfyTahomaPlatform.
- *
- * @file module.ts
+ * @file src/module.ts
+ * @description This file contains the class SomfyTahomaPlatform.
  * @author Luca Liguori
+ * @created 2024-03-06
  * @version 1.4.2
  * @license Apache-2.0
  *

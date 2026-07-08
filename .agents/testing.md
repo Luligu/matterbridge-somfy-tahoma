@@ -1,10 +1,4 @@
----
-name: 'Testing Standards v.1.0.4'
-description: 'Testing standards for unit tests in the project'
-applyTo: '**/src/**/*.test.ts, **/src/**/*.spec.ts, **/test/**/*.ts, **/vitest/**/*.ts, **/buntest/**/*.ts'
----
-
-# Testing Standards for Unit Tests
+# Testing Standards for Unit Tests (v.1.0.0)
 
 ## 1. Test Framework
 
@@ -13,12 +7,12 @@ applyTo: '**/src/**/*.test.ts, **/src/**/*.spec.ts, **/test/**/*.ts, **/vitest/*
 - Bun test is available in the repository when the file `bunfig.toml` exists.
 - Jest tests live in `test` folders. Follow the existing convention in the repository for test file placement.
 - Vitest tests live in `vitest` folders. Follow the existing convention in the repository for test file placement.
-- Bun test tests live in `buntest` folders. Follow the existing convention in the repository for test file placement.
+- Bun tests live in `buntest` folders. Follow the existing convention in the repository for test file placement.
 - Ensure that tests are written in TypeScript and follow the ESM module format.
 
 ## 2. Test Structure
 
-- Organize tests in file name `*.test.ts` in the `test`, `vitest`, or `buntest` folders.
+- Organize tests in file named `*.test.ts` in the `test`, `vitest`, or `buntest` folders.
 - Use `describe` blocks to group related tests and `test` blocks for individual test cases.
 
 ## 3. Test Naming

@@ -38,6 +38,9 @@ If you like this project and find it useful, please consider giving it a star on
 
 ### Changed
 
+- [package]: Apply uniform style.
+- [package]: Upgrade package.
+- [package]: Update dependencies.
 - [toolchain]: Migrate to the native toolchain (tsgo + oxlint + oxfmt + vitest). Replace ESLint/Prettier/Jest with oxlint/oxfmt and Vitest.
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>

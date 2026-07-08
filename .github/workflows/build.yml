@@ -1,4 +1,4 @@
-# Node.js CI (plugin) v. 2.0.5
+# Node.js CI (plugin) v. 2.0.6
 # Path: .github/workflows/build.yml
 
 name: Node.js CI
@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         # Node.js 20.19 is still supported in package.json, but it is not tested in CI as it has reached EOL.
-        node-version: [22.x, 24.x, 26.2.x]
+        node-version: [22.x, 24.x, 26.x]
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:

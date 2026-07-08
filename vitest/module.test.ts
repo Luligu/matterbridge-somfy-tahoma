@@ -1,3 +1,9 @@
+/**
+ * @file vitest/module.test.ts
+ * @description This file contains the tests for the SomfyTahomaPlatform class.
+ * @author Luca Liguori
+ */
+
 const NAME = 'SomfyTahomaPlatform';
 const MATTER_PORT = 6000;
 
