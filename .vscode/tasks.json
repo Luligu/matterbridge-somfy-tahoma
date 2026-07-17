@@ -61,7 +61,7 @@
       "detail": "Run ESLint",
       "type": "npm",
       "script": "lint",
-      "problemMatcher": ["$eslint-stylish"]
+      "problemMatcher": []
     },
     {
       "label": "Format",

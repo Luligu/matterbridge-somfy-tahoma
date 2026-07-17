@@ -1,8 +1,8 @@
 /**
- * This file contains the class SomfyTahomaPlatform.
- *
- * @file module.ts
+ * @file src/module.ts
+ * @description This file contains the class SomfyTahomaPlatform.
  * @author Luca Liguori
+ * @created 2024-03-06
  * @version 1.4.2
  * @license Apache-2.0
  *
@@ -24,11 +24,11 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
-import { bridgedNode, coverDevice, MatterbridgeDynamicPlatform, MatterbridgeEndpoint, PlatformConfig, PlatformMatterbridge, powerSource } from 'matterbridge';
-import { AnsiLogger, BLUE, CYAN, debugStringify, ign, nf, rs, stringify, YELLOW } from 'matterbridge/logger';
+import { bridgedNode, MatterbridgeDynamicPlatform, MatterbridgeEndpoint, type PlatformConfig, type PlatformMatterbridge, powerSource, windowCovering } from 'matterbridge';
+import { type AnsiLogger, BLUE, CYAN, debugStringify, ign, nf, rs, stringify, YELLOW } from 'matterbridge/logger';
 import { Identify, WindowCovering } from 'matterbridge/matter/clusters';
 import { inspectError, isValidNumber, isValidString } from 'matterbridge/utils';
-import { Action, Client, Command, Device, Execution, State } from 'overkiz-client';
+import { Action, Client, Command, type Device, Execution, type State } from 'overkiz-client';
 
 export type MovementDuration = Record<string, number>;
 export const Stopped = WindowCovering.MovementStatus.Stopped;
@@ -70,7 +70,6 @@ export default function initializePlugin(matterbridge: PlatformMatterbridge, log
 
 export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   tahomaDevices: Device[] = [];
-  bridgedDevices: MatterbridgeEndpoint[] = [];
   covers = new Map<string, Cover>();
 
   // TaHoma
@@ -86,9 +85,9 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
-    if (typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.8.0')) {
+    if (typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.9.0')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "3.8.0". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
+        `This plugin requires Matterbridge version >= "3.9.0". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
       );
     }
 
@@ -121,7 +120,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     });
   }
 
-  override async onStart(reason?: string) {
+  override async onStart(reason?: string): Promise<void> {
     await this.ready;
 
     this.log.info('onStart called with reason:', reason ?? 'none');
@@ -130,7 +129,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       return;
     }
     try {
-      await this.tahomaClient.connect(this.config.username as string, this.config.password as string);
+      await this.tahomaClient.connect(this.config.username, this.config.password);
     } catch (error) {
       inspectError(this.log, 'Error connecting to TaHoma service', error);
       return;
@@ -138,7 +137,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     await this.discoverDevices();
   }
 
-  override async onConfigure() {
+  override async onConfigure(): Promise<void> {
     await super.onConfigure();
     this.log.info('onConfigure called');
     if (!this.tahomaClient) {
@@ -147,7 +146,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     }
 
     // Set cover to target = current position and status to stopped (current position persists in the cluster)
-    for (const device of this.bridgedDevices) {
+    for (const device of this.getDevices()) {
       const cover = this.covers.get(device.deviceName ?? '');
       const position = device.getAttribute(WindowCovering, 'currentPositionLiftPercent100ths', device.log);
       cover?.bridgedDevice.log.info(
@@ -157,13 +156,13 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     }
   }
 
-  override async onShutdown(reason?: string) {
+  override async onShutdown(reason?: string): Promise<void> {
     await super.onShutdown(reason);
     this.log.info('onShutdown called with reason:', reason ?? 'none');
-    if (!this.tahomaClient) {
-      this.log.error('TaHoma service not created');
-    } else {
+    if (this.tahomaClient) {
       this.tahomaClient.removeAllListeners();
+    } else {
+      this.log.error('TaHoma service not created');
     }
     this.tahomaClient = undefined;
     this.covers.forEach((cover) => {
@@ -173,10 +172,10 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       cover.commandTimeout = undefined;
     });
     this.covers.clear();
-    if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices();
+    if (this.config.unregisterOnShutdown) await this.unregisterAllDevices();
   }
 
-  async discoverDevices() {
+  async discoverDevices(): Promise<void> {
     // TaHoma
     if (!this.tahomaClient) {
       this.log.error('TaHoma service not created');
@@ -202,7 +201,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         this.log.debug(`Devices successfully written to ${fileName}`);
         return;
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         inspectError(this.log, `Error writing devices to ${fileName}`, error);
       });
 
@@ -264,11 +263,11 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
       // Listen for state changes on the device and log them
       device.on('states', (changedStates: State[]) => {
-        // istanbul ignore next -- This is for debugging purposes and is not critical to cover in tests
+        // v8 ignore next -- This is for debugging purposes and is not critical to cover in tests
         this.log.debug(`***Tahoma update for ${device.label}: ${debugStringify(changedStates)}`);
       });
 
-      const cover = new MatterbridgeEndpoint([coverDevice, bridgedNode, powerSource], { id: device.label }, this.config.debug as boolean);
+      const cover = new MatterbridgeEndpoint([windowCovering, bridgedNode, powerSource], { id: device.label }, this.config.debug);
       cover.createDefaultIdentifyClusterServer(1, Identify.IdentifyType.Actuator);
       cover.createDefaultWindowCoveringClusterServer();
       cover.createDefaultBridgedDeviceBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', device.definition.uiClass);
@@ -276,7 +275,6 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       else cover.createDefaultPowerSourceWiredClusterServer();
       cover.addRequiredClusterServers();
       await this.registerDevice(cover);
-      this.bridgedDevices.push(cover);
       this.covers.set(device.label, { tahomaDevice: device, bridgedDevice: cover, movementStatus: Stopped, movementDuration: duration });
 
       cover.addCommandHandler('Identify.identify', async ({ request: { identifyTime } }) => {
@@ -290,7 +288,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         const cover = this.covers.get(device.label);
         if (!cover) return;
         if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        // oxlint-disable-next-line typescript/no-misused-promises
         cover.commandTimeout = setTimeout(async () => {
           cover.commandTimeout = undefined;
           cover.bridgedDevice.log.info(`Command ${ign}upOrOpen${rs}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
@@ -302,7 +300,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         const cover = this.covers.get(device.label);
         if (!cover) return;
         if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        // oxlint-disable-next-line typescript/no-misused-promises
         cover.commandTimeout = setTimeout(async () => {
           cover.commandTimeout = undefined;
           cover.bridgedDevice.log.info(`Command ${ign}downOrClose${rs}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
@@ -314,7 +312,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         const cover = this.covers.get(device.label);
         if (!cover) return;
         if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        // oxlint-disable-next-line typescript/no-misused-promises
         cover.commandTimeout = setTimeout(async () => {
           cover.commandTimeout = undefined;
           cover.bridgedDevice.log.info(`Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}${liftPercent100thsValue}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
@@ -342,10 +340,11 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   }
 
   // With Matter 0=open 10000=close
-  async moveToPosition(cover: Cover, targetPosition: number) {
+  async moveToPosition(cover: Cover, targetPosition: number): Promise<void> {
     const log = cover.bridgedDevice.log;
-    let currentPosition = cover.bridgedDevice.getAttribute(WindowCovering, 'currentPositionLiftPercent100ths', log) as number;
-    if (!isValidNumber(currentPosition, 0, 10000)) return;
+    const position = cover.bridgedDevice.getAttribute(WindowCovering, 'currentPositionLiftPercent100ths', log);
+    if (!isValidNumber(position, 0, 10000)) return;
+    let currentPosition = position;
     log.info(`Moving from ${currentPosition} to ${targetPosition}...`);
 
     // Stop movement if already moving
@@ -376,7 +375,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     cover.movementStatus = targetPosition > currentPosition ? Closing : Opening;
     await this.sendCommand(targetPosition > currentPosition ? 'close' : 'open', cover.tahomaDevice, true);
 
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    // oxlint-disable-next-line typescript/no-misused-promises
     cover.moveInterval = setInterval(async () => {
       log.debug(`Moving interval from ${currentPosition} to ${targetPosition} with movement ${movement}`);
       if (currentPosition === null) return;
@@ -399,21 +398,22 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     }, 1000);
   }
 
-  async sendCommand(command: string, device: Device, highPriority = false) {
-    if (command === 'open' && !device.commands.includes('open') && device.commands.includes('rollOut')) command = 'rollOut';
-    if (command === 'close' && !device.commands.includes('close') && device.commands.includes('rollUp')) command = 'rollUp';
+  async sendCommand(command: string, device: Device, highPriority = false): Promise<void> {
+    let resolvedCommand = command;
+    if (resolvedCommand === 'open' && !device.commands.includes('open') && device.commands.includes('rollOut')) resolvedCommand = 'rollOut';
+    if (resolvedCommand === 'close' && !device.commands.includes('close') && device.commands.includes('rollUp')) resolvedCommand = 'rollUp';
 
-    if (command === 'open' && !device.commands.includes('open') && device.commands.includes('up')) command = 'up';
-    if (command === 'close' && !device.commands.includes('close') && device.commands.includes('down')) command = 'down';
+    if (resolvedCommand === 'open' && !device.commands.includes('open') && device.commands.includes('up')) resolvedCommand = 'up';
+    if (resolvedCommand === 'close' && !device.commands.includes('close') && device.commands.includes('down')) resolvedCommand = 'down';
 
-    this.log.info(`Sending command ${YELLOW}${command}${nf} highPriority ${highPriority}`);
+    this.log.info(`Sending command ${YELLOW}${resolvedCommand}${nf} highPriority ${highPriority}`);
     try {
-      const newCommand = new Command(command);
+      const newCommand = new Command(resolvedCommand);
       const newAction = new Action(device.deviceURL, [newCommand]);
-      const newExecution = new Execution('Sending ' + command, newAction);
+      const newExecution = new Execution('Sending ' + resolvedCommand, newAction);
       await this.tahomaClient?.execute(highPriority ? 'apply/highPriority' : 'apply', newExecution);
     } catch (error) {
-      inspectError(this.log, `Error sending command ${command} to ${device.label}`, error);
+      inspectError(this.log, `Error sending command ${resolvedCommand} to ${device.label}`, error);
     }
   }
 }
