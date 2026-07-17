@@ -273,7 +273,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       cover.createDefaultBridgedDeviceBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', device.definition.uiClass);
       if (device.states.find((s) => s.name === 'core:BatteryDiscreteLevelState')) cover.createDefaultPowerSourceRechargeableBatteryClusterServer();
       else cover.createDefaultPowerSourceWiredClusterServer();
-      cover.addRequiredClusterServers();
+      cover.addRequiredClusters();
       await this.registerDevice(cover);
       this.covers.set(device.label, { tahomaDevice: device, bridgedDevice: cover, movementStatus: Stopped, movementDuration: duration });
 
