@@ -114,13 +114,13 @@
   "dependencies": {
     "node-ansi-logger": "3.3.0",
     "node-persist-manager": "2.1.0",
-    "overkiz-client": "1.0.20"
+    "overkiz-client": "1.0.23"
   },
   "devDependencies": {
-    "@types/node": "26.1.1",
+    "@types/node": "26.1.2",
     "@vitest/coverage-v8": "4.1.10",
-    "oxfmt": "0.60.0",
-    "oxlint": "1.75.0",
+    "oxfmt": "0.61.0",
+    "oxlint": "1.76.0",
     "oxlint-tsgolint": "7.0.2001",
     "typescript": "7.0.2",
     "vitest": "4.1.10"
