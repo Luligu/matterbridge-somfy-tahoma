@@ -13,7 +13,7 @@ import { promises as fs } from 'node:fs';
 
 import type { PlatformMatterbridge } from 'matterbridge';
 import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
-import { WindowCovering } from 'matterbridge/matter/clusters';
+import { ClosureControl, ClosureDimension } from 'matterbridge/matter/clusters';
 import { wait } from 'matterbridge/utils';
 import { flushAsync, log, loggerLogSpy, setDebug, setupTest } from 'matterbridge/vitest-utils';
 import {
@@ -265,7 +265,7 @@ describe('SomfyTahomaPlatform', () => {
     await flushAsync();
   });
 
-  it('should add a rechargeable battery cover and handle device state updates', async () => {
+  it('should add a cover for a battery powered device and handle device state updates', async () => {
     setMockDevice({ label: 'Device1', uniqueName: 'Blind' });
     mockDevices[0].states = [{ name: 'core:BatteryDiscreteLevelState', type: 3, value: 'normal' } satisfies State];
     clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
@@ -310,69 +310,129 @@ describe('SomfyTahomaPlatform', () => {
     await somfyPlatform.sendCommand('close', mockDevices[0]);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, expect.stringContaining(`Error sending command`));
 
-    const device = somfyPlatform.covers.get('Device1')?.bridgedDevice;
-    expect(device).toBeDefined();
-    if (!device) return;
-    await device.setWindowCoveringCurrentTargetStatus(WC_PERCENT100THS_MIN_OPEN, WC_PERCENT100THS_MIN_OPEN, WindowCovering.MovementStatus.Stopped);
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+    const liftPanel = cover.liftPanel;
+    await somfyPlatform.setCoverStoppedAt(cover, WC_PERCENT100THS_MIN_OPEN);
 
     vi.clearAllMocks();
     await device.executeCommandHandler('Identify.identify', { identifyTime: 1 }, 'identify', (device.state as any).identify, device);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}identify${rs}${nf} called identifyTime:1`);
 
     vi.clearAllMocks();
-    await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToPedestrianPosition },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.WARN, `Command moveTo called with unsupported position:${ClosureControl.TargetPosition.MoveToPedestrianPosition}`);
+
+    vi.clearAllMocks();
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyClosed },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
     await wait(3000);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}downOrClose${rs}${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}moveTo${rs}${nf} ${CYAN}${WC_PERCENT100THS_MAX_CLOSED}${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${WC_PERCENT100THS_MIN_OPEN} to ${WC_PERCENT100THS_MAX_CLOSED}...`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at ${WC_PERCENT100THS_MAX_CLOSED}`);
-    expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(WC_PERCENT100THS_MAX_CLOSED);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(WC_PERCENT100THS_MAX_CLOSED);
 
     vi.clearAllMocks();
-    await device.executeCommandHandler('WindowCovering.upOrOpen', {}, 'windowCovering', (device.state as any).windowCovering, device);
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyOpen },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
     await wait(3000);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}upOrOpen${rs}${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}moveTo${rs}${nf} ${CYAN}${WC_PERCENT100THS_MIN_OPEN}${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${WC_PERCENT100THS_MAX_CLOSED} to ${WC_PERCENT100THS_MIN_OPEN}...`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at ${WC_PERCENT100THS_MIN_OPEN}`);
-    expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(WC_PERCENT100THS_MIN_OPEN);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(WC_PERCENT100THS_MIN_OPEN);
 
     vi.clearAllMocks();
-    await device.executeCommandHandler('WindowCovering.upOrOpen', {}, 'windowCovering', (device.state as any).windowCovering, device);
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyOpen },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
     await wait(3000);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}upOrOpen${rs}${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}moveTo${rs}${nf} ${CYAN}${WC_PERCENT100THS_MIN_OPEN}${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${WC_PERCENT100THS_MIN_OPEN} to ${WC_PERCENT100THS_MIN_OPEN}...`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${WC_PERCENT100THS_MIN_OPEN} to ${WC_PERCENT100THS_MIN_OPEN}. No movement needed.`);
-    expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(WC_PERCENT100THS_MIN_OPEN);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(WC_PERCENT100THS_MIN_OPEN);
 
     vi.clearAllMocks();
-    await device.executeCommandHandler('WindowCovering.goToLiftPercentage', { liftPercent100thsValue: 5000 }, 'windowCovering', (device.state as any).windowCovering, device);
+    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 5000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
     await wait(3000);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}5000${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}setTarget${rs}${nf} ${CYAN}5000${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${WC_PERCENT100THS_MIN_OPEN} to 5000...`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at 5000`);
-    expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(5000);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(5000);
 
     vi.clearAllMocks();
-    await device.executeCommandHandler('WindowCovering.goToLiftPercentage', { liftPercent100thsValue: 10000 }, 'windowCovering', (device.state as any).windowCovering, device);
+    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 10000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
     await wait(3000);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}10000${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}setTarget${rs}${nf} ${CYAN}10000${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 5000 to ${WC_PERCENT100THS_MAX_CLOSED}...`);
 
     vi.clearAllMocks();
-    await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyClosed },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
     await wait(1000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${WC_PERCENT100THS_MAX_CLOSED} to ${WC_PERCENT100THS_MAX_CLOSED}...`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${WC_PERCENT100THS_MAX_CLOSED} to ${WC_PERCENT100THS_MAX_CLOSED}. No movement needed.`);
 
     vi.clearAllMocks();
-    await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyClosed },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
     await wait(1000);
-    expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(WC_PERCENT100THS_MAX_CLOSED);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(WC_PERCENT100THS_MAX_CLOSED);
 
-    await device.executeCommandHandler('WindowCovering.upOrOpen', {}, 'windowCovering', (device.state as any).windowCovering, device);
-    await device.executeCommandHandler('WindowCovering.stopMotion', {}, 'windowCovering', {} as any, device);
-    await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
-    await device.executeCommandHandler('WindowCovering.upOrOpen', {}, 'windowCovering', (device.state as any).windowCovering, device);
-    await device.executeCommandHandler('WindowCovering.stopMotion', {}, 'windowCovering', {} as any, device);
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyOpen },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    await device.executeCommandHandler('ClosureControl.stop', {}, 'closureControl', (device.state as any).closureControl, device);
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyClosed },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyOpen },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    await device.executeCommandHandler('ClosureControl.stop', {}, 'closureControl', (device.state as any).closureControl, device);
 
     somfyPlatform.tahomaDevices = [];
     somfyPlatform.covers.clear();
@@ -429,8 +489,8 @@ describe('SomfyTahomaPlatform', () => {
     expect(cover).toBeDefined();
     if (!cover) return;
 
-    await cover.bridgedDevice.setWindowCoveringCurrentTargetStatus(5000, 5000, WindowCovering.MovementStatus.Stopped);
-    cover.movementStatus = WindowCovering.MovementStatus.Opening;
+    await somfyPlatform.setCoverStoppedAt(cover, 5000);
+    cover.movementStatus = ClosureControl.MainState.Moving;
     cover.moveInterval = setInterval(() => {
       // noop
     }, 1000);
@@ -439,26 +499,26 @@ describe('SomfyTahomaPlatform', () => {
 
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Stopping current movement.');
     expect(clientExecuteSpy).toHaveBeenCalledWith('apply/highPriority', expect.anything());
-    expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
+    expect(cover.movementStatus).toBe(ClosureControl.MainState.Stopped);
     expect(cover.moveInterval).toBeUndefined();
   });
 
-  it('should send stop on stopMotion when movementStatus is not stopped', async () => {
+  it('should send stop on stop when movementStatus is not stopped', async () => {
     const cover = somfyPlatform.covers.get('Device1');
     expect(cover).toBeDefined();
     if (!cover) return;
     const device = cover.bridgedDevice;
 
-    await cover.bridgedDevice.setWindowCoveringCurrentTargetStatus(5000, 5000, WindowCovering.MovementStatus.Stopped);
-    cover.movementStatus = WindowCovering.MovementStatus.Opening;
+    await somfyPlatform.setCoverStoppedAt(cover, 5000);
+    cover.movementStatus = ClosureControl.MainState.Moving;
     cover.moveInterval = setInterval(() => {
       // noop
     }, 1000);
 
-    await device.executeCommandHandler('WindowCovering.stopMotion', {}, 'windowCovering', {} as any, device);
+    await device.executeCommandHandler('ClosureControl.stop', {}, 'closureControl', (device.state as any).closureControl, device);
 
     expect(clientExecuteSpy).toHaveBeenCalledWith('apply/highPriority', expect.anything());
-    expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
+    expect(cover.movementStatus).toBe(ClosureControl.MainState.Stopped);
   });
 
   it('should call onConfigure', async () => {
