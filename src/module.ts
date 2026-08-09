@@ -294,7 +294,9 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       });
 
       const cover = new Closure(device.label, device.serialNumber, {
-        tagList: [getSemtag(ClosureTag.Covering), getSemtag(getCoveringTag(device))],
+        // Window openers (e.g. Velux roof windows) are a Closure in their own right (ClosureTag.Window), not a covering,
+        // so the ClosureCoveringTag material subtype only applies to actual coverings (blinds, shutters, awnings, ...).
+        tagList: device.definition.uiClass === 'Window' ? [getSemtag(ClosureTag.Window)] : [getSemtag(ClosureTag.Covering), getSemtag(getCoveringTag(device))],
       });
       cover.createDefaultBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', 0x8000, device.definition.uiClass);
       const liftPanel = cover.addPanel('Lift', [getSemtag(ClosurePanelTag.Lift)], 'lift');

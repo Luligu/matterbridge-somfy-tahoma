@@ -13,6 +13,7 @@ import { promises as fs } from 'node:fs';
 
 import type { PlatformMatterbridge } from 'matterbridge';
 import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
+import { ClosureTag } from 'matterbridge/matter';
 import { ClosureControl, ClosureDimension } from 'matterbridge/matter/clusters';
 import { wait } from 'matterbridge/utils';
 import { flushAsync, log, loggerLogSpy, setDebug, setupTest } from 'matterbridge/vitest-utils';
@@ -258,6 +259,19 @@ describe('SomfyTahomaPlatform', () => {
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Adding device: ${BLUE}${mockDevices[0].label}${rs}`);
     expect(somfyPlatform.getDevices()).toHaveLength(1);
     expect(somfyPlatform.covers.size).toBe(1);
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+  });
+
+  it('should tag a Window uiClass device with ClosureTag.Window and no covering subtype', async () => {
+    setMockDevice({ label: 'Device1', uniqueName: 'WindowOpenerVeluxIOComponent', uiClass: 'Window', commands: ['open', 'close', 'stop'] });
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover?.bridgedDevice.tagList).toEqual([{ mfgCode: null, namespaceId: ClosureTag.Window.namespaceId, tag: ClosureTag.Window.tag }]);
     somfyPlatform.tahomaDevices = [];
     somfyPlatform.covers.clear();
     await somfyPlatform.unregisterAllDevices();
