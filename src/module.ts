@@ -299,7 +299,13 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         tagList: device.definition.uiClass === 'Window' ? [getSemtag(ClosureTag.Window)] : [getSemtag(ClosureTag.Covering), getSemtag(getCoveringTag(device))],
       });
       cover.createDefaultBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', 0x8000, device.definition.uiClass);
-      const liftPanel = cover.addPanel('Lift', [getSemtag(ClosurePanelTag.Lift)], 'lift');
+      // Window openers (e.g. Velux roof windows) open by rotating on a hinge, not by translating up/down like a
+      // shutter or blind, so their panel must advertise the Rotation feature (ClosureDimension.Feature.Rotation) via
+      // a 'tilt' panel tagged ClosurePanelTag.Tilt instead of a 'lift'/ClosurePanelTag.Lift (Translation) panel.
+      const liftPanel =
+        device.definition.uiClass === 'Window'
+          ? cover.addPanel('Tilt', [getSemtag(ClosurePanelTag.Tilt)], 'tilt')
+          : cover.addPanel('Lift', [getSemtag(ClosurePanelTag.Lift)], 'lift');
       cover.addRequiredClusterServers();
       await this.registerDevice(cover);
       this.covers.set(device.label, { tahomaDevice: device, bridgedDevice: cover, liftPanel, movementStatus: ClosureControl.MainState.Stopped, movementDuration: duration });

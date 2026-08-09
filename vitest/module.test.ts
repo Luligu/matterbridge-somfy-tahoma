@@ -13,7 +13,7 @@ import { promises as fs } from 'node:fs';
 
 import type { PlatformMatterbridge } from 'matterbridge';
 import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
-import { ClosureTag } from 'matterbridge/matter';
+import { ClosurePanelTag, ClosureTag } from 'matterbridge/matter';
 import { ClosureControl, ClosureDimension } from 'matterbridge/matter/clusters';
 import { wait } from 'matterbridge/utils';
 import { flushAsync, log, loggerLogSpy, setDebug, setupTest } from 'matterbridge/vitest-utils';
@@ -266,12 +266,16 @@ describe('SomfyTahomaPlatform', () => {
     await flushAsync();
   });
 
-  it('should tag a Window uiClass device with ClosureTag.Window and no covering subtype', async () => {
+  it('should tag a Window uiClass device with ClosureTag.Window and a rotating Tilt panel', async () => {
     setMockDevice({ label: 'Device1', uniqueName: 'WindowOpenerVeluxIOComponent', uiClass: 'Window', commands: ['open', 'close', 'stop'] });
     clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
     await somfyPlatform.discoverDevices();
     const cover = somfyPlatform.covers.get('Device1');
     expect(cover?.bridgedDevice.tagList).toEqual([{ mfgCode: null, namespaceId: ClosureTag.Window.namespaceId, tag: ClosureTag.Window.tag }]);
+    expect(cover?.liftPanel.tagList).toEqual([{ mfgCode: null, namespaceId: ClosurePanelTag.Tilt.namespaceId, tag: ClosurePanelTag.Tilt.tag }]);
+    // A rotating window opener supports the Rotation feature (rotationAxis attribute), not Translation (translationDirection attribute)
+    expect(cover?.liftPanel.hasAttributeServer(ClosureDimension, 'rotationAxis')).toBe(true);
+    expect(cover?.liftPanel.hasAttributeServer(ClosureDimension, 'translationDirection')).toBe(false);
     somfyPlatform.tahomaDevices = [];
     somfyPlatform.covers.clear();
     await somfyPlatform.unregisterAllDevices();
