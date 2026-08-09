@@ -343,6 +343,8 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         const cover = this.covers.get(device.label);
         if (!cover) return;
         cover.bridgedDevice.log.info(`Command ${ign}stop${rs}${nf} called for ${CYAN}${cover.tahomaDevice.label}. Status ${cover.movementStatus}`);
+        if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
+        cover.commandTimeout = undefined;
         clearInterval(cover.moveInterval);
         cover.moveInterval = undefined;
         if (cover.movementStatus !== ClosureControl.MainState.Stopped) {
@@ -354,7 +356,11 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
       liftPanel.addCommandHandler('ClosureDimension.setTarget', ({ request: { position } }) => {
         const cover = this.covers.get(device.label);
-        if (!cover || position === undefined || position === null) return;
+        if (!cover) return;
+        if (!isValidNumber(position, 0, 10000)) {
+          cover.bridgedDevice.log.warn(`Command setTarget called with unsupported position:${position}`);
+          return;
+        }
         if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
         // oxlint-disable-next-line typescript/no-misused-promises
         cover.commandTimeout = setTimeout(async () => {
@@ -441,7 +447,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
     const overallCurrentState = cover.bridgedDevice.getAttribute(ClosureControl, 'overallCurrentState', log);
     await cover.bridgedDevice.setAttribute(
-      ClosureControl.id,
+      ClosureControl,
       'overallCurrentState',
       {
         position: closureOverallPositionFromPercent(position),
