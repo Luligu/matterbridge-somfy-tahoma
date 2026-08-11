@@ -1,6 +1,8 @@
+// VS Code tasks v.1.0.5
 {
   "version": "2.0.0",
   "tasks": [
+    // --DO NOT EDIT BELOW THIS LINE--
     {
       "label": "Start",
       "detail": "npm run start",
@@ -58,25 +60,23 @@
     },
     {
       "label": "Lint",
-      "detail": "Run ESLint",
+      "detail": "Run lint",
       "type": "npm",
       "script": "lint",
       "problemMatcher": []
     },
     {
       "label": "Format",
-      "detail": "Run Prettier",
+      "detail": "Run format",
       "type": "npm",
       "script": "format",
       "problemMatcher": []
     },
     {
       "label": "Test",
-      "detail": "Run Jest with coverage and verbose",
-      "type": "shell",
-      "command": "node",
-      "args": ["--no-warnings", "--experimental-vm-modules", "node_modules/jest/bin/jest.js", "--verbose", "--coverage", "--maxWorkers=100%"],
-      "group": { "kind": "test", "isDefault": true },
+      "detail": "Run test with coverage",
+      "type": "npm",
+      "script": "test:coverage",
       "problemMatcher": []
     },
     {
@@ -115,6 +115,22 @@
       "problemMatcher": []
     },
     {
+      "label": "Update",
+      "detail": "Update the package with mb-run",
+      "type": "shell",
+      "command": "mb-run",
+      "args": ["--update"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Upgrade",
+      "detail": "Upgrade the package with mb-run",
+      "type": "shell",
+      "command": "mb-run",
+      "args": ["--upgrade"],
+      "problemMatcher": []
+    },
+    {
       "label": "Git Status",
       "detail": "Run Git Status Script",
       "type": "shell",
@@ -146,5 +162,6 @@
       "args": ["scripts/remove-workflows.mjs"],
       "problemMatcher": []
     }
+    // --DO NOT EDIT ABOVE THIS LINE--
   ]
 }
