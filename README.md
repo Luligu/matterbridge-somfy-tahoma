@@ -56,6 +56,8 @@ If any device creates issues put it in the blackList.
 
 Set for each device the full movement time (the plugin will use that time to syncronize the movement).
 
+If `useClosure` is enabled, covers are exposed using the Matter 1.5 Closure device type instead of WindowCovering. This eases integration testing with controllers that support the newer cluster, and requires a matterbridge build with Closure support (development only).
+
 These are the config values:
 
 ```json
@@ -70,7 +72,8 @@ These are the config values:
   "duration": {
     "<DEVICENAME1>": 30,
     "<DEVICENAME2>": 30
-  }
+  },
+  "useClosure": false
 }
 ```
 

@@ -8,6 +8,7 @@
   "blackList": [],
   "whiteList": [],
   "movementDuration": {},
+  "useClosure": false,
   "debug": false,
   "unregisterOnShutdown": false
 }

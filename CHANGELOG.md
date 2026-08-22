@@ -30,6 +30,18 @@ If you like this project and find it useful, please consider giving it a star on
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120"></a>
 
+## [1.7.0] - 2026-08-22
+
+### Breaking changes
+
+- [matterbridge]: Require matterbridge v.3.10.7 (dev branch build with Closure device support).
+
+### Added
+
+- [config]: Add the `useClosure` config option (default `false`) to expose covers using the Matter 1.5 Closure device type instead of WindowCovering, to ease integration testing with controllers that support the newer cluster. Requires a matterbridge dev branch build with Closure support.
+
+<a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
+
 ## [1.6.0] - 2026-07-17
 
 ### Breaking changes

@@ -82,6 +82,12 @@
         "type": "integer"
       }
     },
+    "useClosure": {
+      "title": "Use Closure",
+      "description": "Expose covers using the Matter 1.5 Closure device type instead of WindowCovering, to ease integration testing with controllers that support the newer cluster. Requires a matterbridge build with Closure support (development only)",
+      "type": "boolean",
+      "default": false
+    },
     "debug": {
       "title": "Enable Debug",
 
