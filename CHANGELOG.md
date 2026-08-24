@@ -39,6 +39,7 @@ If you like this project and find it useful, please consider giving it a star on
 ### Added
 
 - [config]: Add the `useClosure` config option (default `false`) to expose covers using the Matter 1.5 Closure device type instead of WindowCovering, to ease integration testing with controllers that support the newer cluster. Requires a matterbridge dev branch build with Closure support.
+- [config]: Add the `closureCalibration`, `closureVentilation` and `closurePedestrian` per-device config options to opt in to the Closure Calibration, Ventilation and Pedestrian optional features on a device basis. Only applies when `useClosure` is enabled.
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
 

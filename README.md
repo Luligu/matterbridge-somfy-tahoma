@@ -58,6 +58,8 @@ Set for each device the full movement time (the plugin will use that time to syn
 
 If `useClosure` is enabled, covers are exposed using the Matter 1.5 Closure device type instead of WindowCovering. This eases integration testing with controllers that support the newer cluster, and requires a matterbridge build with Closure support (development only).
 
+When `useClosure` is enabled, you can opt in per device to the Closure `Calibration`, `Ventilation` and `Pedestrian` optional features with `closureCalibration`, `closureVentilation` and `closurePedestrian`.
+
 These are the config values:
 
 ```json
@@ -73,7 +75,16 @@ These are the config values:
     "<DEVICENAME1>": 30,
     "<DEVICENAME2>": 30
   },
-  "useClosure": false
+  "useClosure": false,
+  "closureCalibration": {
+    "<DEVICENAME1>": true
+  },
+  "closureVentilation": {
+    "<DEVICENAME1>": true
+  },
+  "closurePedestrian": {
+    "<DEVICENAME1>": true
+  }
 }
 ```
 

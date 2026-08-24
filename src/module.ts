@@ -69,6 +69,12 @@ export type SomfyTahomaPlatformConfig = PlatformConfig & {
   movementDuration: MovementDuration;
   /** Expose covers using the Matter 1.5 Closure device type instead of WindowCovering. Requires a matterbridge build with Closure support. Default: false. */
   useClosure?: boolean;
+  /** Per-device opt-in for the Closure Calibration optional feature. Enter the device name and true/false. Only applies when useClosure is enabled. Default: false for all devices. */
+  closureCalibration?: Record<string, boolean>;
+  /** Per-device opt-in for the Closure Ventilation optional feature. Enter the device name and true/false. Only applies when useClosure is enabled. Default: false for all devices. */
+  closureVentilation?: Record<string, boolean>;
+  /** Per-device opt-in for the Closure Pedestrian optional feature. Enter the device name and true/false. Only applies when useClosure is enabled. Default: false for all devices. */
+  closurePedestrian?: Record<string, boolean>;
 };
 
 /**
@@ -410,6 +416,9 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         const closureCover = new Closure(device.label, device.serialNumber, {
           powerSourceType: device.states.find((s) => s.name === 'core:BatteryDiscreteLevelState') ? 'Rechargeable' : 'Wired',
           tagList: isWindow ? [getSemtag(ClosureTag.Window)] : [getSemtag(ClosureTag.Covering), getSemtag(getCoveringTag(device))],
+          calibration: this.config.closureCalibration?.[device.label],
+          ventilation: this.config.closureVentilation?.[device.label],
+          pedestrian: this.config.closurePedestrian?.[device.label],
         });
         closureCover.createDefaultBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', 0x8000, device.definition.uiClass);
         // Window openers open by rotating on a hinge, not by translating up/down like a shutter or blind, so their

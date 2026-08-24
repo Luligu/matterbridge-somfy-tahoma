@@ -88,6 +88,36 @@
       "type": "boolean",
       "default": false
     },
+    "closureCalibration": {
+      "title": "Closure Calibration",
+      "description": "Opt in per device to the Closure Calibration optional feature. Enter in the first field the name of the device and in the second field true or false. Only applies when useClosure is enabled (development only)",
+      "type": "object",
+      "uniqueItems": true,
+      "selectFrom": "name",
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "closureVentilation": {
+      "title": "Closure Ventilation",
+      "description": "Opt in per device to the Closure Ventilation optional feature. Enter in the first field the name of the device and in the second field true or false. Only applies when useClosure is enabled (development only)",
+      "type": "object",
+      "uniqueItems": true,
+      "selectFrom": "name",
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "closurePedestrian": {
+      "title": "Closure Pedestrian",
+      "description": "Opt in per device to the Closure Pedestrian optional feature. Enter in the first field the name of the device and in the second field true or false. Only applies when useClosure is enabled (development only)",
+      "type": "object",
+      "uniqueItems": true,
+      "selectFrom": "name",
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
     "debug": {
       "title": "Enable Debug",
 

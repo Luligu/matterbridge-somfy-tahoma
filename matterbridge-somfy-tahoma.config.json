@@ -9,6 +9,9 @@
   "whiteList": [],
   "movementDuration": {},
   "useClosure": false,
+  "closureCalibration": {},
+  "closureVentilation": {},
+  "closurePedestrian": {},
   "debug": false,
   "unregisterOnShutdown": false
 }

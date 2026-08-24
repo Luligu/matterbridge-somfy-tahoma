@@ -305,6 +305,28 @@ describe('SomfyTahomaPlatform', () => {
     somfyPlatform.config.useClosure = false;
   });
 
+  it('should opt in per device to the Closure Calibration, Ventilation and Pedestrian optional features when useClosure is enabled', async () => {
+    somfyPlatform.config.useClosure = true;
+    somfyPlatform.config.closureCalibration = { Device1: true };
+    somfyPlatform.config.closureVentilation = { Device1: true };
+    somfyPlatform.config.closurePedestrian = { Device1: true };
+    setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass: 'Shutter' });
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover?.bridgedDevice.getAttribute(ClosureControl.id, 'featureMap')).toEqual(expect.objectContaining({ calibration: true, ventilation: true, pedestrian: true }));
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+    somfyPlatform.config.useClosure = false;
+    somfyPlatform.config.closureCalibration = undefined;
+    somfyPlatform.config.closureVentilation = undefined;
+    somfyPlatform.config.closurePedestrian = undefined;
+  });
+
   it('should discover a Closure cover with a battery power source and handle a full moveTo/setTarget/stop cycle', async () => {
     somfyPlatform.config.useClosure = true;
     setMockDevice({ label: 'Device1', uniqueName: 'Blind' });
