@@ -412,6 +412,31 @@ describe('SomfyTahomaPlatform', () => {
     expect(cover.moveInterval).toBeUndefined();
   });
 
+  it('should mark a Closure stopped without syncing position when ClosureControl.stop is called and the position is unknown', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+    const liftPanel = cover.liftPanel;
+    expect(liftPanel).toBeDefined();
+    if (!liftPanel) return;
+
+    cover.movementStatus = WindowCovering.MovementStatus.Opening;
+    cover.moveInterval = setInterval(() => {
+      // noop
+    }, 1000);
+    // Simulate an unknown current position (e.g. right after startup, before the panel reports a value)
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- explicit undefined is required to match getAttribute's overload
+    vi.spyOn(liftPanel, 'getAttribute').mockReturnValueOnce(undefined);
+
+    await device.executeCommandHandler('ClosureControl.stop', {}, 'closureControl', (device.state as any).closureControl, device);
+
+    expect(clientExecuteSpy).toHaveBeenCalledWith('apply/highPriority', expect.anything());
+    // movementStatus and mainState still leave the "moving" state even though the position could not be synced
+    expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
+    expect(device.getAttribute(ClosureControl.id, 'mainState')).toBe(ClosureControl.MainState.Stopped);
+  });
+
   it('should send stop on ClosureControl.stop when movementStatus is not stopped', async () => {
     const cover = somfyPlatform.covers.get('Device1');
     expect(cover).toBeDefined();
@@ -640,6 +665,29 @@ describe('SomfyTahomaPlatform', () => {
   it('should call onConfigure', async () => {
     await somfyPlatform.onConfigure();
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onConfigure called');
+  });
+
+  it('should mark a WindowCovering cover stopped without syncing position when onConfigure runs and the position is unknown', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+
+    cover.movementStatus = WindowCovering.MovementStatus.Opening;
+    // Simulate an unknown current position (e.g. right after startup, before the cluster reports a value)
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- explicit undefined is required to match getAttribute's overload
+    vi.spyOn(device, 'getAttribute').mockReturnValueOnce(undefined);
+
+    await somfyPlatform.onConfigure();
+
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onConfigure called');
+    // movementStatus and operationalStatus still leave the "moving" state even though the position could not be synced
+    expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
+    expect(device.getAttribute(WindowCovering.id, 'operationalStatus')).toEqual({
+      global: WindowCovering.MovementStatus.Stopped,
+      lift: WindowCovering.MovementStatus.Stopped,
+      tilt: WindowCovering.MovementStatus.Stopped,
+    });
   });
 
   it('should call onConfigure and log error', async () => {

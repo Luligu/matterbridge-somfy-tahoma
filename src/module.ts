@@ -82,9 +82,9 @@ export type SomfyTahomaPlatformConfig = PlatformConfig & {
  * the Closure endpoint (Application Cluster Specification § 24, ClosureCoveringTag namespace).
  *
  * @param {Device} device - The discovered TaHoma device.
- * @returns {typeof ClosureCoveringTag.Shutter} The semantic tag describing the covering type.
+ * @returns {Semtag} The semantic tag describing the covering type: Venetian, Awning, Blind, or Shutter (the fallback for Shutter, RollerShutter, and any other supported uiClass).
  */
-function getCoveringTag(device: Device): typeof ClosureCoveringTag.Shutter {
+function getCoveringTag(device: Device): ReturnType<typeof getSemtag> {
   const uiClass = device.definition.uiClass;
   if (uiClass === 'VenetianBlind' || uiClass === 'ExteriorVenetianBlind') return ClosureCoveringTag.Venetian;
   if (uiClass === 'Awning' || uiClass === 'Pergola') return ClosureCoveringTag.Awning;
@@ -149,6 +149,25 @@ async function setCoverStoppedAt(cover: Cover, position: number): Promise<void> 
     );
   } else {
     await cover.bridgedDevice.setWindowCoveringCurrentTargetStatus(position, position, WindowCovering.MovementStatus.Stopped);
+  }
+  cover.movementStatus = Stopped;
+}
+
+/**
+ * Marks the cover stopped without touching its current/target position attributes, on whichever cluster
+ * (WindowCovering or Closure) is currently in use. Use this instead of `setCoverStoppedAt` when the current
+ * position is not known (null/undefined), so the movement status still leaves the "moving" state. Updates
+ * `cover.movementStatus`.
+ *
+ * @param {Cover} cover - The cover to update.
+ * @returns {Promise<void>}
+ */
+async function setCoverStopped(cover: Cover): Promise<void> {
+  const log = cover.bridgedDevice.log;
+  if (cover.liftPanel) {
+    await cover.bridgedDevice.setAttribute(ClosureControl, 'mainState', ClosureControl.MainState.Stopped, log);
+  } else {
+    await cover.bridgedDevice.setWindowCoveringStatus(WindowCovering.MovementStatus.Stopped);
   }
   cover.movementStatus = Stopped;
 }
@@ -293,6 +312,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         `Setting ${cover.tahomaDevice.label} target to ${CYAN}${isValidNumber(position, 0, 10000) ? position / 100 : 'unknown'} %${nf} position and status to stopped. Movement duration: ${CYAN}${cover.movementDuration}${nf}`,
       );
       if (isValidNumber(position, 0, 10000)) await setCoverStoppedAt(cover, position);
+      else await setCoverStopped(cover);
     }
   }
 
@@ -482,6 +502,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
           }
           const position = getCoverPosition(cover);
           if (isValidNumber(position, 0, 10000)) await setCoverStoppedAt(cover, position);
+          else await setCoverStopped(cover);
         });
 
         liftPanel.addCommandHandler('ClosureDimension.setTarget', ({ request: { position } }) => {
