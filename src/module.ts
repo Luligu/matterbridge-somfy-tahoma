@@ -433,7 +433,10 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         // Window openers (e.g. Velux roof windows) are a Closure in their own right (ClosureTag.Window), not a covering,
         // so the ClosureCoveringTag material subtype only applies to actual coverings (blinds, shutters, awnings, ...).
         const isWindow = device.definition.uiClass === 'Window';
-          tagList: isWindow ? [getSemtag(ClosureTag.Window)] : [getSemtag(ClosureTag.Covering), getCoveringTag(device)],
+        const closureCover = new Closure(device.label, device.serialNumber, {
+          powerSourceType: device.states.find((s) => s.name === 'core:BatteryDiscreteLevelState') ? 'Rechargeable' : 'Wired',
+          tagList: isWindow ? [getSemtag(ClosureTag.Window)] : [getSemtag(ClosureTag.Covering), getSemtag(getCoveringTag(device))],
+          calibration: this.config.closureCalibration?.[device.label],
           ventilation: this.config.closureVentilation?.[device.label],
           pedestrian: this.config.closurePedestrian?.[device.label],
         });
