@@ -378,6 +378,109 @@ describe('SomfyTahomaPlatform', () => {
     somfyPlatform.config.closureOptions = {};
   });
 
+  it('should move a Closure cover to the default Signature position (90% closed) and report OpenedAtSignature when useClosure is enabled', async () => {
+    somfyPlatform.config.useClosure = true;
+    setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass: 'Shutter' });
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+    const liftPanel = cover.liftPanel;
+    expect(liftPanel).toBeDefined();
+    if (!liftPanel) return;
+
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToSignaturePosition },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    await wait(3500);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}moveTo${rs}${nf} ${CYAN}9000${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(9000);
+    expect(device.getAttribute(ClosureControl.id, 'overallCurrentState')?.position).toBe(ClosureControl.CurrentPosition.OpenedAtSignature);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+    somfyPlatform.config.useClosure = false;
+    somfyPlatform.config.closureOptions = {};
+  }, 15000);
+
+  it('should move a Window Closure cover to the same default Signature position (90% closed) as other coverings when useClosure is enabled', async () => {
+    somfyPlatform.config.useClosure = true;
+    setMockDevice({ label: 'Device1', uniqueName: 'WindowOpenerVeluxIOComponent', uiClass: 'Window', commands: ['open', 'close', 'stop'] });
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+    const liftPanel = cover.liftPanel;
+    expect(liftPanel).toBeDefined();
+    if (!liftPanel) return;
+
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToSignaturePosition },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    await wait(3500);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}moveTo${rs}${nf} ${CYAN}9000${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(9000);
+    expect(device.getAttribute(ClosureControl.id, 'overallCurrentState')?.position).toBe(ClosureControl.CurrentPosition.OpenedAtSignature);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+    somfyPlatform.config.useClosure = false;
+    somfyPlatform.config.closureOptions = {};
+  }, 15000);
+
+  it('should honor a per-device signaturePosition override for the Closure Signature position', async () => {
+    somfyPlatform.config.useClosure = true;
+    somfyPlatform.config.closureOptions = { Device1: { signaturePosition: 42 } };
+    setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass: 'Shutter' });
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+    const liftPanel = cover.liftPanel;
+    expect(liftPanel).toBeDefined();
+    if (!liftPanel) return;
+
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToSignaturePosition },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    await wait(2500);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}moveTo${rs}${nf} ${CYAN}4200${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(4200);
+    expect(device.getAttribute(ClosureControl.id, 'overallCurrentState')?.position).toBe(ClosureControl.CurrentPosition.OpenedAtSignature);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+    somfyPlatform.config.useClosure = false;
+    somfyPlatform.config.closureOptions = {};
+  }, 15000);
+
   it('should discover a Closure cover with a battery power source and handle a full moveTo/setTarget/stop cycle', async () => {
     somfyPlatform.config.useClosure = true;
     setMockDevice({ label: 'Device1', uniqueName: 'Blind' });

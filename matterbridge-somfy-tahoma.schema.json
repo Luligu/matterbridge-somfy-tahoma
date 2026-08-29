@@ -90,7 +90,7 @@
     },
     "closureOptions": {
       "title": "Closure Options (EXPERIMENTAL)",
-      "description": "Opt in per device to the Closure Calibration, Ventilation and Pedestrian optional features. Enter in the first field the name of the device and in the following fields true or false. Only applies when useClosure is enabled.",
+      "description": "Opt in per device to the Closure Calibration, Ventilation and Pedestrian optional features, and override the Signature position. Enter in the first field the name of the device and in the following fields the value. Only applies when useClosure is enabled.",
       "type": "object",
       "selectFrom": "name",
       "additionalProperties": {
@@ -110,6 +110,13 @@
             "title": "Pedestrian",
             "type": "boolean",
             "default": false
+          },
+          "signaturePosition": {
+            "title": "Signature Position",
+            "description": "Percentage closed (0-100) to move to for the Signature position. Defaults to 90% (10% open) when not set.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
           }
         }
       }

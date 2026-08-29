@@ -29,6 +29,12 @@ If you like this project and find it useful, please consider giving it a star on
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120"></a>
 
+## [Unreleased]
+
+### Added
+
+- [config]: Add the `signaturePosition` per-device `closureOptions` override for the Closure `Signature` position (Application Cluster Specification § 5.4.6.1.1). Defaults to 90% closed (10% open), since neither TaHoma nor the Matter spec exposes this manufacturer- or installer-defined position. Only applies when `useClosure` is enabled. Fixes [#49](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/49).
+
 ## [1.7.0] - 2026-08-29
 
 ### Breaking changes
