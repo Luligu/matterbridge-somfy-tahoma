@@ -34,7 +34,7 @@ import {
   powerSource,
   windowCovering,
 } from 'matterbridge';
-import { Closure } from 'matterbridge/devices';
+import { Closure, type ClosurePanelOptions } from 'matterbridge/devices';
 import { type AnsiLogger, BLUE, CYAN, debugStringify, ign, nf, rs, stringify, YELLOW } from 'matterbridge/logger';
 import { ClosureCoveringTag, ClosurePanelTag, ClosureTag } from 'matterbridge/matter';
 import { ClosureControl, ClosureDimension, Identify, WindowCovering } from 'matterbridge/matter/clusters';
@@ -464,10 +464,16 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
           pedestrian: this.config.closureOptions?.[device.label]?.pedestrian,
         });
         closureCover.createDefaultBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', 0x8000, device.definition.uiClass);
+        // TaHoma reports core:ClosureState in whole percent (0-100), so the finest position change it can ever
+        // report or accept is 1% = 100 percent100ths units. Advertising the cluster default of 1 (0.01%) would
+        // overstate a precision TaHoma doesn't have.
+        const panelOptions: ClosurePanelOptions = { resolution: 100, stepValue: 100 };
         // Window openers open by rotating on a hinge, not by translating up/down like a shutter or blind, so their
         // panel must advertise the Rotation feature (ClosureDimension.Feature.Rotation) via a 'tilt' panel tagged
         // ClosurePanelTag.Tilt instead of a 'lift'/ClosurePanelTag.Lift (Translation) panel.
-        liftPanel = isWindow ? closureCover.addPanel('Tilt', [getSemtag(ClosurePanelTag.Tilt)], 'tilt') : closureCover.addPanel('Lift', [getSemtag(ClosurePanelTag.Lift)], 'lift');
+        liftPanel = isWindow
+          ? closureCover.addPanel('Tilt', [getSemtag(ClosurePanelTag.Tilt)], 'tilt', panelOptions)
+          : closureCover.addPanel('Lift', [getSemtag(ClosurePanelTag.Lift)], 'lift', panelOptions);
         closureCover.addRequiredClusters();
         cover = closureCover;
       } else {
