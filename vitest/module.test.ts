@@ -289,6 +289,23 @@ describe('SomfyTahomaPlatform', () => {
     somfyPlatform.config.useClosure = false;
   });
 
+  it('should advertise the ClosureDimension resolution/stepValue matching TaHoma 1% granularity when useClosure is enabled', async () => {
+    somfyPlatform.config.useClosure = true;
+    setMockDevice({ label: 'Device1', uniqueName: 'Blind' });
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover?.liftPanel?.getAttribute(ClosureDimension, 'resolution')).toBe(100);
+    expect(cover?.liftPanel?.getAttribute(ClosureDimension, 'stepValue')).toBe(100);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+    somfyPlatform.config.useClosure = false;
+  });
+
   it('should tag a Shutter uiClass device with ClosureCoveringTag.Shutter when useClosure is enabled', async () => {
     somfyPlatform.config.useClosure = true;
     setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass: 'Shutter' });
