@@ -514,6 +514,40 @@ describe('SomfyTahomaPlatform', () => {
     // We keep this Closure device to be used in the next tests
   }, 120000);
 
+  it('should allow moveTo/setTarget position changes without latch:false when the closure is not latched (Closure)', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+    const liftPanel = cover.liftPanel;
+    expect(liftPanel).toBeDefined();
+    if (!liftPanel) return;
+
+    vi.clearAllMocks();
+    // isPositionChangeBlockedByLatch() only blocks when the current latch is strictly true, so a not-latched
+    // (or latch-less, if a future device ever omitted MotionLatching) closure never needs latch:false.
+    vi.spyOn(device, 'getAttribute').mockReturnValueOnce({ position: ClosureControl.CurrentPosition.FullyOpened, latch: false, speed: ThreeLevelAuto.Auto });
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyClosed },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    await wait(3000);
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.WARN, expect.stringContaining('ignored'));
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}moveTo${rs}${nf} ${CYAN}${PERCENT100THS_MAX_CLOSED}${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(PERCENT100THS_MAX_CLOSED);
+
+    vi.clearAllMocks();
+    vi.spyOn(liftPanel, 'getAttribute').mockReturnValueOnce({ position: PERCENT100THS_MAX_CLOSED, latch: false, speed: ThreeLevelAuto.Auto });
+    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 5000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
+    await wait(2000);
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.WARN, expect.stringContaining('ignored'));
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}setTarget${rs}${nf} ${CYAN}5000${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(5000);
+  }, 15000);
+
   it('should stop current movement in moveToPosition when already moving (Closure)', async () => {
     const cover = somfyPlatform.covers.get('Device1');
     expect(cover).toBeDefined();
