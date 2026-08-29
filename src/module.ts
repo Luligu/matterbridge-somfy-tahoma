@@ -34,7 +34,7 @@ import {
   powerSource,
   windowCovering,
 } from 'matterbridge';
-import { Closure } from 'matterbridge/devices';
+import { Closure, type ClosurePanelOptions } from 'matterbridge/devices';
 import { type AnsiLogger, BLUE, CYAN, debugStringify, ign, nf, rs, stringify, YELLOW } from 'matterbridge/logger';
 import { ClosureCoveringTag, ClosurePanelTag, ClosureTag } from 'matterbridge/matter';
 import { ClosureControl, ClosureDimension, Identify, WindowCovering } from 'matterbridge/matter/clusters';
@@ -106,6 +106,19 @@ function getCoveringTag(tahomaDevice: Device): Semtag {
   if (uiClass === 'Awning' || uiClass === 'Pergola') return ClosureCoveringTag.Awning;
   if (uiClass === 'Screen' || uiClass === 'ExteriorScreen') return ClosureCoveringTag.Blind;
   return ClosureCoveringTag.Shutter; // Shutter, RollerShutter and any other supported uiClass
+}
+
+/**
+ * Reads the TaHoma `core:ClosureState` (0 fully open to 100 fully closed) reported at discovery time and converts
+ * it to the Matter position convention (0 fully open to 10000 fully closed), so a newly created cover reflects the
+ * cover's real-world position instead of always starting fully open.
+ *
+ * @param {Device} tahomaDevice - The discovered TaHoma device.
+ * @returns {number | undefined} The initial position, 0 (fully open) to 10000 (fully closed), or undefined if TaHoma hasn't reported `core:ClosureState`.
+ */
+function getInitialPosition(tahomaDevice: Device): number | undefined {
+  const closureState = tahomaDevice.states.find((s) => s.name === 'core:ClosureState')?.value;
+  return isValidNumber(closureState, 0, 100) ? closureState * 100 : undefined;
 }
 
 /**
@@ -452,6 +465,9 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
       let cover: MatterbridgeEndpoint;
       let liftPanel: MatterbridgeEndpoint | undefined;
+      // Seeds the newly created endpoint with the cover's real-world position instead of always starting fully
+      // open (see getInitialPosition); undefined when TaHoma hasn't reported core:ClosureState yet.
+      const initialPosition = getInitialPosition(device);
       if (this.config.useClosure) {
         // Window openers (e.g. Velux roof windows) are a Closure in their own right (ClosureTag.Window), not a covering,
         // so the ClosureCoveringTag material subtype only applies to actual coverings (blinds, shutters, awnings, ...).
@@ -464,16 +480,25 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
           pedestrian: this.config.closureOptions?.[device.label]?.pedestrian,
         });
         closureCover.createDefaultBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', 0x8000, device.definition.uiClass);
+        const panelOptions: ClosurePanelOptions =
+          initialPosition === undefined
+            ? {}
+            : {
+                currentState: { position: initialPosition, latch: true, speed: ThreeLevelAuto.Auto },
+                targetState: { position: initialPosition, latch: true, speed: ThreeLevelAuto.Auto },
+              };
         // Window openers open by rotating on a hinge, not by translating up/down like a shutter or blind, so their
         // panel must advertise the Rotation feature (ClosureDimension.Feature.Rotation) via a 'tilt' panel tagged
         // ClosurePanelTag.Tilt instead of a 'lift'/ClosurePanelTag.Lift (Translation) panel.
-        liftPanel = isWindow ? closureCover.addPanel('Tilt', [getSemtag(ClosurePanelTag.Tilt)], 'tilt') : closureCover.addPanel('Lift', [getSemtag(ClosurePanelTag.Lift)], 'lift');
+        liftPanel = isWindow
+          ? closureCover.addPanel('Tilt', [getSemtag(ClosurePanelTag.Tilt)], 'tilt', panelOptions)
+          : closureCover.addPanel('Lift', [getSemtag(ClosurePanelTag.Lift)], 'lift', panelOptions);
         closureCover.addRequiredClusters();
         cover = closureCover;
       } else {
         cover = new MatterbridgeEndpoint([windowCovering, bridgedNode, powerSource], { id: device.label }, this.config.debug);
         cover.createDefaultIdentifyClusterServer(1, Identify.IdentifyType.Actuator);
-        cover.createDefaultWindowCoveringClusterServer();
+        cover.createDefaultWindowCoveringClusterServer(initialPosition);
         cover.createDefaultBridgedDeviceBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', device.definition.uiClass);
         if (device.states.find((s) => s.name === 'core:BatteryDiscreteLevelState')) cover.createDefaultPowerSourceRechargeableBatteryClusterServer();
         else cover.createDefaultPowerSourceWiredClusterServer();

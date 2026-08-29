@@ -624,6 +624,48 @@ describe('SomfyTahomaPlatform', () => {
     somfyPlatform.config.closureOptions = {};
   });
 
+  it('should seed a Closure cover with the real TaHoma position instead of always starting fully open', async () => {
+    somfyPlatform.config.useClosure = true;
+    setMockDevice({ label: 'Device1', uniqueName: 'Blind' });
+    mockDevices[0].states = [{ name: 'core:ClosureState', type: 1, value: 40 } satisfies State];
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const liftPanel = cover.liftPanel;
+    expect(liftPanel).toBeDefined();
+    if (!liftPanel) return;
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(4000);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'targetState')?.position).toBe(4000);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+    somfyPlatform.config.useClosure = false;
+  });
+
+  it('should seed a WindowCovering cover with the real TaHoma position instead of always starting fully open', async () => {
+    setMockDevice({ label: 'Device1', uniqueName: 'Blind' });
+    mockDevices[0].states = [{ name: 'core:ClosureState', type: 1, value: 40 } satisfies State];
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    expect(cover.bridgedDevice.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(4000);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+  });
+
   it('should add a rechargeable battery cover and handle device state updates', async () => {
     setMockDevice({ label: 'Device1', uniqueName: 'Blind' });
     mockDevices[0].states = [{ name: 'core:BatteryDiscreteLevelState', type: 3, value: 'normal' } satisfies State];
