@@ -40,8 +40,8 @@ If you like this project and find it useful, please consider giving it a star on
 - [chip]: Add chip-test toolchain agents instruction and chip-test runner.
 - [frontend]: Add plugin-frontend agents instructions.
 - [devcontainer]: Add `Dev Container` v.2.0.0 with dual Node and Bun runtime support.
-- [config]: Add the experimental `useClosure` config option (default `false`) to expose covers using the Matter 1.5 Closure device type instead of WindowCovering, to ease integration testing with controllers that support the newer cluster. Requires a matterbridge dev branch build with Closure support.
-- [config]: Add the `closureOptions` per-device config option to opt in to the Closure Calibration, Ventilation and Pedestrian optional features on a device basis. Only applies when `useClosure` is enabled.
+- [config]: Add the experimental `useClosure` config option (default `false`) to expose covers using the Matter 1.5 Closure device type instead of WindowCovering, to ease integration testing with controllers that support the newer cluster. Requires a matterbridge dev branch build with Closure support. Based on PR [47](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/47). Thanks Ludovic BOUÉ.
+- [config]: Add the `closureOptions` per-device config option to opt in to the Closure Calibration, Ventilation and Pedestrian optional features on a device basis. Only applies when `useClosure` is enabled. Based on PR [47](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/47). Thanks Ludovic BOUÉ.
 
 ### Changed
 
