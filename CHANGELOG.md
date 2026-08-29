@@ -31,6 +31,10 @@ If you like this project and find it useful, please consider giving it a star on
 
 ## [1.7.1] - Dev branch
 
+### Added
+
+- [config]: Add the `signaturePosition` per-device `closureOptions` override for the Closure `Signature` position (Application Cluster Specification § 5.4.6.1.1). Defaults to 90% closed (10% open), since neither TaHoma nor the Matter spec exposes this manufacturer- or installer-defined position. Only applies when `useClosure` is enabled. Fixes [#49](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/49).
+
 ### Changed
 
 - [package]: Bump transitive `axios` to v.1.20.0 and `follow-redirects` to v.1.16.1 (overkiz-client → axios) to fix security advisories.
