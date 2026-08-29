@@ -34,7 +34,7 @@ import {
   powerSource,
   windowCovering,
 } from 'matterbridge';
-import { Closure } from 'matterbridge/devices';
+import { Closure, type ClosurePanelOptions } from 'matterbridge/devices';
 import { type AnsiLogger, BLUE, CYAN, debugStringify, ign, nf, rs, stringify, YELLOW } from 'matterbridge/logger';
 import { ClosureCoveringTag, ClosurePanelTag, ClosureTag } from 'matterbridge/matter';
 import { ClosureControl, ClosureDimension, Identify, WindowCovering } from 'matterbridge/matter/clusters';
@@ -145,6 +145,8 @@ function getCoverPosition(cover: Cover): number | null | undefined {
 async function setCoverStoppedAt(cover: Cover, position: number): Promise<void> {
   const log = cover.bridgedDevice.log;
   if (cover.liftPanel) {
+    // MotionLatching and Speed are disabled on this panel's ClosureDimension cluster (see addPanel above), so
+    // currentState/targetState only ever carry position.
     await cover.liftPanel.setAttribute(ClosureDimension, 'currentState', { position }, log);
     await cover.liftPanel.setAttribute(ClosureDimension, 'targetState', { position }, log);
 
@@ -458,10 +460,15 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
           pedestrian: this.config.closureOptions?.[device.label]?.pedestrian,
         });
         closureCover.createDefaultBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', 0x8000, device.definition.uiClass);
+        // TaHoma covers don't report a latch state or a controllable motion speed, so the ClosureDimension panel
+        // only advertises Positioning: MotionLatching and Speed are disabled rather than declared and left unused.
+        const panelOptions: ClosurePanelOptions = { motionLatching: false, speed: false };
         // Window openers open by rotating on a hinge, not by translating up/down like a shutter or blind, so their
         // panel must advertise the Rotation feature (ClosureDimension.Feature.Rotation) via a 'tilt' panel tagged
         // ClosurePanelTag.Tilt instead of a 'lift'/ClosurePanelTag.Lift (Translation) panel.
-        liftPanel = isWindow ? closureCover.addPanel('Tilt', [getSemtag(ClosurePanelTag.Tilt)], 'tilt') : closureCover.addPanel('Lift', [getSemtag(ClosurePanelTag.Lift)], 'lift');
+        liftPanel = isWindow
+          ? closureCover.addPanel('Tilt', [getSemtag(ClosurePanelTag.Tilt)], 'tilt', panelOptions)
+          : closureCover.addPanel('Lift', [getSemtag(ClosurePanelTag.Lift)], 'lift', panelOptions);
         closureCover.addRequiredClusters();
         cover = closureCover;
       } else {
