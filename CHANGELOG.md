@@ -31,6 +31,10 @@ If you like this project and find it useful, please consider giving it a star on
 
 ## [1.7.1] - Dev branch
 
+### Fixed
+
+- [closure]: When `useClosure` is enabled, `ClosureControl.moveTo` and `ClosureDimension.setTarget` now refuse a position change while the closure/panel is latched and the command doesn't explicitly request `latch: false`, matching the same precondition matterbridge itself enforces (Matter 1.6 §5.4.8.2.4/§5.5.8.1.4). Matterbridge currently forwards these commands to the plugin before running that validation, so without this guard a command the framework goes on to reject could still move the real cover. Workaround for [Luligu/matterbridge#617](https://github.com/Luligu/matterbridge/issues/617); this plugin-side check can be removed once that lands upstream.
+
 ### Changed
 
 - [package]: Bump transitive `axios` to v.1.20.0 and `follow-redirects` to v.1.16.1 (overkiz-client → axios) to fix security advisories.
