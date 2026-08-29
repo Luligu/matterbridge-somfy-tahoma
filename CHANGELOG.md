@@ -29,7 +29,7 @@ If you like this project and find it useful, please consider giving it a star on
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120"></a>
 
-## [1.6.1] - Dev branch
+## [1.7.0] - 2028-08-29
 
 ### Breaking changes
 
@@ -40,6 +40,8 @@ If you like this project and find it useful, please consider giving it a star on
 - [chip]: Add chip-test toolchain agents instruction and chip-test runner.
 - [frontend]: Add plugin-frontend agents instructions.
 - [devcontainer]: Add `Dev Container` v.2.0.0 with dual Node and Bun runtime support.
+- [config]: Add the experimental `useClosure` config option (default `false`) to expose covers using the Matter 1.5 Closure device type instead of WindowCovering, to ease integration testing with controllers that support the newer cluster. Requires a matterbridge dev branch build with Closure support.
+- [config]: Add the `closureOptions` per-device config option to opt in to the Closure Calibration, Ventilation and Pedestrian optional features on a device basis. Only applies when `useClosure` is enabled.
 
 ### Changed
 

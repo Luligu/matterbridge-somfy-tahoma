@@ -13,7 +13,9 @@ import { promises as fs } from 'node:fs';
 
 import type { PlatformMatterbridge } from 'matterbridge';
 import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
-import { WindowCovering } from 'matterbridge/matter/clusters';
+import { ClosureCoveringTag, ClosurePanelTag, ClosureTag } from 'matterbridge/matter';
+import { ClosureControl, ClosureDimension, WindowCovering } from 'matterbridge/matter/clusters';
+import { ThreeLevelAuto } from 'matterbridge/matter/types';
 import { wait } from 'matterbridge/utils';
 import { flushAsync, log, loggerLogSpy, setDebug, setupTest } from 'matterbridge/vitest-utils';
 import {
@@ -28,7 +30,7 @@ import {
 } from 'matterbridge/vitest-utils/matter';
 import { Client, Device, type State } from 'overkiz-client';
 
-import initializePlugin, { SomfyTahomaPlatform, type SomfyTahomaPlatformConfig, WC_PERCENT100THS_MAX_CLOSED, WC_PERCENT100THS_MIN_OPEN } from '../src/module.js';
+import initializePlugin, { PERCENT100THS_MAX_CLOSED, PERCENT100THS_MIN_OPEN, SomfyTahomaPlatform, type SomfyTahomaPlatformConfig } from '../src/module.js';
 
 // Spy on the Client.connect method
 const clientConnectSpy = vi.spyOn(Client.prototype, 'connect').mockResolvedValue();
@@ -49,11 +51,13 @@ describe('SomfyTahomaPlatform', () => {
     username: 'None',
     password: 'None',
     service: 'somfy_europe',
+    blackList: [],
+    whiteList: [],
     movementDuration: {
       Device1: 2,
     },
-    blackList: [],
-    whiteList: [],
+    useClosure: false,
+    closureOptions: {},
     debug: false,
     unregisterOnShutdown: false,
   };
@@ -265,6 +269,361 @@ describe('SomfyTahomaPlatform', () => {
     await flushAsync();
   });
 
+  it('should tag a Window uiClass device with ClosureTag.Window and a rotating Tilt panel when useClosure is enabled', async () => {
+    somfyPlatform.config.useClosure = true;
+    setMockDevice({ label: 'Device1', uniqueName: 'WindowOpenerVeluxIOComponent', uiClass: 'Window', commands: ['open', 'close', 'stop'] });
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover?.bridgedDevice.tagList).toEqual([{ mfgCode: null, namespaceId: ClosureTag.Window.namespaceId, tag: ClosureTag.Window.tag }]);
+    expect(cover?.liftPanel?.tagList).toEqual([{ mfgCode: null, namespaceId: ClosurePanelTag.Tilt.namespaceId, tag: ClosurePanelTag.Tilt.tag }]);
+    // A rotating window opener supports the Rotation feature (rotationAxis attribute), not Translation (translationDirection attribute)
+    expect(cover?.liftPanel?.hasAttributeServer(ClosureDimension, 'rotationAxis')).toBe(true);
+    expect(cover?.liftPanel?.hasAttributeServer(ClosureDimension, 'translationDirection')).toBe(false);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+    somfyPlatform.config.useClosure = false;
+  });
+
+  it('should tag a Shutter uiClass device with ClosureCoveringTag.Shutter when useClosure is enabled', async () => {
+    somfyPlatform.config.useClosure = true;
+    setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass: 'Shutter' });
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover?.bridgedDevice.tagList).toEqual([
+      { mfgCode: null, namespaceId: ClosureTag.Covering.namespaceId, tag: ClosureTag.Covering.tag },
+      { mfgCode: null, namespaceId: ClosureCoveringTag.Shutter.namespaceId, tag: ClosureCoveringTag.Shutter.tag },
+    ]);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+    somfyPlatform.config.useClosure = false;
+    somfyPlatform.config.closureOptions = {};
+  });
+
+  it('should tag a VenetianBlind uiClass device with ClosureCoveringTag.Venetian when useClosure is enabled, defaulting the movement duration for an unlisted device', async () => {
+    somfyPlatform.config.useClosure = true;
+    setMockDevice({ label: 'Device2', uniqueName: 'xxx', uiClass: 'VenetianBlind' });
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `- duration 30`);
+    const cover = somfyPlatform.covers.get('Device2');
+    expect(cover?.bridgedDevice.tagList).toEqual([
+      { mfgCode: null, namespaceId: ClosureTag.Covering.namespaceId, tag: ClosureTag.Covering.tag },
+      { mfgCode: null, namespaceId: ClosureCoveringTag.Venetian.namespaceId, tag: ClosureCoveringTag.Venetian.tag },
+    ]);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+    somfyPlatform.config.useClosure = false;
+    somfyPlatform.config.closureOptions = {};
+  });
+
+  it('should tag an Awning uiClass device with ClosureCoveringTag.Awning when useClosure is enabled', async () => {
+    somfyPlatform.config.useClosure = true;
+    setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass: 'Awning' });
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover?.bridgedDevice.tagList).toEqual([
+      { mfgCode: null, namespaceId: ClosureTag.Covering.namespaceId, tag: ClosureTag.Covering.tag },
+      { mfgCode: null, namespaceId: ClosureCoveringTag.Awning.namespaceId, tag: ClosureCoveringTag.Awning.tag },
+    ]);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+    somfyPlatform.config.useClosure = false;
+    somfyPlatform.config.closureOptions = {};
+  });
+
+  it('should not add a device that matches no supported uniqueName, uiClass, or command pattern', async () => {
+    setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass: 'Unsupported', commands: ['foo', 'bar'] });
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 1 TaHoma devices`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Discovered 0 TaHoma screens`);
+    expect(somfyPlatform.tahomaDevices).toHaveLength(0);
+    expect(somfyPlatform.covers.size).toBe(0);
+  });
+
+  it('should opt in per device to the Closure Calibration, Ventilation and Pedestrian optional features when useClosure is enabled', async () => {
+    somfyPlatform.config.useClosure = true;
+    somfyPlatform.config.closureOptions = { Device1: { calibration: true, ventilation: true, pedestrian: true } };
+    setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass: 'Shutter' });
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover?.bridgedDevice.getAttribute(ClosureControl.id, 'featureMap')).toEqual(expect.objectContaining({ calibration: true, ventilation: true, pedestrian: true }));
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+    somfyPlatform.config.useClosure = false;
+    somfyPlatform.config.closureOptions = {};
+  });
+
+  it('should discover a Closure cover with a battery power source and handle a full moveTo/setTarget/stop cycle', async () => {
+    somfyPlatform.config.useClosure = true;
+    setMockDevice({ label: 'Device1', uniqueName: 'Blind' });
+    mockDevices[0].states = [{ name: 'core:BatteryDiscreteLevelState', type: 3, value: 'normal' } satisfies State];
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    expect(somfyPlatform.covers.size).toBe(1);
+
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+    const liftPanel = cover.liftPanel;
+    expect(liftPanel).toBeDefined();
+    if (!liftPanel) return;
+    // uiClass defaults to 'Screen' (see createMockDevice), which maps to ClosureCoveringTag.Blind
+    expect(cover.bridgedDevice.tagList).toEqual([
+      { mfgCode: null, namespaceId: ClosureTag.Covering.namespaceId, tag: ClosureTag.Covering.tag },
+      { mfgCode: null, namespaceId: ClosureCoveringTag.Blind.namespaceId, tag: ClosureCoveringTag.Blind.tag },
+    ]);
+    expect(liftPanel.tagList).toEqual([{ mfgCode: null, namespaceId: ClosurePanelTag.Lift.namespaceId, tag: ClosurePanelTag.Lift.tag }]);
+    // A battery powered device restores the same Rechargeable power source parity as the WindowCovering path
+    expect(device.hasAttributeServer('PowerSource', 'batPercentRemaining')).toBe(true);
+    // The Lift panel starts fully open (position 0), matching the WindowCovering path's default
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(PERCENT100THS_MIN_OPEN);
+
+    vi.clearAllMocks();
+    await device.executeCommandHandler('Identify.identify', { identifyTime: 1 }, 'identify', (device.state as any).identify, device);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}identify${rs}${nf} called identifyTime:1`);
+
+    vi.clearAllMocks();
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToPedestrianPosition },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.WARN, `Command moveTo called with unsupported position:${ClosureControl.TargetPosition.MoveToPedestrianPosition}`);
+
+    vi.clearAllMocks();
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyClosed },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    await wait(3000);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}moveTo${rs}${nf} ${CYAN}${PERCENT100THS_MAX_CLOSED}${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at ${PERCENT100THS_MAX_CLOSED}`);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(PERCENT100THS_MAX_CLOSED);
+
+    vi.clearAllMocks();
+    // Two rapid setTarget calls: the second must clear the first's pending debounce timer
+    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 9000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
+    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 5000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
+    await wait(2000);
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}setTarget${rs}${nf} ${CYAN}9000${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}setTarget${rs}${nf} ${CYAN}5000${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at 5000`);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(5000);
+
+    vi.clearAllMocks();
+    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 100000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.WARN, `Command setTarget called with unsupported position:100000`);
+
+    vi.clearAllMocks();
+    // Two rapid moveTo calls: the second must clear the first's pending debounce timer
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyClosed },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyOpen },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    await wait(2000);
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(
+      LogLevel.INFO,
+      `Command ${ign}moveTo${rs}${nf} ${CYAN}${PERCENT100THS_MAX_CLOSED}${nf} called for ${CYAN}${mockDevices[0].label}`,
+    );
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}moveTo${rs}${nf} ${CYAN}${PERCENT100THS_MIN_OPEN}${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at ${PERCENT100THS_MIN_OPEN}`);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(PERCENT100THS_MIN_OPEN);
+    expect(device.getAttribute(ClosureControl.id, 'overallCurrentState')?.position).toBe(ClosureControl.CurrentPosition.FullyOpened);
+
+    // We keep this Closure device to be used in the next tests
+  }, 120000);
+
+  it('should stop current movement in moveToPosition when already moving (Closure)', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+
+    cover.movementStatus = WindowCovering.MovementStatus.Opening;
+    cover.moveInterval = setInterval(() => {
+      // noop
+    }, 1000);
+
+    await somfyPlatform.moveToPosition(cover, 8000);
+
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Stopping current movement.');
+    expect(clientExecuteSpy).toHaveBeenCalledWith('apply/highPriority', expect.anything());
+    expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
+    expect(cover.moveInterval).toBeUndefined();
+  });
+
+  it('should mark a Closure stopped without syncing position when ClosureControl.stop is called and the position is unknown', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+    const liftPanel = cover.liftPanel;
+    expect(liftPanel).toBeDefined();
+    if (!liftPanel) return;
+
+    cover.movementStatus = WindowCovering.MovementStatus.Opening;
+    cover.moveInterval = setInterval(() => {
+      // noop
+    }, 1000);
+    // Simulate an unknown current position (e.g. right after startup, before the panel reports a value)
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- explicit undefined is required to match getAttribute's overload
+    vi.spyOn(liftPanel, 'getAttribute').mockReturnValueOnce(undefined);
+
+    await device.executeCommandHandler('ClosureControl.stop', {}, 'closureControl', (device.state as any).closureControl, device);
+
+    expect(clientExecuteSpy).toHaveBeenCalledWith('apply/highPriority', expect.anything());
+    // movementStatus and mainState still leave the "moving" state even though the position could not be synced
+    expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
+    expect(device.getAttribute(ClosureControl.id, 'mainState')).toBe(ClosureControl.MainState.Stopped);
+  });
+
+  it('should fall back to a null secureState and a default overallTargetState when they are unknown (Closure)', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+
+    cover.movementStatus = WindowCovering.MovementStatus.Opening;
+    cover.moveInterval = setInterval(() => {
+      // noop
+    }, 1000);
+    // Simulate a Speed-feature-only report where secureState has not been determined yet: every other
+    // mandatory field (speed) must stay present, otherwise the ClosureControl cluster rejects the write.
+    vi.spyOn(device, 'getAttribute')
+      .mockReturnValueOnce({ position: ClosureControl.CurrentPosition.PartiallyOpened, latch: false, speed: ThreeLevelAuto.Auto })
+      // oxlint-disable-next-line unicorn/no-useless-undefined -- explicit undefined is required to match getAttribute's overload
+      .mockReturnValueOnce(undefined);
+
+    await device.executeCommandHandler('ClosureControl.stop', {}, 'closureControl', (device.state as any).closureControl, device);
+
+    expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
+    expect(device.getAttribute(ClosureControl.id, 'overallCurrentState')?.secureState).toBeNull();
+    expect(device.getAttribute(ClosureControl.id, 'overallTargetState')).toEqual({
+      position: ClosureControl.TargetPosition.MoveToFullyClosed,
+      latch: true,
+      speed: ThreeLevelAuto.Auto,
+    });
+  });
+
+  it('should ignore Identify and ClosureControl/ClosureDimension commands when the cover was removed from the map (Closure)', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+    const liftPanel = cover.liftPanel;
+    expect(liftPanel).toBeDefined();
+    if (!liftPanel) return;
+
+    // Simulate the cover having been removed from the map (e.g. mid-flight during a shutdown) after the
+    // command handlers were registered but before a pending command is actually dispatched.
+    somfyPlatform.covers.delete('Device1');
+    try {
+      vi.clearAllMocks();
+      await device.executeCommandHandler('Identify.identify', { identifyTime: 1 }, 'identify', (device.state as any).identify, device);
+      expect(loggerLogSpy).not.toHaveBeenCalled();
+
+      await device.executeCommandHandler(
+        'ClosureControl.moveTo',
+        { position: ClosureControl.TargetPosition.MoveToFullyClosed },
+        'closureControl',
+        (device.state as any).closureControl,
+        device,
+      );
+      expect(loggerLogSpy).not.toHaveBeenCalled();
+
+      await device.executeCommandHandler('ClosureControl.stop', {}, 'closureControl', (device.state as any).closureControl, device);
+      expect(loggerLogSpy).not.toHaveBeenCalled();
+
+      await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 5000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
+      expect(loggerLogSpy).not.toHaveBeenCalled();
+    } finally {
+      somfyPlatform.covers.set('Device1', cover);
+    }
+  });
+
+  it('should send stop on ClosureControl.stop when movementStatus is not stopped', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+
+    cover.movementStatus = WindowCovering.MovementStatus.Opening;
+    cover.moveInterval = setInterval(() => {
+      // noop
+    }, 1000);
+
+    // ClosureControl.stop while a moveTo debounce timer is still pending must clear it too
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyClosed },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    await device.executeCommandHandler('ClosureControl.stop', {}, 'closureControl', (device.state as any).closureControl, device);
+    await wait(800);
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(
+      LogLevel.INFO,
+      `Command ${ign}moveTo${rs}${nf} ${CYAN}${PERCENT100THS_MAX_CLOSED}${nf} called for ${CYAN}${mockDevices[0].label}`,
+    );
+
+    expect(clientExecuteSpy).toHaveBeenCalledWith('apply/highPriority', expect.anything());
+    expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
+
+    // Calling stop again while already stopped must not send another stop command
+    vi.clearAllMocks();
+    await device.executeCommandHandler('ClosureControl.stop', {}, 'closureControl', (device.state as any).closureControl, device);
+    expect(clientExecuteSpy).not.toHaveBeenCalled();
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+    somfyPlatform.config.useClosure = false;
+    somfyPlatform.config.closureOptions = {};
+  });
+
   it('should add a rechargeable battery cover and handle device state updates', async () => {
     setMockDevice({ label: 'Device1', uniqueName: 'Blind' });
     mockDevices[0].states = [{ name: 'core:BatteryDiscreteLevelState', type: 3, value: 'normal' } satisfies State];
@@ -313,7 +672,7 @@ describe('SomfyTahomaPlatform', () => {
     const device = somfyPlatform.covers.get('Device1')?.bridgedDevice;
     expect(device).toBeDefined();
     if (!device) return;
-    await device.setWindowCoveringCurrentTargetStatus(WC_PERCENT100THS_MIN_OPEN, WC_PERCENT100THS_MIN_OPEN, WindowCovering.MovementStatus.Stopped);
+    await device.setWindowCoveringCurrentTargetStatus(PERCENT100THS_MIN_OPEN, PERCENT100THS_MIN_OPEN, WindowCovering.MovementStatus.Stopped);
 
     vi.clearAllMocks();
     await device.executeCommandHandler('Identify.identify', { identifyTime: 1 }, 'identify', (device.state as any).identify, device);
@@ -323,56 +682,91 @@ describe('SomfyTahomaPlatform', () => {
     await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
     await wait(3000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}downOrClose${rs}${nf} called for ${CYAN}${mockDevices[0].label}`);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${WC_PERCENT100THS_MIN_OPEN} to ${WC_PERCENT100THS_MAX_CLOSED}...`);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at ${WC_PERCENT100THS_MAX_CLOSED}`);
-    expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(WC_PERCENT100THS_MAX_CLOSED);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${PERCENT100THS_MIN_OPEN} to ${PERCENT100THS_MAX_CLOSED}...`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at ${PERCENT100THS_MAX_CLOSED}`);
+    expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(PERCENT100THS_MAX_CLOSED);
 
     vi.clearAllMocks();
     await device.executeCommandHandler('WindowCovering.upOrOpen', {}, 'windowCovering', (device.state as any).windowCovering, device);
     await wait(3000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}upOrOpen${rs}${nf} called for ${CYAN}${mockDevices[0].label}`);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${WC_PERCENT100THS_MAX_CLOSED} to ${WC_PERCENT100THS_MIN_OPEN}...`);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at ${WC_PERCENT100THS_MIN_OPEN}`);
-    expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(WC_PERCENT100THS_MIN_OPEN);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${PERCENT100THS_MAX_CLOSED} to ${PERCENT100THS_MIN_OPEN}...`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at ${PERCENT100THS_MIN_OPEN}`);
+    expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(PERCENT100THS_MIN_OPEN);
 
     vi.clearAllMocks();
     await device.executeCommandHandler('WindowCovering.upOrOpen', {}, 'windowCovering', (device.state as any).windowCovering, device);
-    await wait(3000);
+    await wait(1100);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}upOrOpen${rs}${nf} called for ${CYAN}${mockDevices[0].label}`);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${WC_PERCENT100THS_MIN_OPEN} to ${WC_PERCENT100THS_MIN_OPEN}...`);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${WC_PERCENT100THS_MIN_OPEN} to ${WC_PERCENT100THS_MIN_OPEN}. No movement needed.`);
-    expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(WC_PERCENT100THS_MIN_OPEN);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${PERCENT100THS_MIN_OPEN} to ${PERCENT100THS_MIN_OPEN}...`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${PERCENT100THS_MIN_OPEN} to ${PERCENT100THS_MIN_OPEN}. No movement needed.`);
+    expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(PERCENT100THS_MIN_OPEN);
 
     vi.clearAllMocks();
     await device.executeCommandHandler('WindowCovering.goToLiftPercentage', { liftPercent100thsValue: 5000 }, 'windowCovering', (device.state as any).windowCovering, device);
-    await wait(3000);
+    await wait(2000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}5000${nf} called for ${CYAN}${mockDevices[0].label}`);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${WC_PERCENT100THS_MIN_OPEN} to 5000...`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${PERCENT100THS_MIN_OPEN} to 5000...`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at 5000`);
     expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(5000);
 
     vi.clearAllMocks();
     await device.executeCommandHandler('WindowCovering.goToLiftPercentage', { liftPercent100thsValue: 10000 }, 'windowCovering', (device.state as any).windowCovering, device);
-    await wait(3000);
+    await wait(2000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}10000${nf} called for ${CYAN}${mockDevices[0].label}`);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 5000 to ${WC_PERCENT100THS_MAX_CLOSED}...`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from 5000 to ${PERCENT100THS_MAX_CLOSED}...`);
 
     vi.clearAllMocks();
     await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
     await wait(1000);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${WC_PERCENT100THS_MAX_CLOSED} to ${WC_PERCENT100THS_MAX_CLOSED}...`);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${WC_PERCENT100THS_MAX_CLOSED} to ${WC_PERCENT100THS_MAX_CLOSED}. No movement needed.`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${PERCENT100THS_MAX_CLOSED} to ${PERCENT100THS_MAX_CLOSED}...`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${PERCENT100THS_MAX_CLOSED} to ${PERCENT100THS_MAX_CLOSED}. No movement needed.`);
 
     vi.clearAllMocks();
     await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
     await wait(1000);
-    expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(WC_PERCENT100THS_MAX_CLOSED);
+    expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(PERCENT100THS_MAX_CLOSED);
+
+    vi.clearAllMocks();
+    // Two rapid goToLiftPercentage calls: the second must clear the first's pending debounce timer
+    await device.executeCommandHandler('WindowCovering.goToLiftPercentage', { liftPercent100thsValue: 3000 }, 'windowCovering', (device.state as any).windowCovering, device);
+    await device.executeCommandHandler('WindowCovering.goToLiftPercentage', { liftPercent100thsValue: 7000 }, 'windowCovering', (device.state as any).windowCovering, device);
+    await wait(2000);
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}3000${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}7000${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(7000);
 
     await device.executeCommandHandler('WindowCovering.upOrOpen', {}, 'windowCovering', (device.state as any).windowCovering, device);
     await device.executeCommandHandler('WindowCovering.stopMotion', {}, 'windowCovering', {} as any, device);
     await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
     await device.executeCommandHandler('WindowCovering.upOrOpen', {}, 'windowCovering', (device.state as any).windowCovering, device);
     await device.executeCommandHandler('WindowCovering.stopMotion', {}, 'windowCovering', {} as any, device);
+
+    // Simulate the cover having been removed from the map (e.g. mid-flight during a shutdown) after the
+    // command handlers were registered but before a pending command is actually dispatched.
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    somfyPlatform.covers.delete('Device1');
+    try {
+      vi.clearAllMocks();
+      await device.executeCommandHandler('Identify.identify', { identifyTime: 1 }, 'identify', (device.state as any).identify, device);
+      expect(loggerLogSpy).not.toHaveBeenCalled();
+
+      await device.executeCommandHandler('WindowCovering.upOrOpen', {}, 'windowCovering', (device.state as any).windowCovering, device);
+      expect(loggerLogSpy).not.toHaveBeenCalled();
+
+      await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
+      expect(loggerLogSpy).not.toHaveBeenCalled();
+
+      await device.executeCommandHandler('WindowCovering.goToLiftPercentage', { liftPercent100thsValue: 5000 }, 'windowCovering', (device.state as any).windowCovering, device);
+      expect(loggerLogSpy).not.toHaveBeenCalled();
+
+      await device.executeCommandHandler('WindowCovering.stopMotion', {}, 'windowCovering', {} as any, device);
+      expect(loggerLogSpy).not.toHaveBeenCalled();
+    } finally {
+      somfyPlatform.covers.set('Device1', cover);
+    }
 
     somfyPlatform.tahomaDevices = [];
     somfyPlatform.covers.clear();
@@ -464,6 +858,29 @@ describe('SomfyTahomaPlatform', () => {
   it('should call onConfigure', async () => {
     await somfyPlatform.onConfigure();
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onConfigure called');
+  });
+
+  it('should mark a WindowCovering cover stopped without syncing position when onConfigure runs and the position is unknown', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+
+    cover.movementStatus = WindowCovering.MovementStatus.Opening;
+    // Simulate an unknown current position (e.g. right after startup, before the cluster reports a value)
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- explicit undefined is required to match getAttribute's overload
+    vi.spyOn(device, 'getAttribute').mockReturnValueOnce(undefined);
+
+    await somfyPlatform.onConfigure();
+
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onConfigure called');
+    // movementStatus and operationalStatus still leave the "moving" state even though the position could not be synced
+    expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
+    expect(device.getAttribute(WindowCovering.id, 'operationalStatus')).toEqual({
+      global: WindowCovering.MovementStatus.Stopped,
+      lift: WindowCovering.MovementStatus.Stopped,
+      tilt: WindowCovering.MovementStatus.Stopped,
+    });
   });
 
   it('should call onConfigure and log error', async () => {

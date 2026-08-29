@@ -82,6 +82,38 @@
         "type": "integer"
       }
     },
+    "useClosure": {
+      "title": "Use Closure (EXPERIMENTAL)",
+      "description": "Expose covers using the Matter 1.5 Closure device type instead of WindowCovering, to ease integration testing with controllers that support the newer cluster (SmartThings).",
+      "type": "boolean",
+      "default": false
+    },
+    "closureOptions": {
+      "title": "Closure Options (EXPERIMENTAL)",
+      "description": "Opt in per device to the Closure Calibration, Ventilation and Pedestrian optional features. Enter in the first field the name of the device and in the following fields true or false. Only applies when useClosure is enabled.",
+      "type": "object",
+      "selectFrom": "name",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "calibration": {
+            "title": "Calibration",
+            "type": "boolean",
+            "default": false
+          },
+          "ventilation": {
+            "title": "Ventilation",
+            "type": "boolean",
+            "default": false
+          },
+          "pedestrian": {
+            "title": "Pedestrian",
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    },
     "debug": {
       "title": "Enable Debug",
 

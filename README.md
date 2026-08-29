@@ -31,7 +31,7 @@ If you like this project and find it useful, please consider giving it a star on
 
 ## Prerequisites
 
-### Matterbridge
+### Matterbridge v3.10.7
 
 See the complete guidelines on [Matterbridge](https://matterbridge.io) for more information.
 
@@ -55,6 +55,10 @@ If any device creates issues put it in the blackList.
 
 Set for each device the full movement time (the plugin will use that time to syncronize the movement).
 
+If `useClosure` is enabled, covers are exposed using the Matter 1.5 Closure device type instead of WindowCovering. This eases integration testing with controllers that support the newer cluster (SmartThings).
+
+When `useClosure` is enabled, you can opt in per device to the Closure `Calibration`, `Ventilation` and `Pedestrian` optional features with `closureOptions`.
+
 These are the config values:
 
 ```json
@@ -69,6 +73,14 @@ These are the config values:
   "duration": {
     "<DEVICENAME1>": 30,
     "<DEVICENAME2>": 30
+  },
+  "useClosure": false,
+  "closureOptions": {
+    "<DEVICENAME1>": {
+      "calibration": false,
+      "ventilation": false,
+      "pedestrian": false
+    }
   }
 }
 ```
