@@ -419,9 +419,41 @@ describe('SomfyTahomaPlatform', () => {
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.WARN, `Command moveTo called with unsupported position:${ClosureControl.TargetPosition.MoveToPedestrianPosition}`);
 
     vi.clearAllMocks();
+    // The panel starts latched (see ClosurePanelOptions defaults): a position-changing command must request
+    // latch:false, or matterbridge's own ClosureControl/ClosureDimension validation would reject it (Matter 1.6
+    // §5.4.8.2.4/§5.5.8.1.4). The plugin re-derives that same precondition (isPositionChangeBlockedByLatch())
+    // so it never acts on a request the framework is about to reject — see
+    // https://github.com/Luligu/matterbridge/issues/617.
     await device.executeCommandHandler(
       'ClosureControl.moveTo',
       { position: ClosureControl.TargetPosition.MoveToFullyClosed },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    expect(loggerLogSpy).toHaveBeenCalledWith(
+      LogLevel.WARN,
+      `Command moveTo ignored for ${CYAN}${mockDevices[0].label}${nf}: latch is true and the command doesn't request latch:false`,
+    );
+    await wait(800);
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(
+      LogLevel.INFO,
+      `Command ${ign}moveTo${rs}${nf} ${CYAN}${PERCENT100THS_MAX_CLOSED}${nf} called for ${CYAN}${mockDevices[0].label}`,
+    );
+
+    vi.clearAllMocks();
+    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 9000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
+    expect(loggerLogSpy).toHaveBeenCalledWith(
+      LogLevel.WARN,
+      `Command setTarget ignored for ${CYAN}${mockDevices[0].label}${nf}: latch is true and the command doesn't request latch:false`,
+    );
+    await wait(800);
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}setTarget${rs}${nf} ${CYAN}9000${nf} called for ${CYAN}${mockDevices[0].label}`);
+
+    vi.clearAllMocks();
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyClosed, latch: false },
       'closureControl',
       (device.state as any).closureControl,
       device,
@@ -433,8 +465,8 @@ describe('SomfyTahomaPlatform', () => {
 
     vi.clearAllMocks();
     // Two rapid setTarget calls: the second must clear the first's pending debounce timer
-    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 9000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
-    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 5000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
+    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 9000, latch: false }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
+    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 5000, latch: false }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
     await wait(2000);
     expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}setTarget${rs}${nf} ${CYAN}9000${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}setTarget${rs}${nf} ${CYAN}5000${nf} called for ${CYAN}${mockDevices[0].label}`);
@@ -442,21 +474,29 @@ describe('SomfyTahomaPlatform', () => {
     expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(5000);
 
     vi.clearAllMocks();
-    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 100000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
+    await liftPanel.executeCommandHandler(
+      'ClosureDimension.setTarget',
+      { position: 100000, latch: false },
+      'closureDimension',
+      (liftPanel.state as any).closureDimension,
+      liftPanel,
+    );
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.WARN, `Command setTarget called with unsupported position:100000`);
 
     vi.clearAllMocks();
-    // Two rapid moveTo calls: the second must clear the first's pending debounce timer
+    // Two rapid moveTo calls: the second must clear the first's pending debounce timer. Both still need
+    // latch:false — moveToPosition() never adopts the requested latch into currentState/overallCurrentState
+    // (these covers have no real latch mechanism), so the closure stays latched across every command.
     await device.executeCommandHandler(
       'ClosureControl.moveTo',
-      { position: ClosureControl.TargetPosition.MoveToFullyClosed },
+      { position: ClosureControl.TargetPosition.MoveToFullyClosed, latch: false },
       'closureControl',
       (device.state as any).closureControl,
       device,
     );
     await device.executeCommandHandler(
       'ClosureControl.moveTo',
-      { position: ClosureControl.TargetPosition.MoveToFullyOpen },
+      { position: ClosureControl.TargetPosition.MoveToFullyOpen, latch: false },
       'closureControl',
       (device.state as any).closureControl,
       device,
@@ -473,6 +513,40 @@ describe('SomfyTahomaPlatform', () => {
 
     // We keep this Closure device to be used in the next tests
   }, 120000);
+
+  it('should allow moveTo/setTarget position changes without latch:false when the closure is not latched (Closure)', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+    const liftPanel = cover.liftPanel;
+    expect(liftPanel).toBeDefined();
+    if (!liftPanel) return;
+
+    vi.clearAllMocks();
+    // isPositionChangeBlockedByLatch() only blocks when the current latch is strictly true, so a not-latched
+    // (or latch-less, if a future device ever omitted MotionLatching) closure never needs latch:false.
+    vi.spyOn(device, 'getAttribute').mockReturnValueOnce({ position: ClosureControl.CurrentPosition.FullyOpened, latch: false, speed: ThreeLevelAuto.Auto });
+    await device.executeCommandHandler(
+      'ClosureControl.moveTo',
+      { position: ClosureControl.TargetPosition.MoveToFullyClosed },
+      'closureControl',
+      (device.state as any).closureControl,
+      device,
+    );
+    await wait(3000);
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.WARN, expect.stringContaining('ignored'));
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}moveTo${rs}${nf} ${CYAN}${PERCENT100THS_MAX_CLOSED}${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(PERCENT100THS_MAX_CLOSED);
+
+    vi.clearAllMocks();
+    vi.spyOn(liftPanel, 'getAttribute').mockReturnValueOnce({ position: PERCENT100THS_MAX_CLOSED, latch: false, speed: ThreeLevelAuto.Auto });
+    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 5000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
+    await wait(2000);
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.WARN, expect.stringContaining('ignored'));
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}setTarget${rs}${nf} ${CYAN}5000${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(5000);
+  }, 15000);
 
   it('should stop current movement in moveToPosition when already moving (Closure)', async () => {
     const cover = somfyPlatform.covers.get('Device1');
@@ -592,10 +666,12 @@ describe('SomfyTahomaPlatform', () => {
       // noop
     }, 1000);
 
-    // ClosureControl.stop while a moveTo debounce timer is still pending must clear it too
+    // ClosureControl.stop while a moveTo debounce timer is still pending must clear it too. latch:false is
+    // required here too, otherwise moveTo is refused up front (isPositionChangeBlockedByLatch) and never
+    // schedules the debounce timer this test means to exercise.
     await device.executeCommandHandler(
       'ClosureControl.moveTo',
-      { position: ClosureControl.TargetPosition.MoveToFullyClosed },
+      { position: ClosureControl.TargetPosition.MoveToFullyClosed, latch: false },
       'closureControl',
       (device.state as any).closureControl,
       device,
