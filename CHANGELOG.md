@@ -33,22 +33,23 @@ If you like this project and find it useful, please consider giving it a star on
 
 ### Breaking changes
 
-- [matterbridge]: Require matterbridge v.3.10.0 with matter v.1.6.0.
+- [matterbridge]: Require matterbridge v.3.10.7 with matter v.1.6.0.
 
 ### Added
 
 - [chip]: Add chip-test toolchain agents instruction and chip-test runner.
 - [frontend]: Add plugin-frontend agents instructions.
+- [devcontainer]: Add `Dev Container` v.2.0.0 with dual Node and Bun runtime support.
 
 ### Changed
 
-- [package]: Bump `oxfmt` to v.0.63.0.
-- [package]: Bump `oxlint` to v.1.78.0.
-- [package]: Bump `oxlint-tsgolint` to v.7.0.2001.
-- [package]: Bump `@types/node` to v.26.2.0.
+- [package]: Upgrade package.
+- [package]: Bump `oxfmt` to v.0.65.0.
+- [package]: Bump `oxlint` to v.1.80.0.
+- [package]: Bump `vitest` to v.4.1.11.
+- [package]: Bump `@types/node` to v.26.4.0.
 - [package]: Bump `overkiz-client` to v.1.0.23.
 - [package]: Update agents configs.
-- [devcontainer]: Bump `Dev Container` to v.1.2.0.
 - [vscode]: Bump `settings` to v.1.0.10.
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
