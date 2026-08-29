@@ -59,6 +59,8 @@ If `useClosure` is enabled, covers are exposed using the Matter 1.5 Closure devi
 
 When `useClosure` is enabled, you can opt in per device to the Closure `Calibration`, `Ventilation` and `Pedestrian` optional features with `closureOptions`.
 
+When `useClosure` is enabled, moving to the Closure `Signature` position (Application Cluster Specification § 5.4.6.1.1) moves to 90% closed (10% open) by default, since neither TaHoma nor the Matter spec exposes this manufacturer- or installer-defined position. Override it per device with `closureOptions.<DEVICENAME>.signaturePosition` (0-100, percentage closed).
+
 These are the config values:
 
 ```json
@@ -79,7 +81,8 @@ These are the config values:
     "<DEVICENAME1>": {
       "calibration": false,
       "ventilation": false,
-      "pedestrian": false
+      "pedestrian": false,
+      "signaturePosition": 90
     }
   }
 }

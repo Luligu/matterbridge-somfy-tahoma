@@ -43,7 +43,7 @@ import { inspectError, isValidNumber, isValidString } from 'matterbridge/utils';
 import { Action, Client, Command, type Device, Execution, type State } from 'overkiz-client';
 
 export type MovementDuration = Record<string, number>;
-export type ClosureOptions = Record<string, { calibration?: boolean; ventilation?: boolean; pedestrian?: boolean }>;
+export type ClosureOptions = Record<string, { calibration?: boolean; ventilation?: boolean; pedestrian?: boolean; signaturePosition?: number }>;
 export const PERCENT100THS_MIN_OPEN = 0;
 export const PERCENT100THS_MAX_CLOSED = 10000;
 
@@ -89,7 +89,11 @@ export type SomfyTahomaPlatformConfig = PlatformConfig & {
   movementDuration: MovementDuration;
   /** Expose covers using the Matter 1.5 Closure device type instead of WindowCovering. Requires a matterbridge build with Closure support. Default: false. */
   useClosure?: boolean;
-  /** Per-device opt-in for the Closure Calibration, Ventilation and Pedestrian optional features. Only applies when useClosure is enabled. Default: false for all devices and features. */
+  /**
+   * Per-device opt-in for the Closure Calibration, Ventilation and Pedestrian optional features, and per-device
+   * override of the Signature position (0-100, percentage closed; see getSignaturePosition and DEFAULT_SIGNATURE_POSITION).
+   * Only applies when useClosure is enabled. Default: false/undefined for all devices, features, and overrides.
+   */
   closureOptions?: ClosureOptions;
 };
 
@@ -106,6 +110,24 @@ function getCoveringTag(tahomaDevice: Device): Semtag {
   if (uiClass === 'Awning' || uiClass === 'Pergola') return ClosureCoveringTag.Awning;
   if (uiClass === 'Screen' || uiClass === 'ExteriorScreen') return ClosureCoveringTag.Blind;
   return ClosureCoveringTag.Shutter; // Shutter, RollerShutter and any other supported uiClass
+}
+
+/** Default Signature position (90% closed / 10% open), used when no per-device `signaturePosition` override is configured. See getSignaturePosition. */
+const DEFAULT_SIGNATURE_POSITION = 9000;
+
+/**
+ * Resolves the Signature position to move to for a ClosureControl.TargetPosition.MoveToSignaturePosition request.
+ * Neither TaHoma nor the Matter spec exposes this position (Application Cluster Specification § 5.4.6.1.1: it is
+ * manufacturer- or installer-defined), so it defaults to DEFAULT_SIGNATURE_POSITION (90% closed / 10% open), which
+ * matches both of the spec's own examples once expressed in the same "percentage closed" convention: a Window
+ * cracked open 10% for ventilation, and a Roller Shutter closed while keeping a gap between the slats.
+ * Overridable per device via the `signaturePosition` closureOptions.
+ *
+ * @param {number} [signaturePosition] - The per-device `closureOptions[label].signaturePosition` override, 0 (fully open) to 100 (fully closed), if configured.
+ * @returns {number} The Signature position, 0 (fully open) to 10000 (fully closed).
+ */
+function getSignaturePosition(signaturePosition?: number): number {
+  return isValidNumber(signaturePosition, 0, 100) ? signaturePosition * 100 : DEFAULT_SIGNATURE_POSITION;
 }
 
 /**
@@ -140,9 +162,10 @@ function getCoverPosition(cover: Cover): number | null | undefined {
  *
  * @param {Cover} cover - The cover to update.
  * @param {number} position - The reached position, 0 (fully open) to 10000 (fully closed).
+ * @param {ClosureControl.CurrentPosition} [overallPosition] - Overrides the coarse ClosureControl.CurrentPosition reported for this position, e.g. OpenedAtSignature for a Signature move whose percent would otherwise map to PartiallyOpened/FullyOpened/FullyClosed. Defaults to the coarse mapping derived from `position`.
  * @returns {Promise<void>}
  */
-async function setCoverStoppedAt(cover: Cover, position: number): Promise<void> {
+async function setCoverStoppedAt(cover: Cover, position: number, overallPosition?: ClosureControl.CurrentPosition): Promise<void> {
   const log = cover.bridgedDevice.log;
   if (cover.liftPanel) {
     const currentState = cover.liftPanel.getAttribute(ClosureDimension, 'currentState', log);
@@ -155,7 +178,7 @@ async function setCoverStoppedAt(cover: Cover, position: number): Promise<void> 
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- cover.liftPanel is only set when bridgedDevice is a Closure (see discoverDevices)
     await (cover.bridgedDevice as Closure).setState(
       {
-        position: getClosureOverallPositionFromPercent(position),
+        position: overallPosition ?? getClosureOverallPositionFromPercent(position),
         latch: overallCurrentState?.latch,
         speed: overallCurrentState?.speed,
         secureState: overallCurrentState?.secureState ?? null,
@@ -498,17 +521,20 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
               ? PERCENT100THS_MIN_OPEN
               : position === ClosureControl.TargetPosition.MoveToFullyClosed
                 ? PERCENT100THS_MAX_CLOSED
-                : undefined;
+                : position === ClosureControl.TargetPosition.MoveToSignaturePosition
+                  ? getSignaturePosition(this.config.closureOptions?.[cover.tahomaDevice.label]?.signaturePosition)
+                  : undefined;
           if (targetPosition === undefined) {
             cover.bridgedDevice.log.warn(`Command moveTo called with unsupported position:${position}`);
             return;
           }
+          const overallPosition = position === ClosureControl.TargetPosition.MoveToSignaturePosition ? ClosureControl.CurrentPosition.OpenedAtSignature : undefined;
           if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
           // oxlint-disable-next-line typescript/no-misused-promises
           cover.commandTimeout = setTimeout(async () => {
             cover.commandTimeout = undefined;
             cover.bridgedDevice.log.info(`Command ${ign}moveTo${rs}${nf} ${CYAN}${targetPosition}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
-            await this.moveToPosition(cover, targetPosition);
+            await this.moveToPosition(cover, targetPosition, overallPosition);
           }, 500);
         });
 
@@ -603,7 +629,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   // With Matter 0=open 10000=close. Cluster-agnostic: reads/writes go through getCoverPosition/setCoverStoppedAt/
   // setCoverMoving/setCoverCurrentPosition, which branch on cover.liftPanel to target either the WindowCovering
   // cluster or the Closure/ClosureDimension clusters (see the useClosure config option).
-  async moveToPosition(cover: Cover, targetPosition: number): Promise<void> {
+  async moveToPosition(cover: Cover, targetPosition: number, overallPosition?: ClosureControl.CurrentPosition): Promise<void> {
     const log = cover.bridgedDevice.log;
     const position = getCoverPosition(cover);
     if (!isValidNumber(position, PERCENT100THS_MIN_OPEN, PERCENT100THS_MAX_CLOSED)) return;
@@ -623,7 +649,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     if (targetPosition === currentPosition) {
       clearInterval(cover.moveInterval);
       cover.moveInterval = undefined;
-      await setCoverStoppedAt(cover, currentPosition);
+      await setCoverStoppedAt(cover, currentPosition, overallPosition);
       log.info(`Moving from ${currentPosition} to ${targetPosition}. No movement needed.`);
       return;
     }
@@ -640,7 +666,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       currentPosition = Math.round(currentPosition + movement / movementSeconds);
       if (Math.abs(targetPosition - currentPosition) <= 100 || (movement > 0 && currentPosition >= targetPosition) || (movement < 0 && currentPosition <= targetPosition)) {
         clearInterval(cover.moveInterval);
-        await setCoverStoppedAt(cover, targetPosition);
+        await setCoverStoppedAt(cover, targetPosition, overallPosition);
         if (targetPosition !== PERCENT100THS_MIN_OPEN && targetPosition !== PERCENT100THS_MAX_CLOSED) await this.sendCommand('stop', cover.tahomaDevice, true);
         log.debug(`Moving stopped at ${targetPosition}`);
       } else {
