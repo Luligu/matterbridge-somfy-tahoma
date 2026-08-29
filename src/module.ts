@@ -158,10 +158,10 @@ function getCoverPosition(cover: Cover): number | null | undefined {
 async function setCoverStoppedAt(cover: Cover, position: number): Promise<void> {
   const log = cover.bridgedDevice.log;
   if (cover.liftPanel) {
-    const currentState = cover.liftPanel.getAttribute(ClosureDimension, 'currentState', log);
-    await cover.liftPanel.setAttribute(ClosureDimension, 'currentState', { position, latch: currentState?.latch, speed: currentState?.speed }, log);
-    const targetState = cover.liftPanel.getAttribute(ClosureDimension, 'targetState', log);
-    await cover.liftPanel.setAttribute(ClosureDimension, 'targetState', { position, latch: targetState?.latch, speed: targetState?.speed }, log);
+    // MotionLatching and Speed are disabled on this panel's ClosureDimension cluster (see addPanel above), so
+    // currentState/targetState only ever carry position.
+    await cover.liftPanel.setAttribute(ClosureDimension, 'currentState', { position }, log);
+    await cover.liftPanel.setAttribute(ClosureDimension, 'targetState', { position }, log);
 
     const overallCurrentState = cover.bridgedDevice.getAttribute(ClosureControl, 'overallCurrentState', log);
     const overallTargetState = cover.bridgedDevice.getAttribute(ClosureControl, 'overallTargetState', log);
@@ -213,8 +213,7 @@ async function setCoverStopped(cover: Cover): Promise<void> {
 async function setCoverMoving(cover: Cover, targetPosition: number, closing: boolean): Promise<void> {
   const log = cover.bridgedDevice.log;
   if (cover.liftPanel) {
-    const targetState = cover.liftPanel.getAttribute(ClosureDimension, 'targetState', log);
-    await cover.liftPanel.setAttribute(ClosureDimension, 'targetState', { position: targetPosition, latch: targetState?.latch, speed: targetState?.speed }, log);
+    await cover.liftPanel.setAttribute(ClosureDimension, 'targetState', { position: targetPosition }, log);
     await cover.bridgedDevice.setAttribute(ClosureControl, 'mainState', ClosureControl.MainState.Moving, log);
   } else {
     await cover.bridgedDevice.setAttribute(WindowCovering, 'targetPositionLiftPercent100ths', targetPosition, log);
@@ -235,8 +234,7 @@ async function setCoverCurrentPosition(cover: Cover, position: number): Promise<
   const log = cover.bridgedDevice.log;
   const clamped = Math.max(PERCENT100THS_MIN_OPEN, Math.min(position, PERCENT100THS_MAX_CLOSED));
   if (cover.liftPanel) {
-    const currentState = cover.liftPanel.getAttribute(ClosureDimension, 'currentState', log);
-    await cover.liftPanel.setAttribute(ClosureDimension, 'currentState', { position: clamped, latch: currentState?.latch, speed: currentState?.speed }, log);
+    await cover.liftPanel.setAttribute(ClosureDimension, 'currentState', { position: clamped }, log);
   } else {
     await cover.bridgedDevice.setAttribute(WindowCovering, 'currentPositionLiftPercent100ths', clamped, log);
   }
@@ -480,13 +478,18 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
           pedestrian: this.config.closureOptions?.[device.label]?.pedestrian,
         });
         closureCover.createDefaultBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', 0x8000, device.definition.uiClass);
-        const panelOptions: ClosurePanelOptions =
-          initialPosition === undefined
+        // TaHoma covers don't report a latch state or a controllable motion speed, so the ClosureDimension panel
+        // only advertises Positioning: MotionLatching and Speed are disabled rather than declared and left unused.
+        const panelOptions: ClosurePanelOptions = {
+          motionLatching: false,
+          speed: false,
+          ...(initialPosition === undefined
             ? {}
             : {
-                currentState: { position: initialPosition, latch: true, speed: ThreeLevelAuto.Auto },
-                targetState: { position: initialPosition, latch: true, speed: ThreeLevelAuto.Auto },
-              };
+                currentState: { position: initialPosition },
+                targetState: { position: initialPosition },
+              }),
+        };
         // Window openers open by rotating on a hinge, not by translating up/down like a shutter or blind, so their
         // panel must advertise the Rotation feature (ClosureDimension.Feature.Rotation) via a 'tilt' panel tagged
         // ClosurePanelTag.Tilt instead of a 'lift'/ClosurePanelTag.Lift (Translation) panel.
