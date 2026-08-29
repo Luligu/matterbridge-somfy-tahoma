@@ -480,13 +480,19 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
           pedestrian: this.config.closureOptions?.[device.label]?.pedestrian,
         });
         closureCover.createDefaultBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', 0x8000, device.definition.uiClass);
-        const panelOptions: ClosurePanelOptions =
-          initialPosition === undefined
+        // TaHoma reports core:ClosureState in whole percent (0-100, see getInitialPosition), so the finest position
+        // change it can ever report or accept is 1% = 100 percent100ths units. Advertising the cluster default of
+        // 1 (0.01%) would overstate a precision TaHoma doesn't have.
+        const panelOptions: ClosurePanelOptions = {
+          resolution: 100,
+          stepValue: 100,
+          ...(initialPosition === undefined
             ? {}
             : {
                 currentState: { position: initialPosition, latch: true, speed: ThreeLevelAuto.Auto },
                 targetState: { position: initialPosition, latch: true, speed: ThreeLevelAuto.Auto },
-              };
+              }),
+        };
         // Window openers open by rotating on a hinge, not by translating up/down like a shutter or blind, so their
         // panel must advertise the Rotation feature (ClosureDimension.Feature.Rotation) via a 'tilt' panel tagged
         // ClosurePanelTag.Tilt instead of a 'lift'/ClosurePanelTag.Lift (Translation) panel.
