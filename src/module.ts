@@ -135,6 +135,25 @@ function getCoverPosition(cover: Cover): number | null | undefined {
 }
 
 /**
+ * Whether a ClosureControl.moveTo/ClosureDimension.setTarget position-change request must be refused because the
+ * closure/panel is currently latched and the request doesn't explicitly ask to unlatch it first (Matter 1.6
+ * Application Cluster Specification §5.4.8.2.4 / §5.5.8.1.4).
+ *
+ * @remarks
+ * Matterbridge forwards these commands to this handler before it runs that same check itself, so a rejected
+ * command can otherwise still reach `moveToPosition` and move the real cover (see
+ * {@link https://github.com/Luligu/matterbridge/issues/617}). Re-deriving the precondition here keeps the plugin
+ * from acting on a request Matterbridge is about to reject, until the upstream fix lands.
+ *
+ * @param {boolean | null | undefined} currentLatch - The `latch` field of the cluster's current state.
+ * @param {boolean | undefined} requestedLatch - The `latch` field of the incoming command, if present.
+ * @returns {boolean} `true` when the position change must be refused.
+ */
+function isPositionChangeBlockedByLatch(currentLatch: boolean | null | undefined, requestedLatch: boolean | undefined): boolean {
+  return currentLatch === true && requestedLatch !== false;
+}
+
+/**
  * Parks the cover at the given position and marks it stopped, on whichever cluster (WindowCovering or Closure) is
  * currently in use. Updates `cover.movementStatus`.
  *
@@ -490,7 +509,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       });
 
       if (liftPanel) {
-        cover.addCommandHandler('ClosureControl.moveTo', ({ request: { position } }) => {
+        cover.addCommandHandler('ClosureControl.moveTo', ({ request: { position, latch } }) => {
           const cover = this.covers.get(device.label);
           if (!cover) return;
           const targetPosition =
@@ -501,6 +520,11 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
                 : undefined;
           if (targetPosition === undefined) {
             cover.bridgedDevice.log.warn(`Command moveTo called with unsupported position:${position}`);
+            return;
+          }
+          const currentLatch = cover.bridgedDevice.getAttribute(ClosureControl, 'overallCurrentState', cover.bridgedDevice.log)?.latch;
+          if (isPositionChangeBlockedByLatch(currentLatch, latch)) {
+            cover.bridgedDevice.log.warn(`Command moveTo ignored for ${CYAN}${cover.tahomaDevice.label}${nf}: latch is true and the command doesn't request latch:false`);
             return;
           }
           if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
@@ -528,11 +552,16 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
           else await setCoverStopped(cover);
         });
 
-        liftPanel.addCommandHandler('ClosureDimension.setTarget', ({ request: { position } }) => {
+        liftPanel.addCommandHandler('ClosureDimension.setTarget', ({ request: { position, latch } }) => {
           const cover = this.covers.get(device.label);
           if (!cover) return;
           if (!isValidNumber(position, PERCENT100THS_MIN_OPEN, PERCENT100THS_MAX_CLOSED)) {
             cover.bridgedDevice.log.warn(`Command setTarget called with unsupported position:${position}`);
+            return;
+          }
+          const currentLatch = liftPanel.getAttribute(ClosureDimension, 'currentState', cover.bridgedDevice.log)?.latch;
+          if (isPositionChangeBlockedByLatch(currentLatch, latch)) {
+            cover.bridgedDevice.log.warn(`Command setTarget ignored for ${CYAN}${cover.tahomaDevice.label}${nf}: latch is true and the command doesn't request latch:false`);
             return;
           }
           if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
