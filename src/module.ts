@@ -75,11 +75,11 @@ export interface Cover {
 }
 
 export type SomfyTahomaPlatformConfig = PlatformConfig & {
-  /** TaHoma account username. */
+  /** TaHoma cloud account username, or local gateway IPv4 address/PIN. */
   username: string;
-  /** TaHoma account password. */
+  /** TaHoma cloud account password, or local API bearer token. */
   password: string;
-  /** TaHoma cloud service to connect to (e.g. `somfy_europe`). */
+  /** TaHoma service to connect to (e.g. `somfy_europe` or `local`). */
   service: string;
   /** Only devices whose name, uniqueName, or serial number is in this list are exposed. Empty means no restriction. */
   whiteList: string[];
@@ -285,7 +285,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.log.info('Finished initializing platform:', this.config.name);
 
     // create TaHoma client
-    this.log.info(`Starting client Tahoma service ${this.config.service} with user ${this.config.username} password: ${this.config.password}`);
+    this.log.info(`Starting TaHoma client for service ${this.config.service}`);
     this.tahomaClient = new Client(this.log, {
       service: this.config.service,
       user: this.config.username,
@@ -663,7 +663,8 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       const newCommand = new Command(resolvedCommand);
       const newAction = new Action(device.deviceURL, [newCommand]);
       const newExecution = new Execution('Sending ' + resolvedCommand, newAction);
-      await this.tahomaClient?.execute(highPriority ? 'apply/highPriority' : 'apply', newExecution);
+      const executionPath = this.config.service === 'local' || !highPriority ? 'apply' : 'apply/highPriority';
+      await this.tahomaClient?.execute(executionPath, newExecution);
     } catch (error) {
       inspectError(this.log, `Error sending command ${resolvedCommand} to ${device.label}`, error);
     }
