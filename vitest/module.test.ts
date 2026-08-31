@@ -179,14 +179,28 @@ describe('SomfyTahomaPlatform', () => {
     const originalService = somfyPlatform.config.service;
     try {
       clientExecuteSpy.mockClear();
+      mockDevices[0].deviceURL = 'io://1234-5678-9012/12345678';
 
       somfyPlatform.config.service = 'local';
       await somfyPlatform.sendCommand('close', mockDevices[0], true);
       expect(clientExecuteSpy).toHaveBeenNthCalledWith(1, 'apply', expect.anything());
+      const localExecution = clientExecuteSpy.mock.calls[0][1];
+      expect(JSON.parse(JSON.stringify(localExecution))).toEqual({
+        label: 'Sending close',
+        actions: [
+          {
+            deviceURL: 'io://1234-5678-9012/12345678',
+            commands: [{ name: 'close', parameters: [] }],
+          },
+        ],
+      });
+      expect(typeof localExecution.onStateUpdate).toBe('function');
 
       somfyPlatform.config.service = 'somfy_europe';
       await somfyPlatform.sendCommand('close', mockDevices[0], true);
       expect(clientExecuteSpy).toHaveBeenNthCalledWith(2, 'apply/highPriority', expect.anything());
+      const cloudExecution = JSON.parse(JSON.stringify(clientExecuteSpy.mock.calls[1][1]));
+      expect(cloudExecution.actions[0].commands[0]).toEqual({ type: 1, name: 'close', parameters: [] });
 
       await somfyPlatform.sendCommand('close', mockDevices[0]);
       expect(clientExecuteSpy).toHaveBeenNthCalledWith(3, 'apply', expect.anything());

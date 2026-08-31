@@ -94,6 +94,23 @@ export type SomfyTahomaPlatformConfig = PlatformConfig & {
 };
 
 /**
+ * Keeps the overkiz-client execution lifecycle while serializing only fields accepted by Somfy's Local API.
+ * The cloud API accepts overkiz-client's additional EventEmitter and command metadata, but the local endpoint
+ * can reject that payload with `400 Unknown object`.
+ */
+class LocalApiExecution extends Execution {
+  toJSON(): { label: string; actions: { deviceURL: string; commands: { name: string; parameters: unknown[] }[] }[] } {
+    return {
+      label: this.label,
+      actions: this.actions.map((action) => ({
+        deviceURL: action.deviceURL,
+        commands: action.commands.map((command) => ({ name: command.name, parameters: command.parameters })),
+      })),
+    };
+  }
+}
+
+/**
  * Maps a discovered TaHoma device's uiClass to the closest ClosureCoveringTag semantic tag, used to disambiguate
  * the Closure endpoint (Application Cluster Specification § 24, ClosureCoveringTag namespace).
  *
@@ -662,8 +679,9 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     try {
       const newCommand = new Command(resolvedCommand);
       const newAction = new Action(device.deviceURL, [newCommand]);
-      const newExecution = new Execution('Sending ' + resolvedCommand, newAction);
-      const executionPath = this.config.service === 'local' || !highPriority ? 'apply' : 'apply/highPriority';
+      const isLocalApi = this.config.service === 'local';
+      const newExecution = isLocalApi ? new LocalApiExecution('Sending ' + resolvedCommand, newAction) : new Execution('Sending ' + resolvedCommand, newAction);
+      const executionPath = isLocalApi || !highPriority ? 'apply' : 'apply/highPriority';
       await this.tahomaClient?.execute(executionPath, newExecution);
     } catch (error) {
       inspectError(this.log, `Error sending command ${resolvedCommand} to ${device.label}`, error);
