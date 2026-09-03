@@ -38,7 +38,7 @@ import { Closure } from 'matterbridge/devices';
 import { type AnsiLogger, BLUE, CYAN, debugStringify, ign, nf, rs, stringify, YELLOW } from 'matterbridge/logger';
 import { ClosureCoveringTag, ClosurePanelTag, ClosureTag } from 'matterbridge/matter';
 import { ClosureControl, ClosureDimension, Identify, WindowCovering } from 'matterbridge/matter/clusters';
-import { type Semtag, ThreeLevelAuto } from 'matterbridge/matter/types';
+import type { Semtag } from 'matterbridge/matter/types';
 import { inspectError, isValidNumber, isValidString } from 'matterbridge/utils';
 import { Action, Client, Command, type Device, Execution, type State } from 'overkiz-client';
 
@@ -145,10 +145,8 @@ function getCoverPosition(cover: Cover): number | null | undefined {
 async function setCoverStoppedAt(cover: Cover, position: number): Promise<void> {
   const log = cover.bridgedDevice.log;
   if (cover.liftPanel) {
-    const currentState = cover.liftPanel.getAttribute(ClosureDimension, 'currentState', log);
-    await cover.liftPanel.setAttribute(ClosureDimension, 'currentState', { position, latch: currentState?.latch, speed: currentState?.speed }, log);
-    const targetState = cover.liftPanel.getAttribute(ClosureDimension, 'targetState', log);
-    await cover.liftPanel.setAttribute(ClosureDimension, 'targetState', { position, latch: targetState?.latch, speed: targetState?.speed }, log);
+    await cover.liftPanel.setAttribute(ClosureDimension, 'currentState', { position }, log);
+    await cover.liftPanel.setAttribute(ClosureDimension, 'targetState', { position }, log);
 
     const overallCurrentState = cover.bridgedDevice.getAttribute(ClosureControl, 'overallCurrentState', log);
     const overallTargetState = cover.bridgedDevice.getAttribute(ClosureControl, 'overallTargetState', log);
@@ -156,11 +154,9 @@ async function setCoverStoppedAt(cover: Cover, position: number): Promise<void> 
     await (cover.bridgedDevice as Closure).setState(
       {
         position: getClosureOverallPositionFromPercent(position),
-        latch: overallCurrentState?.latch,
-        speed: overallCurrentState?.speed,
         secureState: overallCurrentState?.secureState ?? null,
       },
-      overallTargetState ?? { position: ClosureControl.TargetPosition.MoveToFullyClosed, latch: true, speed: ThreeLevelAuto.Auto },
+      overallTargetState ?? { position: ClosureControl.TargetPosition.MoveToFullyClosed },
       ClosureControl.MainState.Stopped,
     );
   } else {
@@ -200,8 +196,7 @@ async function setCoverStopped(cover: Cover): Promise<void> {
 async function setCoverMoving(cover: Cover, targetPosition: number, closing: boolean): Promise<void> {
   const log = cover.bridgedDevice.log;
   if (cover.liftPanel) {
-    const targetState = cover.liftPanel.getAttribute(ClosureDimension, 'targetState', log);
-    await cover.liftPanel.setAttribute(ClosureDimension, 'targetState', { position: targetPosition, latch: targetState?.latch, speed: targetState?.speed }, log);
+    await cover.liftPanel.setAttribute(ClosureDimension, 'targetState', { position: targetPosition }, log);
     await cover.bridgedDevice.setAttribute(ClosureControl, 'mainState', ClosureControl.MainState.Moving, log);
   } else {
     await cover.bridgedDevice.setAttribute(WindowCovering, 'targetPositionLiftPercent100ths', targetPosition, log);
@@ -222,8 +217,7 @@ async function setCoverCurrentPosition(cover: Cover, position: number): Promise<
   const log = cover.bridgedDevice.log;
   const clamped = Math.max(PERCENT100THS_MIN_OPEN, Math.min(position, PERCENT100THS_MAX_CLOSED));
   if (cover.liftPanel) {
-    const currentState = cover.liftPanel.getAttribute(ClosureDimension, 'currentState', log);
-    await cover.liftPanel.setAttribute(ClosureDimension, 'currentState', { position: clamped, latch: currentState?.latch, speed: currentState?.speed }, log);
+    await cover.liftPanel.setAttribute(ClosureDimension, 'currentState', { position: clamped }, log);
   } else {
     await cover.bridgedDevice.setAttribute(WindowCovering, 'currentPositionLiftPercent100ths', clamped, log);
   }

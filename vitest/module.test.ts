@@ -527,8 +527,8 @@ describe('SomfyTahomaPlatform', () => {
     cover.moveInterval = setInterval(() => {
       // noop
     }, 1000);
-    // Simulate a Speed-feature-only report where secureState has not been determined yet: every other
-    // mandatory field (speed) must stay present, otherwise the ClosureControl cluster rejects the write.
+    // Simulate a report where secureState has not been determined yet. MotionLatching and Speed are opt-in
+    // on ClosureOptions and this platform does not enable them, so latch/speed are absent from the overall states.
     vi.spyOn(device, 'getAttribute')
       .mockReturnValueOnce({ position: ClosureControl.CurrentPosition.PartiallyOpened, latch: false, speed: ThreeLevelAuto.Auto })
       // oxlint-disable-next-line unicorn/no-useless-undefined -- explicit undefined is required to match getAttribute's overload
@@ -540,8 +540,6 @@ describe('SomfyTahomaPlatform', () => {
     expect(device.getAttribute(ClosureControl.id, 'overallCurrentState')?.secureState).toBeNull();
     expect(device.getAttribute(ClosureControl.id, 'overallTargetState')).toEqual({
       position: ClosureControl.TargetPosition.MoveToFullyClosed,
-      latch: true,
-      speed: ThreeLevelAuto.Auto,
     });
   });
 
@@ -879,7 +877,6 @@ describe('SomfyTahomaPlatform', () => {
     expect(device.getAttribute(WindowCovering.id, 'operationalStatus')).toEqual({
       global: WindowCovering.MovementStatus.Stopped,
       lift: WindowCovering.MovementStatus.Stopped,
-      tilt: WindowCovering.MovementStatus.Stopped,
     });
   });
 
