@@ -45,7 +45,15 @@ Open the frontend of matterbridge, select the plugin and install it.
 
 ## How to use it
 
-You need to configure the service ("somfy_europe", "somfy_australia" or "somfy_north_america"), username and password of your Tahoma account.
+For the cloud service, configure `somfy_europe`, `somfy_australia`, or `somfy_north_america` with the username and password of your TaHoma account.
+
+For the Local API, first enable [Developer Mode and generate a local bearer token](https://github.com/Somfy-Developer/Somfy-TaHoma-Developer-Mode). Then configure:
+
+- `service`: `local`
+- `username`: the gateway IPv4 address without `https://` or `:8443` (for example `192.168.1.54`), or its PIN (`XXXX-XXXX-XXXX`)
+- `password`: the generated local bearer token, not the Somfy account password
+
+Keep the local bearer token private. The plugin does not write credentials to its startup log.
 
 If the whiteList is defined only the devices included are exposed to Matter.
 
@@ -59,7 +67,7 @@ If `useClosure` is enabled, covers are exposed using the Matter 1.5 Closure devi
 
 When `useClosure` is enabled, you can opt in per device to the Closure `Calibration`, `Ventilation` and `Pedestrian` optional features with `closureOptions`.
 
-These are the config values:
+These are example cloud config values:
 
 ```json
 {
@@ -82,6 +90,16 @@ These are the config values:
       "pedestrian": false
     }
   }
+}
+```
+
+For a local connection, only the three connection values differ:
+
+```json
+{
+  "username": "192.168.1.54",
+  "password": "<LOCAL_BEARER_TOKEN>",
+  "service": "local"
 }
 ```
 

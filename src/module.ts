@@ -75,11 +75,11 @@ export interface Cover {
 }
 
 export type SomfyTahomaPlatformConfig = PlatformConfig & {
-  /** TaHoma account username. */
+  /** TaHoma cloud account username, or local gateway IPv4 address/PIN. */
   username: string;
-  /** TaHoma account password. */
+  /** TaHoma cloud account password, or local API bearer token. */
   password: string;
-  /** TaHoma cloud service to connect to (e.g. `somfy_europe`). */
+  /** TaHoma service to connect to (e.g. `somfy_europe` or `local`). */
   service: string;
   /** Only devices whose name, uniqueName, or serial number is in this list are exposed. Empty means no restriction. */
   whiteList: string[];
@@ -92,6 +92,23 @@ export type SomfyTahomaPlatformConfig = PlatformConfig & {
   /** Per-device opt-in for the Closure Calibration, Ventilation and Pedestrian optional features. Only applies when useClosure is enabled. Default: false for all devices and features. */
   closureOptions?: ClosureOptions;
 };
+
+/**
+ * Keeps the overkiz-client execution lifecycle while serializing only fields accepted by Somfy's Local API.
+ * The cloud API accepts overkiz-client's additional EventEmitter and command metadata, but the local endpoint
+ * can reject that payload with `400 Unknown object`.
+ */
+class LocalApiExecution extends Execution {
+  toJSON(): { label: string; actions: { deviceURL: string; commands: { name: string; parameters: unknown[] }[] }[] } {
+    return {
+      label: this.label,
+      actions: this.actions.map((action) => ({
+        deviceURL: action.deviceURL,
+        commands: action.commands.map((command) => ({ name: command.name, parameters: command.parameters })),
+      })),
+    };
+  }
+}
 
 /**
  * Maps a discovered TaHoma device's uiClass to the closest ClosureCoveringTag semantic tag, used to disambiguate
@@ -279,7 +296,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.log.info('Finished initializing platform:', this.config.name);
 
     // create TaHoma client
-    this.log.info(`Starting client Tahoma service ${this.config.service} with user ${this.config.username} password: ${this.config.password}`);
+    this.log.info(`Starting TaHoma client for service ${this.config.service}`);
     this.tahomaClient = new Client(this.log, {
       service: this.config.service,
       user: this.config.username,
@@ -656,8 +673,10 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     try {
       const newCommand = new Command(resolvedCommand);
       const newAction = new Action(device.deviceURL, [newCommand]);
-      const newExecution = new Execution('Sending ' + resolvedCommand, newAction);
-      await this.tahomaClient?.execute(highPriority ? 'apply/highPriority' : 'apply', newExecution);
+      const isLocalApi = this.config.service === 'local';
+      const newExecution = isLocalApi ? new LocalApiExecution('Sending ' + resolvedCommand, newAction) : new Execution('Sending ' + resolvedCommand, newAction);
+      const executionPath = isLocalApi || !highPriority ? 'apply' : 'apply/highPriority';
+      await this.tahomaClient?.execute(executionPath, newExecution);
     } catch (error) {
       inspectError(this.log, `Error sending command ${resolvedCommand} to ${device.label}`, error);
     }

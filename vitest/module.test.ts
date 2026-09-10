@@ -155,7 +155,58 @@ describe('SomfyTahomaPlatform', () => {
     addMatterbridge(somfyPlatform);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Initializing platform:', config.name);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Finished initializing platform:', config.name);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Starting client Tahoma service somfy_europe with user None password: None');
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Starting TaHoma client for service somfy_europe');
+  });
+
+  it('should not log credentials when creating and shutting down a local TaHoma client', async () => {
+    const sentinelUsername = 'sentinel-local-username';
+    const sentinelToken = 'sentinel-local-bearer-token';
+    const isolatedPlatform = new SomfyTahomaPlatform(matterbridge, log, {
+      ...config,
+      username: sentinelUsername,
+      password: sentinelToken,
+      service: 'local',
+    });
+
+    await isolatedPlatform.onShutdown();
+
+    const loggedValues = loggerLogSpy.mock.calls.flat().join(' ');
+    expect(loggedValues).not.toContain(sentinelUsername);
+    expect(loggedValues).not.toContain(sentinelToken);
+  });
+
+  it('should select the execution endpoint based on the configured service and priority', async () => {
+    const originalService = somfyPlatform.config.service;
+    try {
+      clientExecuteSpy.mockClear();
+      mockDevices[0].deviceURL = 'io://1234-5678-9012/12345678';
+
+      somfyPlatform.config.service = 'local';
+      await somfyPlatform.sendCommand('close', mockDevices[0], true);
+      expect(clientExecuteSpy).toHaveBeenNthCalledWith(1, 'apply', expect.anything());
+      const localExecution = clientExecuteSpy.mock.calls[0][1];
+      expect(JSON.parse(JSON.stringify(localExecution))).toEqual({
+        label: 'Sending close',
+        actions: [
+          {
+            deviceURL: 'io://1234-5678-9012/12345678',
+            commands: [{ name: 'close', parameters: [] }],
+          },
+        ],
+      });
+      expect(typeof localExecution.onStateUpdate).toBe('function');
+
+      somfyPlatform.config.service = 'somfy_europe';
+      await somfyPlatform.sendCommand('close', mockDevices[0], true);
+      expect(clientExecuteSpy).toHaveBeenNthCalledWith(2, 'apply/highPriority', expect.anything());
+      const cloudExecution = JSON.parse(JSON.stringify(clientExecuteSpy.mock.calls[1][1]));
+      expect(cloudExecution.actions[0].commands[0]).toEqual({ type: 1, name: 'close', parameters: [] });
+
+      await somfyPlatform.sendCommand('close', mockDevices[0]);
+      expect(clientExecuteSpy).toHaveBeenNthCalledWith(3, 'apply', expect.anything());
+    } finally {
+      somfyPlatform.config.service = originalService;
+    }
   });
 
   it('should receive tahomaClient events', () => {
