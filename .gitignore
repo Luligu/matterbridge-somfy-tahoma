@@ -1,17 +1,24 @@
-# .gitignore 1.0.2
+# .gitignore 1.0.4
 
 # This file specifies intentionally untracked directories and files that Git should ignore.
 
 # Specific directories that should be ignored
 .cache/
+.cottontail-tmp/
+.hutch/
+artifacts/
 build/
+chip/
 coverage/
 dist/
 node_modules/
 out/
 temp/
+tmp/
 
 # Specific files that should be ignored
+.DS_Store
+*:Zone.Identifier
 *.backup
 *.heapsnapshot
 *.heapprofile
