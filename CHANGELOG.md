@@ -44,12 +44,18 @@ If you like this project and find it useful, please consider giving it a star on
 - [config]: Add the experimental `useClosure` config option (default `false`) to expose covers using the Matter 1.5 Closure device type instead of WindowCovering, to ease integration testing with controllers that support the newer cluster. Based on PR [47](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/47). Thanks Ludovic BOUÉ.
 - [config]: Add the `closureOptions` per-device config option to opt in to the Closure Calibration, Ventilation and Pedestrian optional features on a device basis. Only applies when `useClosure` is enabled. Based on PR [47](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/47). Thanks Ludovic BOUÉ.
 - [agents]: Add [`commit message instructions`](.github/commit-message-instructions.md) v.1.0.0 for the VS Code Copilot "Generate Commit Message" button (Conventional Commits).
+- [scripts]: Add `scripts/bun-bundle.mjs` for Bun JavaScript and declaration bundles with workspace, production, watch and dry-run support.
 
 ### Changed
 
-- [vscode]: Update `.vscode/settings.json` to v.1.0.14: point the Copilot "Generate Commit Message" button to `.github/commit-message-instructions.md`.
 - [styleguide]: Update [`STYLEGUIDE.md`](STYLEGUIDE.md) to v.1.1.0: align it with the lint and format config and add the Commit Messages and Changelog sections.
 - [scripts]: Bump `scripts` to v.2.0.0.
+- [agents]: Update `.antigravity/settings.json` to v.1.0.5: allow read-only Git commands.
+- [gitignore]: Update `.gitignore` to v.1.0.5: ignore `tmp/`, `.DS_Store` and Windows `Zone.Identifier` files.
+- [lint]: Update `.oxlintrc.json` and `.oxfmtrc.json` to v.1.1.0: align shared ignore patterns.
+- [vscode]: Update `.vscode/settings.json` to v.1.0.15: configure commit message instructions, exclude templates from Vitest discovery and refine terminal command approvals.
+- [vitest]: Replace `vite.config.ts` with `vitest.config.ts` v.2.0.8 and update test and coverage exclusions.
+- [package]: Remove unsupported npm flags from `bun link` in `softReset:bun`.
 - [package]: Upgrade package.
 - [package]: Bump `node-ansi-logger` to v.3.3.1.
 - [package]: Bump `node-persist-manager` to v.2.1.1.
