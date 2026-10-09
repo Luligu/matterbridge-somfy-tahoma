@@ -48,6 +48,7 @@ If you like this project and find it useful, please consider giving it a star on
 
 ### Changed
 
+- [test]: Migrate tests from `matterbridge/vitest-utils` to the unified `matterbridge/test-utils`.
 - [styleguide]: Update [`STYLEGUIDE.md`](STYLEGUIDE.md) to v.1.1.0: align it with the lint and format config and add the Commit Messages and Changelog sections.
 - [scripts]: Bump `scripts` to v.2.0.0.
 - [agents]: Update `.antigravity/settings.json` to v.1.0.5: allow read-only Git commands.

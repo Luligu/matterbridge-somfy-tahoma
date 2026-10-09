@@ -16,8 +16,7 @@ import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
 import { ClosureCoveringTag, ClosurePanelTag, ClosureTag } from 'matterbridge/matter';
 import { ClosureControl, ClosureDimension, WindowCovering } from 'matterbridge/matter/clusters';
 import { ThreeLevelAuto } from 'matterbridge/matter/types';
-import { wait } from 'matterbridge/utils';
-import { flushAsync, log, loggerLogSpy, setDebug, setupTest } from 'matterbridge/vitest-utils';
+import { flushAsync } from 'matterbridge/test-utils';
 import {
   addMatterbridge,
   aggregator,
@@ -25,9 +24,14 @@ import {
   createTestEnvironment,
   destroyTestEnvironment,
   getMatterbridge,
+  log,
+  loggerLogSpy,
+  setDebug,
+  setupTest,
   startServerNode,
   stopServerNode,
-} from 'matterbridge/vitest-utils/matter';
+} from 'matterbridge/test-utils/vitest';
+import { wait } from 'matterbridge/utils';
 import { Client, Device, type State } from 'overkiz-client';
 
 import initializePlugin, { PERCENT100THS_MAX_CLOSED, PERCENT100THS_MIN_OPEN, SomfyTahomaPlatform, type SomfyTahomaPlatformConfig } from '../src/module.js';
