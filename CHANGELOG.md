@@ -29,30 +29,45 @@ If you like this project and find it useful, please consider giving it a star on
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120"></a>
 
-## [1.7.0] - 2026-08-29
+## [1.7.0] - Dev branch
 
 ### Breaking changes
 
-- [matterbridge]: Require matterbridge v.3.10.7 with matter v.1.6.0.
+- [matterbridge]: Require matterbridge v.3.10.10 with matter v.1.6.0.
 
 ### Added
 
+- [devcontainer]: Add [`Dev Container`](.devcontainer/README.md) v.2.2.0 with dual Node and Bun runtime support.
+- [agents]: Add a [`shared setup`](.agents/README.md) for all agents: OpenAI Codex, Claude Code, GitHub Copilot and Google Gemini / Antigravity.
 - [chip]: Add chip-test toolchain agents instruction and chip-test runner.
 - [frontend]: Add plugin-frontend agents instructions.
-- [devcontainer]: Add `Dev Container` v.2.0.0 with dual Node and Bun runtime support.
 - [config]: Add the experimental `useClosure` config option (default `false`) to expose covers using the Matter 1.5 Closure device type instead of WindowCovering, to ease integration testing with controllers that support the newer cluster. Based on PR [47](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/47). Thanks Ludovic BOUÉ.
 - [config]: Add the `closureOptions` per-device config option to opt in to the Closure Calibration, Ventilation and Pedestrian optional features on a device basis. Only applies when `useClosure` is enabled. Based on PR [47](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/47). Thanks Ludovic BOUÉ.
+- [agents]: Add [`commit message instructions`](.github/commit-message-instructions.md) v.1.0.0 for the VS Code Copilot "Generate Commit Message" button (Conventional Commits).
+- [scripts]: Add `scripts/bun-bundle.mjs` for Bun JavaScript and declaration bundles with workspace, production, watch and dry-run support.
 
 ### Changed
 
+- [test]: Migrate tests from `matterbridge/vitest-utils` to the unified `matterbridge/test-utils`.
+- [styleguide]: Update [`STYLEGUIDE.md`](STYLEGUIDE.md) to v.1.1.0: align it with the lint and format config and add the Commit Messages and Changelog sections.
+- [scripts]: Bump `scripts` to v.2.0.0.
+- [agents]: Update `.antigravity/settings.json` to v.1.0.5: allow read-only Git commands.
+- [gitignore]: Update `.gitignore` to v.1.0.5: ignore `tmp/`, `.DS_Store` and Windows `Zone.Identifier` files.
+- [lint]: Update `.oxlintrc.json` and `.oxfmtrc.json` to v.1.1.0: align shared ignore patterns.
+- [vscode]: Update `.vscode/settings.json` to v.1.0.15: configure commit message instructions, exclude templates from Vitest discovery and refine terminal command approvals.
+- [vitest]: Replace `vite.config.ts` with `vitest.config.ts` v.2.0.8 and update test and coverage exclusions.
+- [package]: Remove unsupported npm flags from `bun link` in `softReset:bun`.
 - [package]: Upgrade package.
-- [package]: Bump `oxfmt` to v.0.65.0.
-- [package]: Bump `oxlint` to v.1.80.0.
-- [package]: Bump `vitest` to v.4.1.11.
-- [package]: Bump `@types/node` to v.26.4.0.
+- [package]: Bump `node-ansi-logger` to v.3.3.1.
+- [package]: Bump `node-persist-manager` to v.2.1.1.
+- [package]: Bump `oxfmt` to v.0.71.0.
+- [package]: Bump `oxlint` to v.1.86.0.
+- [package]: Bump `oxlint-tsgolint` to v.7.0.2003.
+- [package]: Bump `vitest` to v.5.0.3.
+- [package]: Bump `@vitest/coverage-v8` to v.5.0.3.
+- [package]: Bump `@types/node` to v.26.6.4.
+- [package]: Bump `typescript` to v.7.0.2.
 - [package]: Bump `overkiz-client` to v.1.0.23.
-- [package]: Update agents configs.
-- [vscode]: Bump `settings` to v.1.0.10.
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
 

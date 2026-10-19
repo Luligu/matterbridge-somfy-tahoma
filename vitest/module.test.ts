@@ -16,8 +16,7 @@ import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
 import { ClosureCoveringTag, ClosurePanelTag, ClosureTag } from 'matterbridge/matter';
 import { ClosureControl, ClosureDimension, WindowCovering } from 'matterbridge/matter/clusters';
 import { ThreeLevelAuto } from 'matterbridge/matter/types';
-import { wait } from 'matterbridge/utils';
-import { flushAsync, log, loggerLogSpy, setDebug, setupTest } from 'matterbridge/vitest-utils';
+import { flushAsync } from 'matterbridge/test-utils';
 import {
   addMatterbridge,
   aggregator,
@@ -25,9 +24,14 @@ import {
   createTestEnvironment,
   destroyTestEnvironment,
   getMatterbridge,
+  log,
+  loggerLogSpy,
+  setDebug,
+  setupTest,
   startServerNode,
   stopServerNode,
-} from 'matterbridge/vitest-utils/matter';
+} from 'matterbridge/test-utils/vitest';
+import { wait } from 'matterbridge/utils';
 import { Client, Device, type State } from 'overkiz-client';
 
 import initializePlugin, { PERCENT100THS_MAX_CLOSED, PERCENT100THS_MIN_OPEN, SomfyTahomaPlatform, type SomfyTahomaPlatformConfig } from '../src/module.js';
@@ -217,7 +221,7 @@ describe('SomfyTahomaPlatform', () => {
   });
 
   it('should throw because of version', () => {
-    expect(() => new SomfyTahomaPlatform({ ...matterbridge, matterbridgeVersion: '3.8.0' }, log, config)).toThrow('This plugin requires Matterbridge version >= "3.10.7".');
+    expect(() => new SomfyTahomaPlatform({ ...matterbridge, matterbridgeVersion: '3.8.0' }, log, config)).toThrow('This plugin requires Matterbridge version >= "3.10.10".');
   });
 
   it('should call onStart with reason', async () => {
@@ -578,8 +582,8 @@ describe('SomfyTahomaPlatform', () => {
     cover.moveInterval = setInterval(() => {
       // noop
     }, 1000);
-    // Simulate a Speed-feature-only report where secureState has not been determined yet: every other
-    // mandatory field (speed) must stay present, otherwise the ClosureControl cluster rejects the write.
+    // Simulate a report where secureState has not been determined yet. MotionLatching and Speed are opt-in
+    // on ClosureOptions and this platform does not enable them, so latch/speed are absent from the overall states.
     vi.spyOn(device, 'getAttribute')
       .mockReturnValueOnce({ position: ClosureControl.CurrentPosition.PartiallyOpened, latch: false, speed: ThreeLevelAuto.Auto })
       // oxlint-disable-next-line unicorn/no-useless-undefined -- explicit undefined is required to match getAttribute's overload
@@ -591,8 +595,6 @@ describe('SomfyTahomaPlatform', () => {
     expect(device.getAttribute(ClosureControl.id, 'overallCurrentState')?.secureState).toBeNull();
     expect(device.getAttribute(ClosureControl.id, 'overallTargetState')).toEqual({
       position: ClosureControl.TargetPosition.MoveToFullyClosed,
-      latch: true,
-      speed: ThreeLevelAuto.Auto,
     });
   });
 
@@ -930,7 +932,6 @@ describe('SomfyTahomaPlatform', () => {
     expect(device.getAttribute(WindowCovering.id, 'operationalStatus')).toEqual({
       global: WindowCovering.MovementStatus.Stopped,
       lift: WindowCovering.MovementStatus.Stopped,
-      tilt: WindowCovering.MovementStatus.Stopped,
     });
   });
 
