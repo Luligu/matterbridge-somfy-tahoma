@@ -45,27 +45,31 @@ If you like this project and find it useful, please consider giving it a star on
 - [config]: Add the `closureOptions` per-device config option to opt in to the Closure Calibration, Ventilation and Pedestrian optional features on a device basis. Only applies when `useClosure` is enabled. Based on PR [47](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/47). Thanks Ludovic BOUÉ.
 - [agents]: Add [`commit message instructions`](.github/commit-message-instructions.md) v.1.0.0 for the VS Code Copilot "Generate Commit Message" button (Conventional Commits).
 - [scripts]: Add `scripts/bun-bundle.mjs` for Bun JavaScript and declaration bundles with workspace, production, watch and dry-run support.
+- [agents]: Add the Copilot `Matterbridge` custom agent (`.github/agents/matterbridge.agent.md`) that works without subagents.
 
 ### Changed
 
 - [test]: Migrate tests from `matterbridge/vitest-utils` to the unified `matterbridge/test-utils`.
 - [styleguide]: Update [`STYLEGUIDE.md`](STYLEGUIDE.md) to v.1.1.0: align it with the lint and format config and add the Commit Messages and Changelog sections.
 - [scripts]: Bump `scripts` to v.2.0.0.
-- [agents]: Update `.antigravity/settings.json` to v.1.0.5: allow read-only Git commands.
+- [scripts]: Update `scripts/deep-clean.mjs` and `scripts/prepublish-clean.mjs` to v.2.1.0: also remove `tmp/` and `bun.lock`.
+- [agents]: Update `.claude/settings.json` to v.1.0.9, `.antigravity/settings.json` to v.1.0.6 and `.codex/rules/default.rules` to v.1.0.7.
 - [gitignore]: Update `.gitignore` to v.1.0.5: ignore `tmp/`, `.DS_Store` and Windows `Zone.Identifier` files.
-- [lint]: Update `.oxlintrc.json` and `.oxfmtrc.json` to v.1.1.0: align shared ignore patterns.
-- [vscode]: Update `.vscode/settings.json` to v.1.0.15: configure commit message instructions, exclude templates from Vitest discovery and refine terminal command approvals.
-- [vitest]: Replace `vite.config.ts` with `vitest.config.ts` v.2.0.8 and update test and coverage exclusions.
+- [lint]: Update `.oxlintrc.json` and `.oxfmtrc.json` to v.1.2.0: align shared ignore patterns.
+- [vscode]: Update `.vscode/settings.json` to v.1.0.16: configure commit message instructions, exclude templates from Vitest discovery and refine terminal command approvals.
+- [vscode]: Add Bundle, Minify, Obfuscate, Pack and Docker install tasks to `.vscode/tasks.json`.
+- [vitest]: Replace `vite.config.ts` with `vitest.config.ts` v.2.0.9 and update test and coverage exclusions.
+- [package]: Run `checkDependencies` and `updateDependencies` with `npx npm-check-updates@latest`.
 - [package]: Remove unsupported npm flags from `bun link` in `softReset:bun`.
 - [package]: Upgrade package.
 - [package]: Bump `node-ansi-logger` to v.3.3.1.
 - [package]: Bump `node-persist-manager` to v.2.1.1.
-- [package]: Bump `oxfmt` to v.0.71.0.
-- [package]: Bump `oxlint` to v.1.86.0.
-- [package]: Bump `oxlint-tsgolint` to v.7.0.2003.
-- [package]: Bump `vitest` to v.5.0.3.
-- [package]: Bump `@vitest/coverage-v8` to v.5.0.3.
-- [package]: Bump `@types/node` to v.26.6.4.
+- [package]: Bump `oxfmt` to v.0.74.0.
+- [package]: Bump `oxlint` to v.1.89.0.
+- [package]: Bump `oxlint-tsgolint` to v.7.0.2004.
+- [package]: Bump `vitest` to v.5.0.5.
+- [package]: Bump `@vitest/coverage-v8` to v.5.0.5.
+- [package]: Bump `@types/node` to v.26.6.5.
 - [package]: Bump `typescript` to v.7.0.2.
 - [package]: Bump `overkiz-client` to v.1.0.23.
 
