@@ -170,7 +170,7 @@ describe('SomfyTahomaPlatform', () => {
   });
 
   it('should throw because of version', () => {
-    expect(() => new SomfyTahomaPlatform({ ...matterbridge, matterbridgeVersion: '3.8.0' }, log, config)).toThrow('This plugin requires Matterbridge version >= "3.10.10".');
+    expect(() => new SomfyTahomaPlatform({ ...matterbridge, matterbridgeVersion: '3.8.0' }, log, config)).toThrow('This plugin requires Matterbridge version >= "3.11.0".');
   });
 
   it('should call onStart with reason', async () => {
