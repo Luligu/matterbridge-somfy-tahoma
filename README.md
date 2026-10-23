@@ -31,7 +31,7 @@ If you like this project and find it useful, please consider giving it a star on
 
 ## Prerequisites
 
-### Matterbridge v3.10.7
+### Matterbridge v3.11.0
 
 See the complete guidelines on [Matterbridge](https://matterbridge.io) for more information.
 
