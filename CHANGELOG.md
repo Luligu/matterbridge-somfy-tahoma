@@ -31,6 +31,10 @@ If you like this project and find it useful, please consider giving it a star on
 
 ## [1.7.1] - Dev branch
 
+### Changed
+
+- [package]: Bump transitive `axios` to v.1.20.0 and `follow-redirects` to v.1.16.1 (overkiz-client → axios) to fix security advisories.
+
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
 
 ## [1.7.0] - 2026-10-23
