@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-somfy-tahoma",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Matterbridge somfy tahoma plugin",
   "author": "https://github.com/Luligu",
   "license": "Apache-2.0",
@@ -56,7 +56,7 @@
     "gladysassistant"
   ],
   "engines": {
-    "node": ">=20.19.0 <21.0.0 || >=22.13.0 <23.0.0 || >=24.0.0 <25.0.0 || >=26.0.0 <27.0.0"
+    "node": ">=22.13.0 <23.0.0 || >=24.0.0 <25.0.0 || >=26.0.0 <27.0.0"
   },
   "files": [
     "bin",
@@ -77,7 +77,17 @@
     "publish": false,
     "coverage": {
       "lines": 100,
-      "functions": 100
+      "functions": 100,
+      "branches": 100,
+      "statements": 100
+    },
+    "ignore": {
+      "git": [
+        "users-logs/"
+      ],
+      "vitest": [
+        "**/src/mock/"
+      ]
     }
   },
   "scripts": {
@@ -99,30 +109,30 @@
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:verbose": "vitest run --reporter verbose",
-    "test:coverage": "vitest run --coverage --coverage.thresholds.lines=100 --coverage.thresholds.functions=100",
-    "lint": "oxlint --disable-nested-config",
-    "lint:fix": "oxlint --disable-nested-config --fix",
+    "test:coverage": "vitest run --coverage --coverage.thresholds.statements=100 --coverage.thresholds.branches=100 --coverage.thresholds.lines=100 --coverage.thresholds.functions=100",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "reset": "npm run deepClean && npm run softReset",
     "softReset": "npm install --no-fund --no-audit && npm prune --no-fund --no-audit && npm link --no-fund --no-audit matterbridge && npm run build && npm run typecheck",
-    "checkDependencies": "npm install --no-fund --no-audit --no-save npm-check-updates && ncu && npm run softReset",
-    "updateDependencies": "npm install --no-fund --no-audit --no-save npm-check-updates && ncu -u && npm run softReset",
+    "checkDependencies": "npx --yes --package npm-check-updates@latest ncu",
+    "updateDependencies": "npx --yes --package npm-check-updates@latest ncu -u && npm run softReset",
     "runMeBeforePublish": "npm run cleanBuild && npm run format && npm run lint && npm run build && npm run typecheck && npm run test:coverage",
     "prepublishOnly": "npm run cleanBuildProduction && npm pkg delete devDependencies scripts automator && node scripts/prepublish-clean.mjs && npm install --no-fund --no-audit --omit=dev && npm shrinkwrap --omit=dev"
   },
   "dependencies": {
-    "node-ansi-logger": "3.3.0",
-    "node-persist-manager": "2.1.0",
-    "overkiz-client": "1.0.20"
+    "node-ansi-logger": "3.3.1",
+    "node-persist-manager": "2.1.1",
+    "overkiz-client": "1.0.23"
   },
   "devDependencies": {
-    "@types/node": "26.1.1",
-    "@vitest/coverage-v8": "4.1.10",
-    "oxfmt": "0.59.0",
-    "oxlint": "1.74.0",
-    "oxlint-tsgolint": "0.25.0",
+    "@types/node": "26.6.5",
+    "@vitest/coverage-v8": "5.0.5",
+    "oxfmt": "0.74.0",
+    "oxlint": "1.89.0",
+    "oxlint-tsgolint": "7.0.2004",
     "typescript": "7.0.2",
-    "vitest": "4.1.10"
+    "vitest": "5.0.5"
   }
 }
