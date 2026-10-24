@@ -423,11 +423,14 @@ describe('SomfyTahomaPlatform', () => {
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.WARN, `Command moveTo called with unsupported position:${ClosureControl.TargetPosition.MoveToPedestrianPosition}`);
 
     vi.clearAllMocks();
-    // The panel starts latched (see ClosurePanelOptions defaults): a position-changing command must request
+    // The plugin never enables the ClosureControl/ClosureDimension MotionLatching feature for TaHoma covers, so
+    // overallCurrentState never actually carries a latch:true value in production; simulate a latched closure
+    // here to exercise the guard. A position-changing command must request
     // latch:false, or matterbridge's own ClosureControl/ClosureDimension validation would reject it (Matter 1.6
     // §5.4.8.2.4/§5.5.8.1.4). The plugin re-derives that same precondition (isPositionChangeBlockedByLatch())
     // so it never acts on a request the framework is about to reject — see
     // https://github.com/Luligu/matterbridge/issues/617.
+    vi.spyOn(device, 'getAttribute').mockReturnValueOnce({ position: ClosureControl.CurrentPosition.FullyClosed, latch: true, speed: ThreeLevelAuto.Auto });
     await device.executeCommandHandler(
       'ClosureControl.moveTo',
       { position: ClosureControl.TargetPosition.MoveToFullyClosed },
@@ -446,6 +449,7 @@ describe('SomfyTahomaPlatform', () => {
     );
 
     vi.clearAllMocks();
+    vi.spyOn(liftPanel, 'getAttribute').mockReturnValueOnce({ position: PERCENT100THS_MIN_OPEN, latch: true, speed: ThreeLevelAuto.Auto });
     await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 9000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
     expect(loggerLogSpy).toHaveBeenCalledWith(
       LogLevel.WARN,
