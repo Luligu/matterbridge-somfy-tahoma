@@ -38,7 +38,7 @@ import { Closure, type ClosurePanelOptions } from 'matterbridge/devices';
 import { type AnsiLogger, BLUE, CYAN, debugStringify, ign, nf, rs, stringify, YELLOW } from 'matterbridge/logger';
 import { ClosureCoveringTag, ClosurePanelTag, ClosureTag } from 'matterbridge/matter';
 import { ClosureControl, ClosureDimension, Identify, WindowCovering } from 'matterbridge/matter/clusters';
-import type { Semtag } from 'matterbridge/matter/types';
+import { type Semtag, ThreeLevelAuto } from 'matterbridge/matter/types';
 import { inspectError, isValidNumber, isValidString } from 'matterbridge/utils';
 import { Action, Client, Command, type Device, Execution, type State } from 'overkiz-client';
 
