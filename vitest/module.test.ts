@@ -561,6 +561,24 @@ describe('SomfyTahomaPlatform', () => {
     }
   });
 
+  it('should not move a Closure if its overall target becomes unknown during debounce', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+    const previousTarget = device.getAttribute(ClosureControl, 'overallTargetState');
+    try {
+      await device.invokeBehaviorCommand('closureControl', 'ClosureControl.moveTo', { position: ClosureControl.TargetPosition.MoveToFullyClosed });
+      await device.setAttribute(ClosureControl, 'overallTargetState', null);
+      await wait(600);
+      expect(cover.commandTimeout).toBeUndefined();
+      expect(clientExecuteSpy).not.toHaveBeenCalled();
+      expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.WARN, 'Command moveTo called with unsupported position:undefined');
+    } finally {
+      await device.setAttribute(ClosureControl, 'overallTargetState', previousTarget ?? null);
+    }
+  });
+
   it('should stop current movement in moveToPosition when already moving (Closure)', async () => {
     const cover = somfyPlatform.covers.get('Device1');
     expect(cover).toBeDefined();

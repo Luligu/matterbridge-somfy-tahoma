@@ -493,14 +493,20 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
       if (liftPanel && cover instanceof Closure) {
         const closure = cover;
-        cover.subscribeCommand(ClosureControl, 'moveTo', ({ request: { position } }) => {
+        cover.subscribeCommand(ClosureControl, 'moveTo', () => {
           const cover = this.covers.get(device.label);
-          if (!cover || position === undefined) return;
-          const targetPosition = closure.targetPositionToTargetPercent(position);
+          if (!cover) return;
           if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
           // oxlint-disable-next-line typescript/no-misused-promises
           cover.commandTimeout = setTimeout(async () => {
             cover.commandTimeout = undefined;
+            // Read the committed target after the invoke completes.
+            const committedPosition = closure.getAttribute(ClosureControl, 'overallTargetState', cover.bridgedDevice.log)?.position;
+            if (committedPosition === undefined || committedPosition === null) {
+              cover.bridgedDevice.log.warn(`Command moveTo called with unsupported position:${committedPosition}`);
+              return;
+            }
+            const targetPosition = closure.targetPositionToTargetPercent(committedPosition);
             cover.bridgedDevice.log.info(`Command ${ign}moveTo${rs}${nf} ${CYAN}${targetPosition}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
             await this.moveToPosition(cover, targetPosition);
           }, 500);
