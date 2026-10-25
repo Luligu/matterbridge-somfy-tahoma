@@ -15,7 +15,7 @@ import type { PlatformMatterbridge } from 'matterbridge';
 import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
 import { ClosureCoveringTag, ClosurePanelTag, ClosureTag } from 'matterbridge/matter';
 import { ClosureControl, ClosureDimension, WindowCovering } from 'matterbridge/matter/clusters';
-import { ThreeLevelAuto } from 'matterbridge/matter/types';
+import { Status, ThreeLevelAuto } from 'matterbridge/matter/types';
 import { flushAsync } from 'matterbridge/test-utils';
 import {
   addMatterbridge,
@@ -382,6 +382,64 @@ describe('SomfyTahomaPlatform', () => {
     somfyPlatform.config.closureOptions = {};
   });
 
+  it.each(['Shutter', 'Window'])('should honor a per-device Signature position for a %s Closure', async (uiClass) => {
+    somfyPlatform.config.useClosure = true;
+    somfyPlatform.config.closureOptions = { Device1: { signaturePosition: 42 } };
+    setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass });
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    try {
+      expect(cover?.liftPanel).toBeDefined();
+      if (!cover?.liftPanel) return;
+      const device = cover.bridgedDevice;
+      expect(device.getAttribute('closureControl', 'signaturePosition')).toBe(4200);
+      await device.invokeBehaviorCommand('closureControl', 'ClosureControl.moveTo', { position: ClosureControl.TargetPosition.MoveToSignaturePosition });
+      await vi.waitFor(
+        () => {
+          expect(cover.liftPanel?.getAttribute(ClosureDimension, 'currentState')?.position).toBe(4200);
+          expect(device.getAttribute(ClosureControl, 'overallCurrentState')?.position).toBe(ClosureControl.CurrentPosition.OpenedAtSignature);
+        },
+        { timeout: 3000 },
+      );
+      expect(clientExecuteSpy).toHaveBeenCalledWith('apply/highPriority', expect.anything());
+    } finally {
+      clearTimeout(cover?.commandTimeout);
+      clearInterval(cover?.moveInterval);
+      somfyPlatform.tahomaDevices = [];
+      somfyPlatform.covers.clear();
+      await somfyPlatform.unregisterAllDevices();
+      await flushAsync();
+      somfyPlatform.config.useClosure = false;
+      somfyPlatform.config.closureOptions = {};
+    }
+  });
+
+  it.each([
+    { signaturePosition: 0, expected: 0 },
+    { signaturePosition: 100, expected: 10000 },
+    { signaturePosition: -1, expected: 5000 },
+    { signaturePosition: 101, expected: 5000 },
+    { signaturePosition: Number.NaN, expected: 5000 },
+  ])('should resolve Signature position $signaturePosition to $expected percent hundredths', async ({ signaturePosition, expected }) => {
+    somfyPlatform.config.useClosure = true;
+    somfyPlatform.config.closureOptions = { Device1: { signaturePosition } };
+    setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass: 'Shutter' });
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    try {
+      const cover = somfyPlatform.covers.get('Device1');
+      expect(cover?.bridgedDevice.getAttribute('closureControl', 'signaturePosition')).toBe(expected);
+    } finally {
+      somfyPlatform.tahomaDevices = [];
+      somfyPlatform.covers.clear();
+      await somfyPlatform.unregisterAllDevices();
+      await flushAsync();
+      somfyPlatform.config.useClosure = false;
+      somfyPlatform.config.closureOptions = {};
+    }
+  });
+
   it('should discover a Closure cover with a battery power source and handle a full moveTo/setTarget/stop cycle', async () => {
     somfyPlatform.config.useClosure = true;
     setMockDevice({ label: 'Device1', uniqueName: 'Blind' });
@@ -413,59 +471,13 @@ describe('SomfyTahomaPlatform', () => {
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}identify${rs}${nf} called identifyTime:1`);
 
     vi.clearAllMocks();
-    await device.executeCommandHandler(
-      'ClosureControl.moveTo',
-      { position: ClosureControl.TargetPosition.MoveToPedestrianPosition },
-      'closureControl',
-      (device.state as any).closureControl,
-      device,
-    );
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.WARN, `Command moveTo called with unsupported position:${ClosureControl.TargetPosition.MoveToPedestrianPosition}`);
+    await device.invokeBehaviorCommand('closureControl', 'ClosureControl.moveTo', { position: ClosureControl.TargetPosition.MoveToSignaturePosition });
+    await wait(2000);
+    expect(liftPanel.getAttribute(ClosureDimension, 'currentState')?.position).toBe(5000);
+    expect(device.getAttribute(ClosureControl, 'overallCurrentState')?.position).toBe(ClosureControl.CurrentPosition.OpenedAtSignature);
 
     vi.clearAllMocks();
-    // The plugin never enables the ClosureControl/ClosureDimension MotionLatching feature for TaHoma covers, so
-    // overallCurrentState never actually carries a latch:true value in production; simulate a latched closure
-    // here to exercise the guard. A position-changing command must request
-    // latch:false, or matterbridge's own ClosureControl/ClosureDimension validation would reject it (Matter 1.6
-    // §5.4.8.2.4/§5.5.8.1.4). The plugin re-derives that same precondition (isPositionChangeBlockedByLatch())
-    // so it never acts on a request the framework is about to reject — see
-    // https://github.com/Luligu/matterbridge/issues/617.
-    vi.spyOn(device, 'getAttribute').mockReturnValueOnce({ position: ClosureControl.CurrentPosition.FullyClosed, latch: true, speed: ThreeLevelAuto.Auto });
-    await device.executeCommandHandler(
-      'ClosureControl.moveTo',
-      { position: ClosureControl.TargetPosition.MoveToFullyClosed },
-      'closureControl',
-      (device.state as any).closureControl,
-      device,
-    );
-    expect(loggerLogSpy).toHaveBeenCalledWith(
-      LogLevel.WARN,
-      `Command moveTo ignored for ${CYAN}${mockDevices[0].label}${nf}: latch is true and the command doesn't request latch:false`,
-    );
-    await wait(800);
-    expect(loggerLogSpy).not.toHaveBeenCalledWith(
-      LogLevel.INFO,
-      `Command ${ign}moveTo${rs}${nf} ${CYAN}${PERCENT100THS_MAX_CLOSED}${nf} called for ${CYAN}${mockDevices[0].label}`,
-    );
-
-    vi.clearAllMocks();
-    vi.spyOn(liftPanel, 'getAttribute').mockReturnValueOnce({ position: PERCENT100THS_MIN_OPEN, latch: true, speed: ThreeLevelAuto.Auto });
-    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 9000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
-    expect(loggerLogSpy).toHaveBeenCalledWith(
-      LogLevel.WARN,
-      `Command setTarget ignored for ${CYAN}${mockDevices[0].label}${nf}: latch is true and the command doesn't request latch:false`,
-    );
-    await wait(800);
-    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}setTarget${rs}${nf} ${CYAN}9000${nf} called for ${CYAN}${mockDevices[0].label}`);
-
-    vi.clearAllMocks();
-    await device.executeCommandHandler(
-      'ClosureControl.moveTo',
-      { position: ClosureControl.TargetPosition.MoveToFullyClosed, latch: false },
-      'closureControl',
-      (device.state as any).closureControl,
-      device,
-    );
+    await device.invokeBehaviorCommand('closureControl', 'ClosureControl.moveTo', { position: ClosureControl.TargetPosition.MoveToFullyClosed });
     await wait(3000);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}moveTo${rs}${nf} ${CYAN}${PERCENT100THS_MAX_CLOSED}${nf} called for ${CYAN}${mockDevices[0].label}`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at ${PERCENT100THS_MAX_CLOSED}`);
@@ -473,42 +485,22 @@ describe('SomfyTahomaPlatform', () => {
 
     vi.clearAllMocks();
     // Two rapid setTarget calls: the second must clear the first's pending debounce timer
-    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 9000, latch: false }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
-    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 5000, latch: false }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
-    await wait(2000);
+    await liftPanel.invokeBehaviorCommand('closureDimension', 'ClosureDimension.setTarget', { position: 9000 });
+    await liftPanel.invokeBehaviorCommand('closureDimension', 'ClosureDimension.setTarget', { position: 4567 });
+    await wait(3000);
     expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}setTarget${rs}${nf} ${CYAN}9000${nf} called for ${CYAN}${mockDevices[0].label}`);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}setTarget${rs}${nf} ${CYAN}5000${nf} called for ${CYAN}${mockDevices[0].label}`);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at 5000`);
-    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(5000);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}setTarget${rs}${nf} ${CYAN}4600${nf} called for ${CYAN}${mockDevices[0].label}`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at 4600`);
+    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(4600);
 
     vi.clearAllMocks();
-    await liftPanel.executeCommandHandler(
-      'ClosureDimension.setTarget',
-      { position: 100000, latch: false },
-      'closureDimension',
-      (liftPanel.state as any).closureDimension,
-      liftPanel,
-    );
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.WARN, `Command setTarget called with unsupported position:100000`);
+    await expect(liftPanel.invokeBehaviorCommand('closureDimension', 'ClosureDimension.setTarget', { position: 100000 })).rejects.toMatchObject({ code: Status.ConstraintError });
+    expect(cover.commandTimeout).toBeUndefined();
 
     vi.clearAllMocks();
-    // Two rapid moveTo calls: the second must clear the first's pending debounce timer. Both still need
-    // latch:false — moveToPosition() never adopts the requested latch into currentState/overallCurrentState
-    // (these covers have no real latch mechanism), so the closure stays latched across every command.
-    await device.executeCommandHandler(
-      'ClosureControl.moveTo',
-      { position: ClosureControl.TargetPosition.MoveToFullyClosed, latch: false },
-      'closureControl',
-      (device.state as any).closureControl,
-      device,
-    );
-    await device.executeCommandHandler(
-      'ClosureControl.moveTo',
-      { position: ClosureControl.TargetPosition.MoveToFullyOpen, latch: false },
-      'closureControl',
-      (device.state as any).closureControl,
-      device,
-    );
+    // Two rapid moveTo calls: the second must clear the first's pending debounce timer.
+    await device.invokeBehaviorCommand('closureControl', 'ClosureControl.moveTo', { position: ClosureControl.TargetPosition.MoveToFullyClosed });
+    await device.invokeBehaviorCommand('closureControl', 'ClosureControl.moveTo', { position: ClosureControl.TargetPosition.MoveToFullyOpen });
     await wait(2000);
     expect(loggerLogSpy).not.toHaveBeenCalledWith(
       LogLevel.INFO,
@@ -522,7 +514,7 @@ describe('SomfyTahomaPlatform', () => {
     // We keep this Closure device to be used in the next tests
   }, 120000);
 
-  it('should allow moveTo/setTarget position changes without latch:false when the closure is not latched (Closure)', async () => {
+  it('should not send TaHoma commands for rejected or ignored Closure commands', async () => {
     const cover = somfyPlatform.covers.get('Device1');
     expect(cover).toBeDefined();
     if (!cover) return;
@@ -531,30 +523,43 @@ describe('SomfyTahomaPlatform', () => {
     expect(liftPanel).toBeDefined();
     if (!liftPanel) return;
 
-    vi.clearAllMocks();
-    // isPositionChangeBlockedByLatch() only blocks when the current latch is strictly true, so a not-latched
-    // (or latch-less, if a future device ever omitted MotionLatching) closure never needs latch:false.
-    vi.spyOn(device, 'getAttribute').mockReturnValueOnce({ position: ClosureControl.CurrentPosition.FullyOpened, latch: false, speed: ThreeLevelAuto.Auto });
-    await device.executeCommandHandler(
-      'ClosureControl.moveTo',
-      { position: ClosureControl.TargetPosition.MoveToFullyClosed },
-      'closureControl',
-      (device.state as any).closureControl,
-      device,
-    );
-    await wait(3000);
-    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.WARN, expect.stringContaining('ignored'));
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}moveTo${rs}${nf} ${CYAN}${PERCENT100THS_MAX_CLOSED}${nf} called for ${CYAN}${mockDevices[0].label}`);
-    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(PERCENT100THS_MAX_CLOSED);
+    await device.setAttribute(ClosureControl, 'mainState', ClosureControl.MainState.Error);
+    try {
+      await expect(device.invokeBehaviorCommand('closureControl', 'ClosureControl.moveTo', { position: ClosureControl.TargetPosition.MoveToFullyClosed })).rejects.toMatchObject({
+        code: Status.InvalidInState,
+      });
+      await expect(liftPanel.invokeBehaviorCommand('closureDimension', 'ClosureDimension.setTarget', { position: 5000 })).rejects.toMatchObject({ code: Status.InvalidInState });
+    } finally {
+      await device.setAttribute(ClosureControl, 'mainState', ClosureControl.MainState.Stopped);
+    }
+    await expect(device.invokeBehaviorCommand('closureControl', 'ClosureControl.moveTo', {})).rejects.toMatchObject({ code: Status.InvalidCommand });
+    await expect(liftPanel.invokeBehaviorCommand('closureDimension', 'ClosureDimension.setTarget', {})).rejects.toMatchObject({ code: Status.InvalidCommand });
+    await expect(liftPanel.invokeBehaviorCommand('closureDimension', 'ClosureDimension.setTarget', { position: -1 })).rejects.toMatchObject({ code: Status.ConstraintError });
+    // MotionLatching is disabled, and a position matching CurrentState needs no movement.
+    await liftPanel.invokeBehaviorCommand('closureDimension', 'ClosureDimension.setTarget', { latch: false });
+    await liftPanel.invokeBehaviorCommand('closureDimension', 'ClosureDimension.setTarget', { position: PERCENT100THS_MIN_OPEN });
+    expect(cover.commandTimeout).toBeUndefined();
+    await wait(600);
+    expect(clientExecuteSpy).not.toHaveBeenCalled();
+  });
 
-    vi.clearAllMocks();
-    vi.spyOn(liftPanel, 'getAttribute').mockReturnValueOnce({ position: PERCENT100THS_MAX_CLOSED, latch: false, speed: ThreeLevelAuto.Auto });
-    await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 5000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
-    await wait(2000);
-    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.WARN, expect.stringContaining('ignored'));
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}setTarget${rs}${nf} ${CYAN}5000${nf} called for ${CYAN}${mockDevices[0].label}`);
-    expect(liftPanel.getAttribute(ClosureDimension.id, 'currentState')?.position).toBe(5000);
-  }, 15000);
+  it('should not move a Closure panel if its target becomes unknown during debounce', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover?.liftPanel).toBeDefined();
+    if (!cover?.liftPanel) return;
+    const liftPanel = cover.liftPanel;
+    const previousTarget = liftPanel.getAttribute(ClosureDimension, 'targetState');
+    try {
+      await liftPanel.invokeBehaviorCommand('closureDimension', 'ClosureDimension.setTarget', { position: 5000 });
+      await liftPanel.setAttribute(ClosureDimension, 'targetState', null);
+      await wait(600);
+      expect(cover.commandTimeout).toBeUndefined();
+      expect(clientExecuteSpy).not.toHaveBeenCalled();
+      expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.WARN, 'Command setTarget called with unsupported position:undefined');
+    } finally {
+      await liftPanel.setAttribute(ClosureDimension, 'targetState', previousTarget ?? null);
+    }
+  });
 
   it('should stop current movement in moveToPosition when already moving (Closure)', async () => {
     const cover = somfyPlatform.covers.get('Device1');
@@ -591,7 +596,8 @@ describe('SomfyTahomaPlatform', () => {
     // oxlint-disable-next-line unicorn/no-useless-undefined -- explicit undefined is required to match getAttribute's overload
     vi.spyOn(liftPanel, 'getAttribute').mockReturnValueOnce(undefined);
 
-    await device.executeCommandHandler('ClosureControl.stop', {}, 'closureControl', (device.state as any).closureControl, device);
+    await device.invokeBehaviorCommand('closureControl', 'ClosureControl.stop', {});
+    await flushAsync();
 
     expect(clientExecuteSpy).toHaveBeenCalledWith('apply/highPriority', expect.anything());
     // movementStatus and mainState still leave the "moving" state even though the position could not be synced
@@ -616,13 +622,30 @@ describe('SomfyTahomaPlatform', () => {
       // oxlint-disable-next-line unicorn/no-useless-undefined -- explicit undefined is required to match getAttribute's overload
       .mockReturnValueOnce(undefined);
 
-    await device.executeCommandHandler('ClosureControl.stop', {}, 'closureControl', (device.state as any).closureControl, device);
+    await device.invokeBehaviorCommand('closureControl', 'ClosureControl.stop', {});
+    await flushAsync();
 
     expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
     expect(device.getAttribute(ClosureControl.id, 'overallCurrentState')?.secureState).toBeNull();
     expect(device.getAttribute(ClosureControl.id, 'overallTargetState')).toEqual({
       position: ClosureControl.TargetPosition.MoveToFullyClosed,
     });
+  });
+
+  it('should log errors from an asynchronous Closure stop listener', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover?.liftPanel).toBeDefined();
+    if (!cover?.liftPanel) return;
+    const getPositionSpy = vi.spyOn(cover.liftPanel, 'getAttribute').mockImplementationOnce(() => {
+      throw new Error('Position read failed');
+    });
+    try {
+      await cover.bridgedDevice.invokeBehaviorCommand('closureControl', 'ClosureControl.stop', {});
+      await flushAsync();
+      expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, expect.stringContaining('Error stopping cover'));
+    } finally {
+      getPositionSpy.mockRestore();
+    }
   });
 
   it('should ignore Identify and ClosureControl/ClosureDimension commands when the cover was removed from the map (Closure)', async () => {
@@ -635,27 +658,24 @@ describe('SomfyTahomaPlatform', () => {
     if (!liftPanel) return;
 
     // Simulate the cover having been removed from the map (e.g. mid-flight during a shutdown) after the
-    // command handlers were registered but before a pending command is actually dispatched.
+    // command subscriptions were registered but before an accepted command is dispatched.
     somfyPlatform.covers.delete('Device1');
     try {
       vi.clearAllMocks();
       await device.executeCommandHandler('Identify.identify', { identifyTime: 1 }, 'identify', (device.state as any).identify, device);
       expect(loggerLogSpy).not.toHaveBeenCalled();
 
-      await device.executeCommandHandler(
-        'ClosureControl.moveTo',
-        { position: ClosureControl.TargetPosition.MoveToFullyClosed },
-        'closureControl',
-        (device.state as any).closureControl,
-        device,
-      );
-      expect(loggerLogSpy).not.toHaveBeenCalled();
+      await device.invokeBehaviorCommand('closureControl', 'ClosureControl.moveTo', { position: ClosureControl.TargetPosition.MoveToFullyClosed });
+      expect(clientExecuteSpy).not.toHaveBeenCalled();
+      expect(cover.commandTimeout).toBeUndefined();
 
-      await device.executeCommandHandler('ClosureControl.stop', {}, 'closureControl', (device.state as any).closureControl, device);
-      expect(loggerLogSpy).not.toHaveBeenCalled();
+      await device.invokeBehaviorCommand('closureControl', 'ClosureControl.stop', {});
+      expect(clientExecuteSpy).not.toHaveBeenCalled();
+      expect(cover.commandTimeout).toBeUndefined();
 
-      await liftPanel.executeCommandHandler('ClosureDimension.setTarget', { position: 5000 }, 'closureDimension', (liftPanel.state as any).closureDimension, liftPanel);
-      expect(loggerLogSpy).not.toHaveBeenCalled();
+      await liftPanel.invokeBehaviorCommand('closureDimension', 'ClosureDimension.setTarget', { position: 5000 });
+      expect(clientExecuteSpy).not.toHaveBeenCalled();
+      expect(cover.commandTimeout).toBeUndefined();
     } finally {
       somfyPlatform.covers.set('Device1', cover);
     }
@@ -672,17 +692,9 @@ describe('SomfyTahomaPlatform', () => {
       // noop
     }, 1000);
 
-    // ClosureControl.stop while a moveTo debounce timer is still pending must clear it too. latch:false is
-    // required here too, otherwise moveTo is refused up front (isPositionChangeBlockedByLatch) and never
-    // schedules the debounce timer this test means to exercise.
-    await device.executeCommandHandler(
-      'ClosureControl.moveTo',
-      { position: ClosureControl.TargetPosition.MoveToFullyClosed, latch: false },
-      'closureControl',
-      (device.state as any).closureControl,
-      device,
-    );
-    await device.executeCommandHandler('ClosureControl.stop', {}, 'closureControl', (device.state as any).closureControl, device);
+    // Stop must clear a pending moveTo debounce timer before it can send a cloud command.
+    await device.invokeBehaviorCommand('closureControl', 'ClosureControl.moveTo', { position: ClosureControl.TargetPosition.MoveToFullyClosed });
+    await device.invokeBehaviorCommand('closureControl', 'ClosureControl.stop', {});
     await wait(800);
     expect(loggerLogSpy).not.toHaveBeenCalledWith(
       LogLevel.INFO,
@@ -694,8 +706,24 @@ describe('SomfyTahomaPlatform', () => {
 
     // Calling stop again while already stopped must not send another stop command
     vi.clearAllMocks();
-    await device.executeCommandHandler('ClosureControl.stop', {}, 'closureControl', (device.state as any).closureControl, device);
+    await device.invokeBehaviorCommand('closureControl', 'ClosureControl.stop', {});
+    await flushAsync();
     expect(clientExecuteSpy).not.toHaveBeenCalled();
+
+    // Stop before a queued open starts must leave an already closed cover closed.
+    const liftPanel = cover.liftPanel;
+    expect(liftPanel).toBeDefined();
+    if (!liftPanel) return;
+    await liftPanel.setAttribute(ClosureDimension, 'currentState', { position: PERCENT100THS_MAX_CLOSED });
+    await device.setAttribute(ClosureControl, 'overallCurrentState', { position: ClosureControl.CurrentPosition.FullyClosed, secureState: true });
+    await device.invokeBehaviorCommand('closureControl', 'ClosureControl.moveTo', { position: ClosureControl.TargetPosition.MoveToFullyOpen });
+    expect(cover.commandTimeout).toBeDefined();
+    await device.invokeBehaviorCommand('closureControl', 'ClosureControl.stop', {});
+    expect(cover.commandTimeout).toBeUndefined();
+    await wait(600);
+    expect(clientExecuteSpy).not.toHaveBeenCalled();
+    expect(liftPanel.getAttribute(ClosureDimension, 'currentState')?.position).toBe(PERCENT100THS_MAX_CLOSED);
+    expect(device.getAttribute(ClosureControl, 'overallCurrentState')?.position).toBe(ClosureControl.CurrentPosition.FullyClosed);
 
     somfyPlatform.tahomaDevices = [];
     somfyPlatform.covers.clear();
