@@ -59,6 +59,10 @@ If `useClosure` is enabled, covers are exposed using the Matter 1.5 Closure devi
 
 When `useClosure` is enabled, you can opt in per device to the Closure `Calibration`, `Ventilation` and `Pedestrian` optional features with `closureOptions`.
 
+Set `closureOptions.<DEVICENAME>.signaturePosition` to override the Signature position per device (0-100, percentage closed). When omitted or invalid, Matterbridge's default applies (50% closed).
+
+Closure movement and stop commands act on the physical cover only after Matterbridge accepts the command. Panel target positions follow the resolution applied by the server, and preset targets use Matterbridge's configured percentages.
+
 These are the config values:
 
 ```json
@@ -79,7 +83,8 @@ These are the config values:
     "<DEVICENAME1>": {
       "calibration": false,
       "ventilation": false,
-      "pedestrian": false
+      "pedestrian": false,
+      "signaturePosition": 50
     }
   }
 }

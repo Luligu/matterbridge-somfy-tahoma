@@ -3,7 +3,7 @@
  * @description This file contains the class SomfyTahomaPlatform.
  * @author Luca Liguori
  * @created 2024-03-06
- * @version 1.7.0
+ * @version 1.7.1
  * @license Apache-2.0
  *
  * Copyright 2025, 2026, 2027 Luca Liguori.
@@ -43,7 +43,7 @@ import { inspectError, isValidNumber, isValidString } from 'matterbridge/utils';
 import { Action, Client, Command, type Device, Execution, type State } from 'overkiz-client';
 
 export type MovementDuration = Record<string, number>;
-export type ClosureOptions = Record<string, { calibration?: boolean; ventilation?: boolean; pedestrian?: boolean }>;
+export type ClosureOptions = Record<string, { calibration?: boolean; ventilation?: boolean; pedestrian?: boolean; signaturePosition?: number }>;
 export const PERCENT100THS_MIN_OPEN = 0;
 export const PERCENT100THS_MAX_CLOSED = 10000;
 
@@ -89,7 +89,7 @@ export type SomfyTahomaPlatformConfig = PlatformConfig & {
   movementDuration: MovementDuration;
   /** Expose covers using the Matter 1.5 Closure device type instead of WindowCovering. Requires a matterbridge build with Closure support. Default: false. */
   useClosure?: boolean;
-  /** Per-device opt-in for the Closure Calibration, Ventilation and Pedestrian optional features. Only applies when useClosure is enabled. Default: false for all devices and features. */
+  /** Per-device Closure feature options and Signature position (0-100, percentage closed). Only applies when useClosure is enabled. Defaults to disabled features and Matterbridge's Signature position. */
   closureOptions?: ClosureOptions;
 };
 
@@ -151,9 +151,15 @@ async function setCoverStoppedAt(cover: Cover, position: number): Promise<void> 
     const overallCurrentState = cover.bridgedDevice.getAttribute(ClosureControl, 'overallCurrentState', log);
     const overallTargetState = cover.bridgedDevice.getAttribute(ClosureControl, 'overallTargetState', log);
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- cover.liftPanel is only set when bridgedDevice is a Closure (see discoverDevices)
-    await (cover.bridgedDevice as Closure).setState(
+    const closure = cover.bridgedDevice as Closure;
+    const targetPosition = overallTargetState?.position;
+    const reachedPosition =
+      targetPosition !== undefined && targetPosition !== null && closure.targetPositionToTargetPercent(targetPosition) === position
+        ? closure.targetPositionToCurrentPosition(targetPosition)
+        : getClosureOverallPositionFromPercent(position);
+    await closure.setState(
       {
-        position: getClosureOverallPositionFromPercent(position),
+        position: reachedPosition,
         secureState: overallCurrentState?.secureState ?? null,
       },
       overallTargetState ?? { position: ClosureControl.TargetPosition.MoveToFullyClosed },
@@ -450,12 +456,14 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         // Window openers (e.g. Velux roof windows) are a Closure in their own right (ClosureTag.Window), not a covering,
         // so the ClosureCoveringTag material subtype only applies to actual coverings (blinds, shutters, awnings, ...).
         const isWindow = device.definition.uiClass === 'Window';
+        const signaturePosition = this.config.closureOptions?.[device.label]?.signaturePosition;
         const closureCover = new Closure(device.label, device.serialNumber, {
           powerSourceType: device.states.find((s) => s.name === 'core:BatteryDiscreteLevelState') ? 'Rechargeable' : 'Wired',
           tagList: isWindow ? [getSemtag(ClosureTag.Window)] : [getSemtag(ClosureTag.Covering), getSemtag(getCoveringTag(device))],
           calibration: this.config.closureOptions?.[device.label]?.calibration,
           ventilation: this.config.closureOptions?.[device.label]?.ventilation,
           pedestrian: this.config.closureOptions?.[device.label]?.pedestrian,
+          signaturePosition: isValidNumber(signaturePosition, 0, 100) ? signaturePosition * 100 : undefined,
         });
         closureCover.createDefaultBasicInformationClusterServer(device.label, device.serialNumber, 0xfff1, 'Somfy Tahoma', 0x8000, device.definition.uiClass);
         // Window openers open by rotating on a hinge, not by translating up/down like a shutter or blind, so their
@@ -483,30 +491,29 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         await this.sendCommand('identify', device, true);
       });
 
-      if (liftPanel) {
-        cover.addCommandHandler('ClosureControl.moveTo', ({ request: { position } }) => {
+      if (liftPanel && cover instanceof Closure) {
+        const closure = cover;
+        cover.subscribeCommand(ClosureControl, 'moveTo', () => {
           const cover = this.covers.get(device.label);
           if (!cover) return;
-          const targetPosition =
-            position === ClosureControl.TargetPosition.MoveToFullyOpen
-              ? PERCENT100THS_MIN_OPEN
-              : position === ClosureControl.TargetPosition.MoveToFullyClosed
-                ? PERCENT100THS_MAX_CLOSED
-                : undefined;
-          if (targetPosition === undefined) {
-            cover.bridgedDevice.log.warn(`Command moveTo called with unsupported position:${position}`);
-            return;
-          }
           if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
           // oxlint-disable-next-line typescript/no-misused-promises
           cover.commandTimeout = setTimeout(async () => {
             cover.commandTimeout = undefined;
+            // Read the committed target after the invoke completes.
+            const committedPosition = closure.getAttribute(ClosureControl, 'overallTargetState', cover.bridgedDevice.log)?.position;
+            if (committedPosition === undefined || committedPosition === null) {
+              cover.bridgedDevice.log.warn(`Command moveTo called with unsupported position:${committedPosition}`);
+              return;
+            }
+            const targetPosition = closure.targetPositionToTargetPercent(committedPosition);
             cover.bridgedDevice.log.info(`Command ${ign}moveTo${rs}${nf} ${CYAN}${targetPosition}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
             await this.moveToPosition(cover, targetPosition);
           }, 500);
         });
 
-        cover.addCommandHandler('ClosureControl.stop', async () => {
+        // oxlint-disable-next-line typescript/no-misused-promises -- command notifications do not await listener results
+        cover.subscribeCommand(ClosureControl, 'stop', async () => {
           const cover = this.covers.get(device.label);
           if (!cover) return;
           cover.bridgedDevice.log.info(`Command ${ign}stop${rs}${nf} called for ${CYAN}${cover.tahomaDevice.label}. Status ${cover.movementStatus}`);
@@ -514,25 +521,31 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
           cover.commandTimeout = undefined;
           clearInterval(cover.moveInterval);
           cover.moveInterval = undefined;
-          if (cover.movementStatus !== WindowCovering.MovementStatus.Stopped) {
-            await this.sendCommand('stop', cover.tahomaDevice, true);
+          try {
+            if (cover.movementStatus !== WindowCovering.MovementStatus.Stopped) {
+              await this.sendCommand('stop', cover.tahomaDevice, true);
+            }
+            const position = getCoverPosition(cover);
+            if (isValidNumber(position, PERCENT100THS_MIN_OPEN, PERCENT100THS_MAX_CLOSED)) await setCoverStoppedAt(cover, position);
+            else await setCoverStopped(cover);
+          } catch (error) {
+            inspectError(cover.bridgedDevice.log, 'Error stopping cover', error);
           }
-          const position = getCoverPosition(cover);
-          if (isValidNumber(position, PERCENT100THS_MIN_OPEN, PERCENT100THS_MAX_CLOSED)) await setCoverStoppedAt(cover, position);
-          else await setCoverStopped(cover);
         });
 
-        liftPanel.addCommandHandler('ClosureDimension.setTarget', ({ request: { position } }) => {
+        liftPanel.subscribeCommand(ClosureDimension, 'setTarget', () => {
           const cover = this.covers.get(device.label);
           if (!cover) return;
-          if (!isValidNumber(position, PERCENT100THS_MIN_OPEN, PERCENT100THS_MAX_CLOSED)) {
-            cover.bridgedDevice.log.warn(`Command setTarget called with unsupported position:${position}`);
-            return;
-          }
           if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
           // oxlint-disable-next-line typescript/no-misused-promises
           cover.commandTimeout = setTimeout(async () => {
             cover.commandTimeout = undefined;
+            // Read the committed target, including the server's resolution rounding, after the invoke completes.
+            const position = liftPanel.getAttribute(ClosureDimension, 'targetState', cover.bridgedDevice.log)?.position;
+            if (!isValidNumber(position, PERCENT100THS_MIN_OPEN, PERCENT100THS_MAX_CLOSED)) {
+              cover.bridgedDevice.log.warn(`Command setTarget called with unsupported position:${position}`);
+              return;
+            }
             cover.bridgedDevice.log.info(`Command ${ign}setTarget${rs}${nf} ${CYAN}${position}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
             await this.moveToPosition(cover, position);
           }, 500);
