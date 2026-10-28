@@ -82,6 +82,16 @@
         "type": "integer"
       }
     },
+    "invertDirection": {
+      "title": "Invert Direction",
+      "description": "The devices in the list move in the opposite direction: open sends close and close sends open. Use it for covers that move the wrong way.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "selectFrom": "name"
+    },
     "useClosure": {
       "title": "Use Closure (EXPERIMENTAL)",
       "description": "Expose covers using the Matter 1.5 Closure device type instead of WindowCovering, to ease integration testing with controllers that support the newer cluster (SmartThings).",

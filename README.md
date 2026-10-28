@@ -55,6 +55,10 @@ If any device creates issues put it in the blackList.
 
 Set for each device the full movement time (the plugin will use that time to syncronize the movement).
 
+Pergolas with a fabric roof (uiClass `Pergola` with the `deploy` and `undeploy` commands) are opened with `undeploy` (fabric retracted) and closed with `deploy` (fabric extended).
+
+If a device moves in the opposite direction (open closes it and close opens it), add its name to `invertDirection`.
+
 If `useClosure` is enabled, covers are exposed using the Matter 1.5 Closure device type instead of WindowCovering. This eases integration testing with controllers that support the newer cluster (SmartThings).
 
 When `useClosure` is enabled, you can opt in per device to the Closure `Calibration`, `Ventilation` and `Pedestrian` optional features with `closureOptions`.
@@ -78,6 +82,7 @@ These are the config values:
     "<DEVICENAME1>": 30,
     "<DEVICENAME2>": 30
   },
+  "invertDirection": [],
   "useClosure": false,
   "closureOptions": {
     "<DEVICENAME1>": {

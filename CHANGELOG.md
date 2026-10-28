@@ -36,9 +36,11 @@ If you like this project and find it useful, please consider giving it a star on
 - [closure]: Add validated command subscriptions for Closure movement and stop commands.
 - [closure]: Add preset position support using Matterbridge's Closure helpers.
 - [config]: Add the per-device `closureOptions.signaturePosition` override, keeping Matterbridge's default when omitted. Based on PR [50](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/50). Thanks Ludovic BOUÉ.
+- [config]: Add the `invertDirection` config option (default `[]`) to swap the open/close direction of the listed devices. Addresses [41](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/41).
 
 ### Changed
 
+- [pergola]: Open and close pergolas (uiClass `Pergola` with `deploy`/`undeploy`) with `undeploy`/`deploy`, like the Home Assistant Overkiz integration. Fixes [41](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/41). If your pergola now moves the wrong way, add it to `invertDirection`.
 - [package]: Bump transitive `axios` to v.1.20.0 and `follow-redirects` to v.1.16.1 (overkiz-client → axios) to fix security advisories.
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
