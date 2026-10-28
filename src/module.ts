@@ -75,11 +75,11 @@ export interface Cover {
 }
 
 export type SomfyTahomaPlatformConfig = PlatformConfig & {
-  /** TaHoma account username. */
+  /** TaHoma cloud account username, or local gateway IPv4 address/PIN. */
   username: string;
-  /** TaHoma account password. */
+  /** TaHoma cloud account password, or local API bearer token. */
   password: string;
-  /** TaHoma cloud service to connect to (e.g. `somfy_europe`). */
+  /** TaHoma service to connect to (e.g. `somfy_europe` or `local`). */
   service: string;
   /** Only devices whose name, uniqueName, or serial number is in this list are exposed. Empty means no restriction. */
   whiteList: string[];
@@ -87,11 +87,30 @@ export type SomfyTahomaPlatformConfig = PlatformConfig & {
   blackList: string[];
   /** Full open-to-close movement time in seconds, per device name. Devices not listed default to 30 seconds. */
   movementDuration: MovementDuration;
+  /** Device names whose open/close direction is swapped, for covers that move the opposite way. Default: []. */
+  invertDirection?: string[];
   /** Expose covers using the Matter 1.5 Closure device type instead of WindowCovering. Requires a matterbridge build with Closure support. Default: false. */
   useClosure?: boolean;
   /** Per-device Closure feature options and Signature position (0-100, percentage closed). Only applies when useClosure is enabled. Defaults to disabled features and Matterbridge's Signature position. */
   closureOptions?: ClosureOptions;
 };
+
+/**
+ * Keeps the overkiz-client execution lifecycle while serializing only fields accepted by Somfy's Local API.
+ * The cloud API accepts overkiz-client's additional EventEmitter and command metadata, but the local endpoint
+ * can reject that payload with `400 Unknown object`.
+ */
+class LocalApiExecution extends Execution {
+  toJSON(): { label: string; actions: { deviceURL: string; commands: { name: string; parameters: unknown[] }[] }[] } {
+    return {
+      label: this.label,
+      actions: this.actions.map((action) => ({
+        deviceURL: action.deviceURL,
+        commands: action.commands.map((command) => ({ name: command.name, parameters: command.parameters })),
+      })),
+    };
+  }
+}
 
 /**
  * Maps a discovered TaHoma device's uiClass to the closest ClosureCoveringTag semantic tag, used to disambiguate
@@ -286,6 +305,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     config.blackList ??= [];
     config.whiteList ??= [];
     config.movementDuration ??= {};
+    config.invertDirection ??= [];
     config.useClosure ??= false;
     config.closureOptions ??= {};
     config.debug ??= false;
@@ -298,7 +318,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.log.info('Finished initializing platform:', this.config.name);
 
     // create TaHoma client
-    this.log.info(`Starting client Tahoma service ${this.config.service} with user ${this.config.username} password: ${this.config.password}`);
+    this.log.info(`Starting TaHoma client for service ${this.config.service}`);
     this.tahomaClient = new Client(this.log, {
       service: this.config.service,
       user: this.config.username,
@@ -684,18 +704,40 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
 
   async sendCommand(command: string, device: Device, highPriority = false): Promise<void> {
     let resolvedCommand = command;
+    // Pergola fabric roofs: open retracts the fabric (undeploy) and close extends it (deploy), like the HA Overkiz integration
+    if (device.definition.uiClass === 'Pergola' && device.commands.includes('deploy') && device.commands.includes('undeploy')) {
+      if (resolvedCommand === 'open') resolvedCommand = 'undeploy';
+      else if (resolvedCommand === 'close') resolvedCommand = 'deploy';
+    }
     if (resolvedCommand === 'open' && !device.commands.includes('open') && device.commands.includes('rollOut')) resolvedCommand = 'rollOut';
     if (resolvedCommand === 'close' && !device.commands.includes('close') && device.commands.includes('rollUp')) resolvedCommand = 'rollUp';
 
     if (resolvedCommand === 'open' && !device.commands.includes('open') && device.commands.includes('up')) resolvedCommand = 'up';
     if (resolvedCommand === 'close' && !device.commands.includes('close') && device.commands.includes('down')) resolvedCommand = 'down';
 
+    // Swap the direction for the devices listed in invertDirection
+    if (this.config.invertDirection?.includes(device.label)) {
+      const inverted: Record<string, string> = {
+        open: 'close',
+        close: 'open',
+        rollOut: 'rollUp',
+        rollUp: 'rollOut',
+        up: 'down',
+        down: 'up',
+        deploy: 'undeploy',
+        undeploy: 'deploy',
+      };
+      resolvedCommand = inverted[resolvedCommand] ?? resolvedCommand;
+    }
+
     this.log.info(`Sending command ${YELLOW}${resolvedCommand}${nf} highPriority ${highPriority}`);
     try {
       const newCommand = new Command(resolvedCommand);
       const newAction = new Action(device.deviceURL, [newCommand]);
-      const newExecution = new Execution('Sending ' + resolvedCommand, newAction);
-      await this.tahomaClient?.execute(highPriority ? 'apply/highPriority' : 'apply', newExecution);
+      const isLocalApi = this.config.service === 'local';
+      const newExecution = isLocalApi ? new LocalApiExecution('Sending ' + resolvedCommand, newAction) : new Execution('Sending ' + resolvedCommand, newAction);
+      const executionPath = isLocalApi || !highPriority ? 'apply' : 'apply/highPriority';
+      await this.tahomaClient?.execute(executionPath, newExecution);
     } catch (error) {
       inspectError(this.log, `Error sending command ${resolvedCommand} to ${device.label}`, error);
     }

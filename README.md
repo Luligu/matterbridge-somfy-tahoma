@@ -45,7 +45,15 @@ Open the frontend of matterbridge, select the plugin and install it.
 
 ## How to use it
 
-You need to configure the service ("somfy_europe", "somfy_australia" or "somfy_north_america"), username and password of your Tahoma account.
+For the cloud service, configure `somfy_europe`, `somfy_australia`, or `somfy_north_america` with the username and password of your TaHoma account.
+
+For the Local API, first enable [Developer Mode and generate a local bearer token](https://github.com/Somfy-Developer/Somfy-TaHoma-Developer-Mode). Then configure:
+
+- `service`: `local`
+- `username`: the gateway IPv4 address without `https://` or `:8443` (for example `192.168.1.54`), or its PIN (`XXXX-XXXX-XXXX`)
+- `password`: the generated local bearer token, not the Somfy account password
+
+Keep the local bearer token private. The plugin does not write credentials to its startup log.
 
 If the whiteList is defined only the devices included are exposed to Matter.
 
@@ -55,6 +63,10 @@ If any device creates issues put it in the blackList.
 
 Set for each device the full movement time (the plugin will use that time to syncronize the movement).
 
+Pergolas with a fabric roof (uiClass `Pergola` with the `deploy` and `undeploy` commands) are opened with `undeploy` (fabric retracted) and closed with `deploy` (fabric extended).
+
+If a device moves in the opposite direction (open closes it and close opens it), add its name to `invertDirection`.
+
 If `useClosure` is enabled, covers are exposed using the Matter 1.5 Closure device type instead of WindowCovering. This eases integration testing with controllers that support the newer cluster (SmartThings).
 
 When `useClosure` is enabled, you can opt in per device to the Closure `Calibration`, `Ventilation` and `Pedestrian` optional features with `closureOptions`.
@@ -63,7 +75,7 @@ Set `closureOptions.<DEVICENAME>.signaturePosition` to override the Signature po
 
 Closure movement and stop commands act on the physical cover only after Matterbridge accepts the command. Panel target positions follow the resolution applied by the server, and preset targets use Matterbridge's configured percentages.
 
-These are the config values:
+These are example cloud config values:
 
 ```json
 {
@@ -78,6 +90,7 @@ These are the config values:
     "<DEVICENAME1>": 30,
     "<DEVICENAME2>": 30
   },
+  "invertDirection": [],
   "useClosure": false,
   "closureOptions": {
     "<DEVICENAME1>": {
@@ -87,6 +100,16 @@ These are the config values:
       "signaturePosition": 50
     }
   }
+}
+```
+
+For a local connection, only the three connection values differ:
+
+```json
+{
+  "username": "192.168.1.54",
+  "password": "<LOCAL_BEARER_TOKEN>",
+  "service": "local"
 }
 ```
 

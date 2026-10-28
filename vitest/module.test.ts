@@ -159,7 +159,58 @@ describe('SomfyTahomaPlatform', () => {
     addMatterbridge(somfyPlatform);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Initializing platform:', config.name);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Finished initializing platform:', config.name);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Starting client Tahoma service somfy_europe with user None password: None');
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Starting TaHoma client for service somfy_europe');
+  });
+
+  it('should not log credentials when creating and shutting down a local TaHoma client', async () => {
+    const sentinelUsername = 'sentinel-local-username';
+    const sentinelToken = 'sentinel-local-bearer-token';
+    const isolatedPlatform = new SomfyTahomaPlatform(matterbridge, log, {
+      ...config,
+      username: sentinelUsername,
+      password: sentinelToken,
+      service: 'local',
+    });
+
+    await isolatedPlatform.onShutdown();
+
+    const loggedValues = loggerLogSpy.mock.calls.flat().join(' ');
+    expect(loggedValues).not.toContain(sentinelUsername);
+    expect(loggedValues).not.toContain(sentinelToken);
+  });
+
+  it('should select the execution endpoint based on the configured service and priority', async () => {
+    const originalService = somfyPlatform.config.service;
+    try {
+      clientExecuteSpy.mockClear();
+      mockDevices[0].deviceURL = 'io://1234-5678-9012/12345678';
+
+      somfyPlatform.config.service = 'local';
+      await somfyPlatform.sendCommand('close', mockDevices[0], true);
+      expect(clientExecuteSpy).toHaveBeenNthCalledWith(1, 'apply', expect.anything());
+      const localExecution = clientExecuteSpy.mock.calls[0][1];
+      expect(JSON.parse(JSON.stringify(localExecution))).toEqual({
+        label: 'Sending close',
+        actions: [
+          {
+            deviceURL: 'io://1234-5678-9012/12345678',
+            commands: [{ name: 'close', parameters: [] }],
+          },
+        ],
+      });
+      expect(typeof localExecution.onStateUpdate).toBe('function');
+
+      somfyPlatform.config.service = 'somfy_europe';
+      await somfyPlatform.sendCommand('close', mockDevices[0], true);
+      expect(clientExecuteSpy).toHaveBeenNthCalledWith(2, 'apply/highPriority', expect.anything());
+      const cloudExecution = JSON.parse(JSON.stringify(clientExecuteSpy.mock.calls[1][1]));
+      expect(cloudExecution.actions[0].commands[0]).toEqual({ type: 1, name: 'close', parameters: [] });
+
+      await somfyPlatform.sendCommand('close', mockDevices[0]);
+      expect(clientExecuteSpy).toHaveBeenNthCalledWith(3, 'apply', expect.anything());
+    } finally {
+      somfyPlatform.config.service = originalService;
+    }
   });
 
   it('should receive tahomaClient events', () => {
@@ -944,6 +995,67 @@ describe('SomfyTahomaPlatform', () => {
     expect(aggregator.parts.size).toBe(0);
     await flushAsync();
   }, 120000);
+
+  it('should open a Pergola with undeploy and close it with deploy', async () => {
+    const pergola = createMockDevice({
+      label: 'Pergola',
+      uniqueName: 'PergolaHorizontalUnoIOComponent',
+      uiClass: 'Pergola',
+      commands: ['open', 'close', 'deploy', 'undeploy', 'stop'],
+    });
+    await somfyPlatform.sendCommand('open', pergola);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Sending command ${YELLOW}undeploy${nf} highPriority false`);
+    await somfyPlatform.sendCommand('close', pergola);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Sending command ${YELLOW}deploy${nf} highPriority false`);
+    await somfyPlatform.sendCommand('stop', pergola);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Sending command ${YELLOW}stop${nf} highPriority false`);
+  });
+
+  it('should open and close a Pergola without deploy and undeploy with open and close', async () => {
+    const pergola = createMockDevice({ label: 'Pergola', uniqueName: 'BioclimaticPergolaIOComponent', uiClass: 'Pergola', commands: ['open', 'close', 'stop'] });
+    await somfyPlatform.sendCommand('open', pergola);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Sending command ${YELLOW}open${nf} highPriority false`);
+    await somfyPlatform.sendCommand('close', pergola);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Sending command ${YELLOW}close${nf} highPriority false`);
+  });
+
+  it('should invert the direction of the devices listed in invertDirection', async () => {
+    somfyPlatform.config.invertDirection = ['Shutter', 'Pergola', 'RollOut', 'UpDown'];
+    const shutter = createMockDevice({ label: 'Shutter', uniqueName: 'xxx', uiClass: 'Shutter', commands: ['open', 'close', 'stop'] });
+    await somfyPlatform.sendCommand('open', shutter);
+    expect(loggerLogSpy).toHaveBeenLastCalledWith(LogLevel.INFO, `Sending command ${YELLOW}close${nf} highPriority false`);
+    await somfyPlatform.sendCommand('close', shutter);
+    expect(loggerLogSpy).toHaveBeenLastCalledWith(LogLevel.INFO, `Sending command ${YELLOW}open${nf} highPriority false`);
+    await somfyPlatform.sendCommand('stop', shutter);
+    expect(loggerLogSpy).toHaveBeenLastCalledWith(LogLevel.INFO, `Sending command ${YELLOW}stop${nf} highPriority false`);
+    await somfyPlatform.sendCommand('identify', shutter);
+    expect(loggerLogSpy).toHaveBeenLastCalledWith(LogLevel.INFO, `Sending command ${YELLOW}identify${nf} highPriority false`);
+
+    const pergola = createMockDevice({
+      label: 'Pergola',
+      uniqueName: 'PergolaHorizontalUnoIOComponent',
+      uiClass: 'Pergola',
+      commands: ['open', 'close', 'deploy', 'undeploy', 'stop'],
+    });
+    await somfyPlatform.sendCommand('open', pergola);
+    expect(loggerLogSpy).toHaveBeenLastCalledWith(LogLevel.INFO, `Sending command ${YELLOW}deploy${nf} highPriority false`);
+    await somfyPlatform.sendCommand('close', pergola);
+    expect(loggerLogSpy).toHaveBeenLastCalledWith(LogLevel.INFO, `Sending command ${YELLOW}undeploy${nf} highPriority false`);
+
+    const rollOut = createMockDevice({ label: 'RollOut', uniqueName: 'xxx', uiClass: 'xxx', commands: ['rollOut', 'rollUp', 'stop'] });
+    await somfyPlatform.sendCommand('open', rollOut);
+    expect(loggerLogSpy).toHaveBeenLastCalledWith(LogLevel.INFO, `Sending command ${YELLOW}rollUp${nf} highPriority false`);
+    await somfyPlatform.sendCommand('close', rollOut);
+    expect(loggerLogSpy).toHaveBeenLastCalledWith(LogLevel.INFO, `Sending command ${YELLOW}rollOut${nf} highPriority false`);
+
+    const upDown = createMockDevice({ label: 'UpDown', uniqueName: 'xxx', uiClass: 'xxx', commands: ['up', 'down', 'stop'] });
+    await somfyPlatform.sendCommand('open', upDown);
+    expect(loggerLogSpy).toHaveBeenLastCalledWith(LogLevel.INFO, `Sending command ${YELLOW}down${nf} highPriority false`);
+    await somfyPlatform.sendCommand('close', upDown);
+    expect(loggerLogSpy).toHaveBeenLastCalledWith(LogLevel.INFO, `Sending command ${YELLOW}up${nf} highPriority false`);
+
+    somfyPlatform.config.invertDirection = [];
+  });
 
   it('should discover devices with command "rollOut", "rollUp" and "stop"', async () => {
     await setDebug(false);
