@@ -31,7 +31,7 @@ If you like this project and find it useful, please consider giving it a star on
 
 ## Prerequisites
 
-### Matterbridge v3.10.7
+### Matterbridge v3.11.0
 
 See the complete guidelines on [Matterbridge](https://matterbridge.io) for more information.
 
@@ -63,9 +63,17 @@ If any device creates issues put it in the blackList.
 
 Set for each device the full movement time (the plugin will use that time to syncronize the movement).
 
+Pergolas with a fabric roof (uiClass `Pergola` with the `deploy` and `undeploy` commands) are opened with `undeploy` (fabric retracted) and closed with `deploy` (fabric extended).
+
+If a device moves in the opposite direction (open closes it and close opens it), add its name to `invertDirection`.
+
 If `useClosure` is enabled, covers are exposed using the Matter 1.5 Closure device type instead of WindowCovering. This eases integration testing with controllers that support the newer cluster (SmartThings).
 
 When `useClosure` is enabled, you can opt in per device to the Closure `Calibration`, `Ventilation` and `Pedestrian` optional features with `closureOptions`.
+
+Set `closureOptions.<DEVICENAME>.signaturePosition` to override the Signature position per device (0-100, percentage closed). When omitted or invalid, Matterbridge's default applies (50% closed).
+
+Closure movement and stop commands act on the physical cover only after Matterbridge accepts the command. Panel target positions follow the resolution applied by the server, and preset targets use Matterbridge's configured percentages.
 
 These are example cloud config values:
 
@@ -82,12 +90,14 @@ These are example cloud config values:
     "<DEVICENAME1>": 30,
     "<DEVICENAME2>": 30
   },
+  "invertDirection": [],
   "useClosure": false,
   "closureOptions": {
     "<DEVICENAME1>": {
       "calibration": false,
       "ventilation": false,
-      "pedestrian": false
+      "pedestrian": false,
+      "signaturePosition": 50
     }
   }
 }
