@@ -41,6 +41,9 @@ If you like this project and find it useful, please consider giving it a star on
 ### Changed
 
 - [pergola]: Open and close pergolas (uiClass `Pergola` with `deploy`/`undeploy`) with `undeploy`/`deploy`, like the Home Assistant Overkiz integration. Fixes [41](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/41). If your pergola now moves the wrong way, add it to `invertDirection`.
+- [local]: Send all Local API commands to `/exec/apply` (the Local API has no `apply/highPriority`) and serialize only the documented execution fields. Fixes [20](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/20). Based on PR [56](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/56). Thanks Pierrick Druart.
+- [config]: Clarify the Local API setup (gateway address/PIN and bearer token) in the schema and README. Based on PR [56](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/56). Thanks Pierrick Druart.
+- [log]: Stop logging the configured username and password at startup. Based on PR [56](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/56). Thanks Pierrick Druart.
 - [package]: Bump transitive `axios` to v.1.20.0 and `follow-redirects` to v.1.16.1 (overkiz-client → axios) to fix security advisories.
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>

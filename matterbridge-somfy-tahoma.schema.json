@@ -19,13 +19,13 @@
       "ui:widget": "hidden"
     },
     "username": {
-      "title": "Username",
-      "description": "Username",
+      "title": "Cloud username / Local gateway",
+      "description": "Cloud: Somfy account username. Local API: gateway IPv4 address or PIN (XXXX-XXXX-XXXX), without a URL or port.",
       "type": "string"
     },
     "password": {
-      "title": "Password",
-      "description": "Password",
+      "title": "Cloud password / Local API token",
+      "description": "Cloud: Somfy account password. Local API: Developer Mode bearer token, not the Somfy account password.",
       "type": "string",
       "ui:widget": "password"
     },
