@@ -31,6 +31,12 @@ If you like this project and find it useful, please consider giving it a star on
 
 ## [1.7.1] - Dev branch
 
+### Added
+
+- [closure]: Add validated command subscriptions for Closure movement and stop commands.
+- [closure]: Add preset position support using Matterbridge's Closure helpers.
+- [config]: Add the per-device `closureOptions.signaturePosition` override, keeping Matterbridge's default when omitted. Based on PR [50](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/50). Thanks Ludovic BOUÉ.
+
 ### Changed
 
 - [package]: Bump transitive `axios` to v.1.20.0 and `follow-redirects` to v.1.16.1 (overkiz-client → axios) to fix security advisories.
