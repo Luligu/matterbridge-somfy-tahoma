@@ -29,6 +29,8 @@ If you like this project and find it useful, please consider giving it a star on
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120"></a>
 
+---
+
 ## [1.7.1] - Dev branch
 
 ### Added
@@ -37,6 +39,8 @@ If you like this project and find it useful, please consider giving it a star on
 - [closure]: Add preset position support using Matterbridge's Closure helpers.
 - [config]: Add the per-device `closureOptions.signaturePosition` override, keeping Matterbridge's default when omitted. Based on PR [50](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/50). Thanks Ludovic BOUÉ.
 - [config]: Add the `invertDirection` config option (default `[]`) to swap the open/close direction of the listed devices. Addresses [41](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/41).
+- [agents]: Add `SHARED-AGENTS.md` documenting the shared agent instruction setup.
+- [toolchain]: Add `TOOLCHAIN.md` v.1.0.1 documenting the repository toolchain.
 
 ### Changed
 
@@ -45,6 +49,21 @@ If you like this project and find it useful, please consider giving it a star on
 - [config]: Clarify the Local API setup (gateway address/PIN and bearer token) in the schema and README. Based on PR [56](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/56). Thanks Pierrick Druart.
 - [log]: Stop logging the configured username and password at startup. Based on PR [56](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/56). Thanks Pierrick Druart.
 - [package]: Bump transitive `axios` to v.1.20.0 and `follow-redirects` to v.1.16.1 (overkiz-client → axios) to fix security advisories.
+- [agents]: Update `AGENTS.md` to v.1.0.8: document commit sign-off and sensitive data rules.
+- [agents]: Update `.github/commit-message-instructions.md` to v.1.0.1: let Git add the sign-off trailer.
+- [vscode]: Update `.vscode/settings.json` to v.1.0.17: enable automatic commit sign-off.
+- [docs]: Update `CODE_OF_CONDUCT.md` to v.1.0.0 and `CONTRIBUTING.md` to v.1.0.1.
+- [scripts]: Update `scripts/downloads.mjs` to v.2.2.0: query explicit dates and mark unpublished download counts as pending.
+- [agents]: Update the mirrored plugin frontend rules to v.1.0.2: document base paths and trailing slashes for Home Assistant Ingress.
+- [codex]: Update `.codex/config.toml` to v.1.0.6: clarify the default workspace permissions and opt-in profiles.
+- [vscode]: Update `.vscode/tasks.json`: pack local sources and download Docker installer scripts before running them.
+- [scripts]: Update `scripts/git-sync-dev.mjs` to v.2.1.0: guard against overwriting remote dev commits.
+- [scripts]: Update `scripts/prepublish-clean.mjs` to v.2.2.0: remove development fields from `package.json`, preserving indentation and line endings.
+- [package]: Delegate development-field removal in `prepublishOnly` to `scripts/prepublish-clean.mjs`.
+- [package]: Bump `@types/node` to v.26.6.6.
+- [package]: Bump `oxfmt` to v.0.75.0.
+- [package]: Bump `oxlint` to v.1.90.0.
+- [package]: Bump `oxlint-tsgolint` to v.7.0.2005.
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
 
