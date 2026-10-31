@@ -29,6 +29,25 @@ If you like this project and find it useful, please consider giving it a star on
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="120"></a>
 
+## [1.7.1] - Dev branch
+
+### Added
+
+- [closure]: Add validated command subscriptions for Closure movement and stop commands.
+- [closure]: Add preset position support using Matterbridge's Closure helpers.
+- [config]: Add the per-device `closureOptions.signaturePosition` override, keeping Matterbridge's default when omitted. Based on PR [50](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/50). Thanks Ludovic BOUÉ.
+- [config]: Add the `invertDirection` config option (default `[]`) to swap the open/close direction of the listed devices. Addresses [41](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/41).
+
+### Changed
+
+- [pergola]: Open and close pergolas (uiClass `Pergola` with `deploy`/`undeploy`) with `undeploy`/`deploy`, like the Home Assistant Overkiz integration. Fixes [41](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/41). If your pergola now moves the wrong way, add it to `invertDirection`.
+- [local]: Send all Local API commands to `/exec/apply` (the Local API has no `apply/highPriority`) and serialize only the documented execution fields. Fixes [20](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/20). Based on PR [56](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/56). Thanks Pierrick Druart.
+- [config]: Clarify the Local API setup (gateway address/PIN and bearer token) in the schema and README. Based on PR [56](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/56). Thanks Pierrick Druart.
+- [log]: Stop logging the configured username and password at startup. Based on PR [56](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/56). Thanks Pierrick Druart.
+- [package]: Bump transitive `axios` to v.1.20.0 and `follow-redirects` to v.1.16.1 (overkiz-client → axios) to fix security advisories.
+
+<a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
+
 ## [1.7.0] - 2026-10-23
 
 ### Breaking changes
