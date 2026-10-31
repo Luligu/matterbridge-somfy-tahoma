@@ -44,6 +44,7 @@ If you like this project and find it useful, please consider giving it a star on
 
 ### Changed
 
+- [platform]: Uniform the constructor, onStart, onConfigure and onShutdown log messages.
 - [pergola]: Open and close pergolas (uiClass `Pergola` with `deploy`/`undeploy`) with `undeploy`/`deploy`, like the Home Assistant Overkiz integration. Fixes [41](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/41). If your pergola now moves the wrong way, add it to `invertDirection`.
 - [local]: Send all Local API commands to `/exec/apply` (the Local API has no `apply/highPriority`) and serialize only the documented execution fields. Fixes [20](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/20). Based on PR [56](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/56). Thanks Pierrick Druart.
 - [config]: Clarify the Local API setup (gateway address/PIN and bearer token) in the schema and README. Based on PR [56](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/56). Thanks Pierrick Druart.

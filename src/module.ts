@@ -286,7 +286,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       );
     }
 
-    this.log.info('Initializing platform:', this.config.name);
+    this.log.info(`Initializing platform ${this.config.name}...`);
 
     // This section ensures that all optional configuration parameters have default values.
     config.blackList ??= [];
@@ -302,7 +302,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.error('No service or username or password provided for:', this.config.name);
       return;
     }
-    this.log.info('Finished initializing platform:', this.config.name);
+    this.log.info(`Platform ${this.config.name} initialized successfully`);
 
     // create TaHoma client
     this.log.info(`Starting TaHoma client for service ${this.config.service}`);
@@ -326,7 +326,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   override async onStart(reason?: string): Promise<void> {
     await this.ready;
 
-    this.log.info('onStart called with reason:', reason ?? 'none');
+    this.log.info(`Starting platform ${this.config.name} with reason: ${reason ?? 'no reason provided'}...`);
     if (!this.tahomaClient) {
       this.log.error('TaHoma service not created');
       return;
@@ -338,11 +338,13 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       return;
     }
     await this.discoverDevices();
+
+    this.log.info(`Platform ${this.config.name} started successfully`);
   }
 
   override async onConfigure(): Promise<void> {
     await super.onConfigure();
-    this.log.info('onConfigure called');
+    this.log.info(`Configuring platform ${this.config.name}...`);
     if (!this.tahomaClient) {
       this.log.error('TaHoma service not created');
       return;
@@ -357,11 +359,13 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       if (isValidNumber(position, PERCENT100THS_MIN_OPEN, PERCENT100THS_MAX_CLOSED)) await setCoverStoppedAt(cover, position);
       else await setCoverStopped(cover);
     }
+
+    this.log.info(`Platform ${this.config.name} configured successfully`);
   }
 
   override async onShutdown(reason?: string): Promise<void> {
     await super.onShutdown(reason);
-    this.log.info('onShutdown called with reason:', reason ?? 'none');
+    this.log.info(`Shutting down platform ${this.config.name} with reason: ${reason ?? 'no reason provided'}...`);
     if (this.tahomaClient) {
       this.tahomaClient.removeAllListeners();
     } else {
@@ -376,6 +380,8 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     });
     this.covers.clear();
     if (this.config.unregisterOnShutdown) await this.unregisterAllDevices();
+
+    this.log.info(`Platform ${this.config.name} shut down successfully`);
   }
 
   async discoverDevices(): Promise<void> {

@@ -146,7 +146,7 @@ describe('SomfyTahomaPlatform', () => {
     config.password = '';
     config.service = '';
     somfyPlatform = new SomfyTahomaPlatform(matterbridge, log, config);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Initializing platform:', config.name);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Initializing platform ${config.name}...`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, 'No service or username or password provided for:', config.name);
     await somfyPlatform.onShutdown();
   });
@@ -157,8 +157,8 @@ describe('SomfyTahomaPlatform', () => {
     config.service = 'somfy_europe';
     somfyPlatform = new SomfyTahomaPlatform(matterbridge, log, config);
     addMatterbridge(somfyPlatform);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Initializing platform:', config.name);
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Finished initializing platform:', config.name);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Initializing platform ${config.name}...`);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Platform ${config.name} initialized successfully`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Starting TaHoma client for service somfy_europe');
   });
 
@@ -226,7 +226,7 @@ describe('SomfyTahomaPlatform', () => {
 
   it('should call onStart with reason', async () => {
     await somfyPlatform.onStart('Test reason');
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onStart called with reason:', 'Test reason');
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Starting platform ${config.name} with reason: Test reason...`);
     expect(clientConnectSpy).toHaveBeenCalledWith('None', 'None');
   });
 
@@ -244,7 +244,7 @@ describe('SomfyTahomaPlatform', () => {
       throw new Error('Error connecting to TaHoma service');
     });
     await somfyPlatform.onStart('Test reason');
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onStart called with reason:', 'Test reason');
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Starting platform ${config.name} with reason: Test reason...`);
     expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.ERROR, 'TaHoma service not created');
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, expect.stringContaining('Error connecting to TaHoma service'));
     expect(clientConnectSpy).toHaveBeenCalledWith('None', 'None');
@@ -1097,7 +1097,7 @@ describe('SomfyTahomaPlatform', () => {
 
   it('should call onConfigure', async () => {
     await somfyPlatform.onConfigure();
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onConfigure called');
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Configuring platform ${config.name}...`);
   });
 
   it('should mark a WindowCovering cover stopped without syncing position when onConfigure runs and the position is unknown', async () => {
@@ -1113,7 +1113,7 @@ describe('SomfyTahomaPlatform', () => {
 
     await somfyPlatform.onConfigure();
 
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onConfigure called');
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Configuring platform ${config.name}...`);
     // movementStatus and operationalStatus still leave the "moving" state even though the position could not be synced
     expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
     expect(device.getAttribute(WindowCovering.id, 'operationalStatus')).toEqual({
@@ -1126,7 +1126,7 @@ describe('SomfyTahomaPlatform', () => {
     const client = somfyPlatform.tahomaClient;
     somfyPlatform.tahomaClient = undefined;
     await somfyPlatform.onConfigure();
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onConfigure called');
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Configuring platform ${config.name}...`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, 'TaHoma service not created');
     somfyPlatform.tahomaClient = client;
   });
@@ -1136,7 +1136,7 @@ describe('SomfyTahomaPlatform', () => {
     const client = somfyPlatform.tahomaClient;
     somfyPlatform.tahomaClient = undefined;
     await somfyPlatform.onShutdown('Test reason');
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onShutdown called with reason:', 'Test reason');
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Shutting down platform ${config.name} with reason: Test reason...`);
     somfyPlatform.tahomaClient = client;
     expect(somfyPlatform.size()).toBe(0); // destroy called from onShutdown
     expect(aggregator.parts.size).toBe(1);
@@ -1148,7 +1148,7 @@ describe('SomfyTahomaPlatform', () => {
     somfyPlatform.name = config.name;
     config.unregisterOnShutdown = true;
     await somfyPlatform.onShutdown();
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onShutdown called with reason:', 'none');
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Shutting down platform ${config.name} with reason: no reason provided...`);
     expect(somfyPlatform.tahomaClient).toBeUndefined();
     somfyPlatform.tahomaClient = client;
     config.unregisterOnShutdown = false;
@@ -1158,6 +1158,6 @@ describe('SomfyTahomaPlatform', () => {
 
   it('should call onShutdown with reason and log error', async () => {
     await somfyPlatform.onShutdown('Test reason');
-    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'onShutdown called with reason:', 'Test reason');
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Shutting down platform ${config.name} with reason: Test reason...`);
   });
 });
