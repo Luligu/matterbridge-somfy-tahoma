@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/matterbridge-somfy-tahoma.svg)](https://www.npmjs.com/package/matterbridge-somfy-tahoma)
 [![npm downloads](https://img.shields.io/npm/dt/matterbridge-somfy-tahoma.svg)](https://www.npmjs.com/package/matterbridge-somfy-tahoma)
 [![Docker Version](https://img.shields.io/docker/v/luligu/matterbridge/latest?label=docker%20version)](https://hub.docker.com/r/luligu/matterbridge)
-[![Docker Pulls](https://img.shields.io/docker/pulls/luligu/matterbridge?label=docker%20pulls)](https://hub.docker.com/r/luligu/matterbridge)
+[![Docker Pulls](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/Luligu/b21088ab9c9f2b119b42c33f0fef218d/raw/docker.json)](https://hub.docker.com/r/luligu/matterbridge)
 ![Node.js CI](https://github.com/Luligu/matterbridge-somfy-tahoma/actions/workflows/build.yml/badge.svg)
 ![CodeQL](https://github.com/Luligu/matterbridge-somfy-tahoma/actions/workflows/codeql.yml/badge.svg)
 [![codecov](https://codecov.io/gh/Luligu/matterbridge-somfy-tahoma/branch/main/graph/badge.svg)](https://codecov.io/gh/Luligu/matterbridge-somfy-tahoma)
@@ -45,7 +45,15 @@ Open the frontend of matterbridge, select the plugin and install it.
 
 ## How to use it
 
-You need to configure the service ("somfy_europe", "somfy_australia" or "somfy_north_america"), username and password of your Tahoma account.
+For the cloud service, configure `somfy_europe`, `somfy_australia`, or `somfy_north_america` with the username and password of your TaHoma account.
+
+For the Local API, first enable [Developer Mode and generate a local bearer token](https://github.com/Somfy-Developer/Somfy-TaHoma-Developer-Mode). Then configure:
+
+- `service`: `local`
+- `username`: the gateway IPv4 address without `https://` or `:8443` (for example `192.168.1.54`), or its PIN (`XXXX-XXXX-XXXX`)
+- `password`: the generated local bearer token, not the Somfy account password
+
+Keep the local bearer token private. The plugin does not write credentials to its startup log.
 
 If the whiteList is defined only the devices included are exposed to Matter.
 
@@ -53,13 +61,21 @@ If the blackList is defined the devices included will not be exposed to Matter.
 
 If any device creates issues put it in the blackList.
 
-Set for each device the full movement time (the plugin will use that time to syncronize the movement).
+Set each device’s full movement time in seconds under `movementDuration`, keyed by its device name. The plugin uses this time to synchronize movement and defaults to 30 seconds when no duration is configured.
+
+Pergolas with a fabric roof (uiClass `Pergola` with the `deploy` and `undeploy` commands) are opened with `undeploy` (fabric retracted) and closed with `deploy` (fabric extended).
+
+If a device moves in the opposite direction (open closes it and close opens it), add its name to `invertDirection`.
 
 If `useClosure` is enabled, covers are exposed using the Matter 1.5 Closure device type instead of WindowCovering. This eases integration testing with controllers that support the newer cluster (SmartThings).
 
 When `useClosure` is enabled, you can opt in per device to the Closure `Calibration`, `Ventilation` and `Pedestrian` optional features with `closureOptions`.
 
-These are the config values:
+Set `closureOptions.<DEVICENAME>.signaturePosition` to override the Signature position per device (0-100, percentage closed). When omitted or invalid, Matterbridge's default applies (50% closed).
+
+Closure movement and stop commands act on the physical cover only after Matterbridge accepts the command. Panel target positions follow the resolution applied by the server, and preset targets use Matterbridge's configured percentages.
+
+These are example cloud config values:
 
 ```json
 {
@@ -70,18 +86,30 @@ These are the config values:
   "service": "somfy_europe",
   "blackList": [],
   "whiteList": [],
-  "duration": {
+  "movementDuration": {
     "<DEVICENAME1>": 30,
     "<DEVICENAME2>": 30
   },
+  "invertDirection": [],
   "useClosure": false,
   "closureOptions": {
     "<DEVICENAME1>": {
       "calibration": false,
       "ventilation": false,
-      "pedestrian": false
+      "pedestrian": false,
+      "signaturePosition": 50
     }
   }
+}
+```
+
+For a local connection, only the three connection values differ:
+
+```json
+{
+  "username": "192.168.1.54",
+  "password": "<LOCAL_BEARER_TOKEN>",
+  "service": "local"
 }
 ```
 
@@ -95,89 +123,46 @@ Siri close the Living room blind
 Siri set the Living room blind to 70%
 ```
 
-## Style guide
-
-See also the [Style Guide](./STYLEGUIDE.md) for JSDoc, naming, and logging conventions used in this repository.
-
-## Repository toolchain
-
-> **Note:** This repository uses a new toolchain. It replaces the traditional TypeScript / ESLint / Prettier / Jest stack with a faster and lighter setup.
-
-- **No `typescript 6.x` package** — replaced by [TypeScript Native 7.x](https://github.com/microsoft/typescript-go).
-- **No ESLint, no Prettier** — replaced by the [oxc](https://oxc.rs) stack: [oxlint](https://oxc.rs/docs/guide/usage/linter.html) for linting and [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) for formatting.
-- **No Jest** — replaced by [Vitest](https://vitest.dev), which is much faster and natively supports ESM without extra configuration.
-- **Far fewer development dependencies** — the number of installed packages drops from **~600** to **~75**. A clean install is much faster.
-- **Much faster linting and formatting** — oxlint and oxfmt run in a fraction of the time required by the ESLint / Prettier pipeline.
-- **Much faster builds** — tsgo compiles the project in a fraction of the time required by the standard `tsc` build.
-- **Editor support** — use the VS Code extensions for tsgo and oxc to get the same experience in the editor.
-
-## Shared agent instructions
-
-All coding agents read the same guidance. [AGENTS.md](./AGENTS.md) and [.agents/](./.agents/) are the **single source of truth**; everything under `.github/`, `.claude/`, `.codex/` and `.antigravity/` are pointers and mirrors. Edit `.agents/` (or `AGENTS.md`), never the copies. See [.agents/README.md](./.agents/README.md) for the full layout.
-
-| File                                            | Notes                                                                                                        |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `AGENTS.md`                                     | Main project instructions — shared by every agent                                                            |
-| `.agents/README.md`                             | Layout and versioning of the shared instructions                                                             |
-| `.agents/rules/testing.instructions.md`         | Testing standards for unit tests                                                                             |
-| `.agents/rules/matterbridge.instructions.md`    | Creating endpoints and using the single-class devices                                                        |
-| `.agents/rules/plugin-frontend.instructions.md` | Serving a plugin's own frontend SPA and REST API                                                             |
-| `.agents/rules/chip-tests.instructions.md`      | The CHIP conformance test harness                                                                            |
-| `.agents/skills/verify-agent-context/SKILL.md`  | Verify the agent loaded this context — `$verify-agent-context` (Codex), `/verify-agent-context` (all others) |
-
-Content lives only in `.agents/`. The per-agent folders exist because each tool discovers rules and skills from its own hardcoded location, so they hold stubs that point back here — except where the tool reads `.agents/` natively.
-
-| Tool                               | Instructions                                    | Rules                                                 | Skills                                              |
-| ---------------------------------- | ----------------------------------------------- | ----------------------------------------------------- | --------------------------------------------------- |
-| Codex                              | `AGENTS.md` — read natively                     | `.agents/rules/` — linked from `AGENTS.md`, on demand | `.agents/skills/` — native, `$verify-agent-context` |
-| Copilot (VS Code and coding agent) | `.github/copilot-instructions.md` → `AGENTS.md` | stubs in `.github/instructions/` — `applyTo` globs    | stub in `.github/skills/` — `/verify-agent-context` |
-| Claude Code                        | `CLAUDE.md` imports `AGENTS.md`                 | stubs in `.claude/rules/` — `paths` globs             | stub in `.claude/skills/` — `/verify-agent-context` |
-| Gemini / Antigravity               | `GEMINI.md` imports `AGENTS.md`                 | `.agents/rules/` — on demand                          | `.agents/skills/` — native, `/verify-agent-context` |
-
-### Copilot instructions
-
-| File                                                                   | Notes                                                                              |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `.github/copilot-instructions.md`                                      | Pointer to AGENTS.md — always loaded                                               |
-| `.github/instructions/chip-tests/chip-tests.instructions.md`           | CHIP conformance test harness — scoped to CHIP test files                          |
-| `.github/instructions/matterbridge/matterbridge.instructions.md`       | Matterbridge endpoint guide — dedicated Copilot instruction file                   |
-| `.github/instructions/plugin-frontend/plugin-frontend.instructions.md` | Plugin frontend SPA and custom REST API guide — scoped to frontend and plugin code |
-| `.github/instructions/testing/testing.instructions.md`                 | Testing standards — scoped to `**/*.test.ts`                                       |
-| `.github/skills/verify-agent-context/SKILL.md`                         | Skill invocable as `/verify-agent-context`                                         |
-
-### Claude instructions
-
-| File                                                            | Notes                                                                              |
-| --------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `CLAUDE.md`                                                     | Pointer to AGENTS.md — always loaded                                               |
-| `.claude/settings.json`                                         | Claude permissions: allow, ask and deny rules                                      |
-| `.claude/rules/chip-tests/chip-tests.instructions.md`           | CHIP conformance test harness — scoped to CHIP test files                          |
-| `.claude/rules/matterbridge/matterbridge.instructions.md`       | Matterbridge endpoint guide — loaded for all contexts                              |
-| `.claude/rules/plugin-frontend/plugin-frontend.instructions.md` | Plugin frontend SPA and custom REST API guide — scoped to frontend and plugin code |
-| `.claude/rules/testing/testing.instructions.md`                 | Testing standards — scoped to `**/*.test.ts`                                       |
-| `.claude/skills/verify-agent-context/SKILL.md`                  | Skill invocable as `/verify-agent-context`                                         |
-
-### Codex instructions
-
-| File                         | Notes                                                             |
-| ---------------------------- | ----------------------------------------------------------------- |
-| `AGENTS.md`                  | Main project instructions — read directly, no pointer file needed |
-| `.codex/config.toml`         | Codex project permissions, approvals, and profile                 |
-| `.codex/rules/default.rules` | Codex command allow, prompt, and deny rules                       |
-
-Codex reads the shared rules and skills from `.agents/` directly; the skill is invoked as `$verify-agent-context`.
-
-### Gemini / Antigravity instructions
-
-| File                         | Notes                                                 |
-| ---------------------------- | ----------------------------------------------------- |
-| `GEMINI.md`                  | Pointer to AGENTS.md — always loaded                  |
-| `.antigravity/settings.json` | Sandboxing and permissions: allow, ask and deny rules |
-
-The shared rules under `.agents/rules/` apply on demand for the relevant tasks, and `.agents/skills/` is discovered automatically as `/verify-agent-context`.
-
 ## Development guide
 
 Refer to the Matterbridge [Development guide](https://matterbridge.io/README-DEV.html) for other guidelines.
 
----
+## Repository toolchain
+
+See [TOOLCHAIN.md](./TOOLCHAIN.md) for compilers, linting, formatting, testing, and editor support.
+
+## Shared agent instructions
+
+See [SHARED-AGENTS.md](./SHARED-AGENTS.md) for shared guidance, rules, skills, and configuration for coding agents.
+
+See [.agents/README.md](./.agents/README.md) for the shared instructions layout and versioning.
+
+## Shared dev container support
+
+See [.devcontainer/README.md](./.devcontainer/README.md) for the shared development container setup and usage.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidelines.
+
+## Style guide
+
+See [STYLEGUIDE.md](./STYLEGUIDE.md) for code style, naming, documentation, and testing conventions.
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for release history and notable changes.
+
+## Issues and feature requests
+
+Report bugs and suggest improvements on [GitHub Issues](https://github.com/Luligu/matterbridge-somfy-tahoma/issues).
+
+## License
+
+Licensed under the [Apache License 2.0](./LICENSE).
+
+## Support the project
+
+If you find this project useful, please consider giving it a star on GitHub and sponsoring it. Your support helps maintain and improve the project.
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png)](https://www.buymeacoffee.com/luligugithub)

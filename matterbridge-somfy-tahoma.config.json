@@ -8,6 +8,7 @@
   "blackList": [],
   "whiteList": [],
   "movementDuration": {},
+  "invertDirection": [],
   "useClosure": false,
   "closureOptions": {},
   "debug": false,
