@@ -11,7 +11,7 @@ const MATTER_PORT = 6000;
 
 import { promises as fs } from 'node:fs';
 
-import type { PlatformMatterbridge } from 'matterbridge';
+import { MatterbridgeEndpoint, type PlatformMatterbridge } from 'matterbridge';
 import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
 import { ClosureCoveringTag, ClosurePanelTag, ClosureTag } from 'matterbridge/matter';
 import { ClosureControl, ClosureDimension, WindowCovering } from 'matterbridge/matter/clusters';
@@ -912,6 +912,68 @@ describe('SomfyTahomaPlatform', () => {
 
     // Trigger the per-device 'states' listener registered in discoverDevices
     mockDevices[0].emit('states', mockDevices[0].states);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+  });
+
+  it('should set the WindowCovering current and target position from TaHoma at discovery', async () => {
+    setMockDevice({ label: 'Device1', uniqueName: 'RollerShutterGenericIOComponent', uiClass: 'RollerShutter' });
+    mockDevices[0].states = [{ name: 'core:ClosureState', type: 1, value: 40 }];
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Setting Device1 current and target position to ${CYAN}40 %${nf} from TaHoma`);
+    expect(cover.bridgedDevice.getAttribute(WindowCovering, 'currentPositionLiftPercent100ths')).toBe(4000);
+    expect(cover.bridgedDevice.getAttribute(WindowCovering, 'targetPositionLiftPercent100ths')).toBe(4000);
+    expect(isMoving(cover)).toBe(false);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+  });
+
+  it('should set the Closure current and target position from TaHoma at discovery', async () => {
+    somfyPlatform.config.useClosure = true;
+    setMockDevice({ label: 'Device1', uniqueName: 'RollerShutterGenericIOComponent', uiClass: 'RollerShutter' });
+    mockDevices[0].states = [{ name: 'core:ClosureState', type: 1, value: 100 }];
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover?.liftPanel).toBeDefined();
+    if (!cover?.liftPanel) return;
+
+    expect(cover.liftPanel.getAttribute(ClosureDimension, 'currentState')?.position).toBe(PERCENT100THS_MAX_CLOSED);
+    expect(cover.liftPanel.getAttribute(ClosureDimension, 'targetState')?.position).toBe(PERCENT100THS_MAX_CLOSED);
+    expect(cover.bridgedDevice.getAttribute(ClosureControl, 'overallCurrentState')?.position).toBe(ClosureControl.CurrentPosition.FullyClosed);
+    expect(cover.bridgedDevice.getAttribute(ClosureControl, 'mainState')).toBe(ClosureControl.MainState.Stopped);
+    expect(isMoving(cover)).toBe(false);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+    somfyPlatform.config.useClosure = false;
+  });
+
+  it('should log an error if setting the TaHoma position at discovery fails', async () => {
+    setMockDevice({ label: 'Device1', uniqueName: 'RollerShutterGenericIOComponent', uiClass: 'RollerShutter' });
+    mockDevices[0].states = [{ name: 'core:ClosureState', type: 1, value: 40 }];
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    const setStatusSpy = vi.spyOn(MatterbridgeEndpoint.prototype, 'setWindowCoveringCurrentTargetStatus').mockRejectedValueOnce(new Error('Test error'));
+    await somfyPlatform.discoverDevices();
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, expect.stringContaining('Error setting the TaHoma position of Device1'));
+    expect(somfyPlatform.covers.size).toBe(1);
+    setStatusSpy.mockRestore();
 
     somfyPlatform.tahomaDevices = [];
     somfyPlatform.covers.clear();

@@ -560,7 +560,20 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         cover.addRequiredClusters();
       }
       await this.registerDevice(cover);
-      this.covers.set(device.label, { tahomaDevice: device, bridgedDevice: cover, liftPanel, movementStatus: WindowCovering.MovementStatus.Stopped, movementDuration: duration });
+      const platformCover: Cover = { tahomaDevice: device, bridgedDevice: cover, liftPanel, movementStatus: WindowCovering.MovementStatus.Stopped, movementDuration: duration };
+      this.covers.set(device.label, platformCover);
+
+      // Bidirectional (io) covers report their real position: nothing is moving yet, so set both current and target to it.
+      // Done after registerDevice so it overrides the position restored from storage.
+      const tahomaPosition = getTahomaPosition(device);
+      if (tahomaPosition !== undefined) {
+        this.log.info(`Setting ${device.label} current and target position to ${CYAN}${tahomaPosition / 100} %${nf} from TaHoma`);
+        try {
+          await setCoverStoppedAt(platformCover, tahomaPosition);
+        } catch (error) {
+          inspectError(this.log, `Error setting the TaHoma position of ${device.label}`, error);
+        }
+      }
 
       cover.addCommandHandler('Identify.identify', async ({ request: { identifyTime } }) => {
         const cover = this.covers.get(device.label);
