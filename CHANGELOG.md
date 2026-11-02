@@ -41,6 +41,20 @@ If you like this project and find it useful, please consider giving it a star on
 - [tahoma]: Update the current and target position of bidirectional (io) covers from TaHoma state changes, only while the plugin is not moving the cover. An update received during a movement is applied when the movement ends. Addresses [26](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/26). Thanks smuteau for the logs, the devices list and all the tests on real bidirectional covers.
 - [tahoma]: Log the execution result of each command sent to TaHoma (failures and timeouts as warnings). Refer to [26](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/26).
 
+### Changed
+
+- [agents]: Update `.antigravity/settings.json` to v.1.0.6.
+- [agents]: Update `.claude/settings.json` to v.1.0.9.
+- [codex]: Update `.codex/rules/default.rules` to v.1.0.7.
+- [workflows]: Update `.github/workflows/build.yml` to v.2.0.8.
+- [workflows]: Update `.github/workflows/codecov.yml` to v.2.0.8.
+- [workflows]: Update `.github/workflows/codeql.yml` to v.2.0.0.
+- [workflows]: Update `.github/workflows/publish.yml` to v.2.0.7.
+- [config]: Update `.gitignore` to v.1.0.5.
+- [config]: Update `.oxfmtrc.json` to v.1.2.0.
+- [config]: Update `.oxlintrc.json` to v.1.2.0.
+- [config]: Update `vitest.config.ts` to v.2.0.9.
+
 ### Fixed
 
 - [cover]: WindowCovering `stopMotion` now cancels a move command still waiting in its 500 ms debounce, so the cover no longer starts moving after a quick stop.
