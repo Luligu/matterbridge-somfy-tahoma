@@ -35,10 +35,10 @@ If you like this project and find it useful, please consider giving it a star on
 
 ### Added
 
-- [tahoma]: Add `getTahomaPosition()` helper reading the real position of bidirectional (io) covers from their TaHoma states. Not used yet.
-- [cover]: Add `isMoving()` helper reporting a pending (debounced) or in-progress movement started by the plugin. Not used yet.
+- [tahoma]: Add `getTahomaPosition()` helper reading the real position of bidirectional (io) covers from their TaHoma states.
+- [cover]: Add `isMoving()` helper reporting a pending (debounced) or in-progress movement started by the plugin.
 - [tahoma]: Set the current and target position of bidirectional (io) covers from their TaHoma state at discovery, on both WindowCovering and Closure. Based on PR [54](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/54). Thanks Ludovic BOUÉ.
-- [tahoma]: Update the current and target position of bidirectional (io) covers from TaHoma state changes, only while the plugin is not moving the cover. An update received during a movement is applied when the movement ends. Refer to [26](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/26).
+- [tahoma]: Update the current and target position of bidirectional (io) covers from TaHoma state changes, only while the plugin is not moving the cover. An update received during a movement is applied when the movement ends. Addresses [26](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/26). Thanks smuteau for the logs, the devices list and all the tests on real bidirectional covers.
 - [tahoma]: Log the execution result of each command sent to TaHoma (failures and timeouts as warnings). Refer to [26](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/26).
 
 ### Fixed
