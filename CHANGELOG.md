@@ -33,6 +33,18 @@ If you like this project and find it useful, please consider giving it a star on
 
 ## [1.7.2] - Dev branch
 
+### Added
+
+- [tahoma]: Add `getTahomaPosition()` helper reading the real position of bidirectional (io) covers from their TaHoma states. Not used yet.
+- [cover]: Add `isMoving()` helper reporting a pending (debounced) or in-progress movement started by the plugin. Not used yet.
+- [tahoma]: Log the execution result of each command sent to TaHoma (failures and timeouts as warnings). Refer to [26](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/26).
+
+### Fixed
+
+- [cover]: WindowCovering `stopMotion` now cancels a move command still waiting in its 500 ms debounce, so the cover no longer starts moving after a quick stop.
+- [cover]: Reset the movement timer when a simulated movement ends or is stopped.
+- [cover]: Don't start the movement simulation when a stop arrives while the open/close command is still being sent to TaHoma.
+
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
 
 ## [1.7.1] - 2026-10-31
