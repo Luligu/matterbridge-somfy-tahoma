@@ -126,14 +126,14 @@
             "description": "Percentage closed (0-100) for the Signature position. Defaults to Matterbridge's value (50%) when omitted.",
             "type": "integer",
             "minimum": 0,
-            "maximum": 100
+            "maximum": 100,
+            "default": 50
           }
         }
       }
     },
     "debug": {
       "title": "Enable Debug",
-
       "description": "Enable the debug for the plugin (development only)",
       "type": "boolean",
       "default": false

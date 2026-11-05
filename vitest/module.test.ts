@@ -11,7 +11,7 @@ const MATTER_PORT = 6000;
 
 import { promises as fs } from 'node:fs';
 
-import type { PlatformMatterbridge } from 'matterbridge';
+import { MatterbridgeEndpoint, type PlatformMatterbridge } from 'matterbridge';
 import { BLUE, CYAN, ign, LogLevel, nf, rs, YELLOW } from 'matterbridge/logger';
 import { ClosureCoveringTag, ClosurePanelTag, ClosureTag } from 'matterbridge/matter';
 import { ClosureControl, ClosureDimension, WindowCovering } from 'matterbridge/matter/clusters';
@@ -32,9 +32,17 @@ import {
   stopServerNode,
 } from 'matterbridge/test-utils/vitest';
 import { wait } from 'matterbridge/utils';
-import { Client, Device, type State } from 'overkiz-client';
+import { Client, Device, ExecutionState, type State } from 'overkiz-client';
 
-import initializePlugin, { PERCENT100THS_MAX_CLOSED, PERCENT100THS_MIN_OPEN, SomfyTahomaPlatform, type SomfyTahomaPlatformConfig } from '../src/module.js';
+import initializePlugin, {
+  type Cover,
+  getTahomaPosition,
+  isMoving,
+  PERCENT100THS_MAX_CLOSED,
+  PERCENT100THS_MIN_OPEN,
+  SomfyTahomaPlatform,
+  type SomfyTahomaPlatformConfig,
+} from '../src/module.js';
 
 // Spy on the Client.connect method
 const clientConnectSpy = vi.spyOn(Client.prototype, 'connect').mockResolvedValue();
@@ -211,6 +219,97 @@ describe('SomfyTahomaPlatform', () => {
     } finally {
       somfyPlatform.config.service = originalService;
     }
+  });
+
+  it('should log the execution results of a command', async () => {
+    clientExecuteSpy.mockClear();
+    await somfyPlatform.sendCommand('close', mockDevices[0]);
+    const execution = clientExecuteSpy.mock.calls[0][1];
+
+    execution.onStateUpdate(ExecutionState.IN_PROGRESS, {});
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Command close to ${mockDevices[0].label} IN_PROGRESS`);
+    execution.onStateUpdate(ExecutionState.COMPLETED, {});
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Command close to ${mockDevices[0].label} COMPLETED`);
+    execution.onStateUpdate(ExecutionState.FAILED, { failureType: 'WHILEEXEC_BLOCKED_BY_HAZARD' });
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.WARN, `Command close to ${mockDevices[0].label} FAILED: WHILEEXEC_BLOCKED_BY_HAZARD`);
+    execution.onStateUpdate(ExecutionState.TIMED_OUT, null);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.WARN, `Command close to ${mockDevices[0].label} TIMED_OUT`);
+  });
+
+  it('should read the TaHoma position of bidirectional covers', () => {
+    const withStates = (states: State[], uiClass = 'Screen'): Device => {
+      const device = createMockDevice({ uiClass });
+      device.states = states;
+      return device;
+    };
+    // Stateless (RTS) device
+    expect(getTahomaPosition(withStates([]))).toBeUndefined();
+    // core:ClosureState from getDevices (number) and from DeviceStateChangedEvent (string)
+    expect(getTahomaPosition(withStates([{ name: 'core:ClosureState', type: 1, value: 0 }]))).toBe(PERCENT100THS_MIN_OPEN);
+    expect(getTahomaPosition(withStates([{ name: 'core:ClosureState', type: 1, value: 100 }]))).toBe(PERCENT100THS_MAX_CLOSED);
+    expect(getTahomaPosition(withStates([{ name: 'core:ClosureState', type: 1, value: '40' }]))).toBe(4000);
+    expect(getTahomaPosition(withStates([{ name: 'core:ClosureState', type: 1, value: '' }]))).toBeUndefined();
+    expect(getTahomaPosition(withStates([{ name: 'core:ClosureState', type: 1, value: 'abc' }]))).toBeUndefined();
+    // core:DeploymentState (awnings) is inverted
+    expect(getTahomaPosition(withStates([{ name: 'core:DeploymentState', type: 1, value: 0 }]))).toBe(PERCENT100THS_MAX_CLOSED);
+    expect(getTahomaPosition(withStates([{ name: 'core:DeploymentState', type: 1, value: '75' }]))).toBe(2500);
+    // With both states, core:DeploymentState is used only for uiClass Awning
+    const bothStates: State[] = [
+      { name: 'core:DeploymentState', type: 1, value: 75 },
+      { name: 'core:ClosureState', type: 1, value: 40 },
+    ];
+    expect(getTahomaPosition(withStates(bothStates, 'RollerShutter'))).toBe(4000);
+    expect(getTahomaPosition(withStates(bothStates, 'Awning'))).toBe(2500);
+    // core:TargetClosureState alone is not a position
+    expect(getTahomaPosition(withStates([{ name: 'core:TargetClosureState', type: 1, value: 30 }]))).toBeUndefined();
+    // 108 "My" position falls back to core:Memorized1PositionState
+    expect(
+      getTahomaPosition(
+        withStates([
+          { name: 'core:ClosureState', type: 1, value: 108 },
+          { name: 'core:Memorized1PositionState', type: 1, value: 86 },
+        ]),
+      ),
+    ).toBe(8600);
+    // 105 is an unset Memorized1PositionState
+    expect(
+      getTahomaPosition(
+        withStates([
+          { name: 'core:ClosureState', type: 1, value: 108 },
+          { name: 'core:Memorized1PositionState', type: 1, value: 105 },
+        ]),
+      ),
+    ).toBeUndefined();
+    // 124 unknown position falls back to core:TargetClosureState
+    expect(
+      getTahomaPosition(
+        withStates([
+          { name: 'core:ClosureState', type: 1, value: '124' },
+          { name: 'core:TargetClosureState', type: 1, value: '20' },
+        ]),
+      ),
+    ).toBe(2000);
+    expect(
+      getTahomaPosition(
+        withStates([
+          { name: 'core:ClosureState', type: 1, value: 124 },
+          { name: 'core:TargetClosureState', type: 1, value: 124 },
+        ]),
+      ),
+    ).toBeUndefined();
+  });
+
+  it('should report a cover as moving when a command is debouncing or the cover is opening/closing', () => {
+    const cover = { movementStatus: WindowCovering.MovementStatus.Stopped } as Cover;
+    expect(isMoving(cover)).toBe(false);
+    cover.commandTimeout = setTimeout(() => {}, 0);
+    expect(isMoving(cover)).toBe(true);
+    clearTimeout(cover.commandTimeout);
+    cover.commandTimeout = undefined;
+    cover.movementStatus = WindowCovering.MovementStatus.Opening;
+    expect(isMoving(cover)).toBe(true);
+    cover.movementStatus = WindowCovering.MovementStatus.Closing;
+    expect(isMoving(cover)).toBe(true);
   });
 
   it('should receive tahomaClient events', () => {
@@ -821,6 +920,199 @@ describe('SomfyTahomaPlatform', () => {
     await flushAsync();
   });
 
+  it('should set the WindowCovering current and target position from TaHoma at discovery', async () => {
+    setMockDevice({ label: 'Device1', uniqueName: 'RollerShutterGenericIOComponent', uiClass: 'RollerShutter' });
+    mockDevices[0].states = [{ name: 'core:ClosureState', type: 1, value: 40 }];
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Setting Device1 current and target position to ${CYAN}40 %${nf} from TaHoma`);
+    expect(cover.bridgedDevice.getAttribute(WindowCovering, 'currentPositionLiftPercent100ths')).toBe(4000);
+    expect(cover.bridgedDevice.getAttribute(WindowCovering, 'targetPositionLiftPercent100ths')).toBe(4000);
+    expect(isMoving(cover)).toBe(false);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+  });
+
+  it('should set the Closure current and target position from TaHoma at discovery', async () => {
+    somfyPlatform.config.useClosure = true;
+    setMockDevice({ label: 'Device1', uniqueName: 'RollerShutterGenericIOComponent', uiClass: 'RollerShutter' });
+    mockDevices[0].states = [{ name: 'core:ClosureState', type: 1, value: 100 }];
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover?.liftPanel).toBeDefined();
+    if (!cover?.liftPanel) return;
+
+    expect(cover.liftPanel.getAttribute(ClosureDimension, 'currentState')?.position).toBe(PERCENT100THS_MAX_CLOSED);
+    expect(cover.liftPanel.getAttribute(ClosureDimension, 'targetState')?.position).toBe(PERCENT100THS_MAX_CLOSED);
+    expect(cover.bridgedDevice.getAttribute(ClosureControl, 'overallCurrentState')?.position).toBe(ClosureControl.CurrentPosition.FullyClosed);
+    expect(cover.bridgedDevice.getAttribute(ClosureControl, 'mainState')).toBe(ClosureControl.MainState.Stopped);
+    expect(isMoving(cover)).toBe(false);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+    somfyPlatform.config.useClosure = false;
+  });
+
+  it('should update current and target from TaHoma state changes only when not moving', async () => {
+    setMockDevice({ label: 'Device1', uniqueName: 'RollerShutterGenericIOComponent', uiClass: 'RollerShutter' });
+    mockDevices[0].states = [{ name: 'core:ClosureState', type: 1, value: 40 }];
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = mockDevices[0];
+    const current = (): number | null | undefined => cover.bridgedDevice.getAttribute(WindowCovering, 'currentPositionLiftPercent100ths');
+    const target = (): number | null | undefined => cover.bridgedDevice.getAttribute(WindowCovering, 'targetPositionLiftPercent100ths');
+
+    // DeviceStateChangedEvent values are strings
+    vi.clearAllMocks();
+    device.updateStates([{ name: 'core:ClosureState', type: 1, value: '70' }]);
+    // overkiz-client emits the states after a 100 ms debounce, then the attribute writes are async: wait for them
+    await vi.waitFor(
+      () => {
+        expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Updating Device1 current and target position to ${CYAN}70 %${nf} from TaHoma`);
+        expect(current()).toBe(7000);
+        expect(target()).toBe(7000);
+      },
+      { timeout: 3000 },
+    );
+
+    // Ignored while our own movement is in progress
+    vi.clearAllMocks();
+    cover.movementStatus = WindowCovering.MovementStatus.Opening;
+    device.updateStates([{ name: 'core:ClosureState', type: 1, value: '20' }]);
+    await vi.waitFor(() => expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `TaHoma position update for Device1 deferred while moving`), { timeout: 3000 });
+    expect(current()).toBe(7000);
+    cover.movementStatus = WindowCovering.MovementStatus.Stopped;
+
+    // Ignored while a command is waiting in its debounce
+    vi.clearAllMocks();
+    cover.commandTimeout = setTimeout(() => {}, 0);
+    device.updateStates([{ name: 'core:ClosureState', type: 1, value: '30' }]);
+    await vi.waitFor(() => expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `TaHoma position update for Device1 deferred while moving`), { timeout: 3000 });
+    expect(current()).toBe(7000);
+    clearTimeout(cover.commandTimeout);
+    cover.commandTimeout = undefined;
+
+    // No update for a state that is not a position, an unchanged position or an unknown position
+    vi.clearAllMocks();
+    device.updateStates([{ name: 'core:RSSILevelState', type: 2, value: '82.0' }]);
+    await wait(200);
+    device.states = [{ name: 'core:ClosureState', type: 1, value: 70 }];
+    device.emit('states', device.states);
+    await wait(50);
+    device.updateStates([{ name: 'core:ClosureState', type: 1, value: '124' }]);
+    await wait(200);
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.INFO, expect.stringContaining('Updating Device1'));
+    expect(current()).toBe(7000);
+
+    // Error while updating the endpoint
+    vi.clearAllMocks();
+    const setStatusSpy = vi.spyOn(MatterbridgeEndpoint.prototype, 'setWindowCoveringCurrentTargetStatus').mockRejectedValueOnce(new Error('Test error'));
+    device.updateStates([{ name: 'core:ClosureState', type: 1, value: '10' }]);
+    await vi.waitFor(() => expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, expect.stringContaining('Error updating the TaHoma position of Device1')), { timeout: 3000 });
+    setStatusSpy.mockRestore();
+
+    // No update once the cover is removed from the map
+    vi.clearAllMocks();
+    somfyPlatform.covers.delete('Device1');
+    device.updateStates([{ name: 'core:ClosureState', type: 1, value: '50' }]);
+    await wait(200);
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.INFO, expect.stringContaining('Updating Device1'));
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+  });
+
+  it('should re-sync from TaHoma when our movement ends only if an update arrived during it', async () => {
+    setMockDevice({ label: 'Device1', uniqueName: 'RollerShutterGenericIOComponent', uiClass: 'RollerShutter' });
+    mockDevices[0].states = [{ name: 'core:ClosureState', type: 1, value: 0 }];
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    await somfyPlatform.discoverDevices();
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = mockDevices[0];
+    const current = (): number | null | undefined => cover.bridgedDevice.getAttribute(WindowCovering, 'currentPositionLiftPercent100ths');
+
+    // The real cover stops at 60% during the simulated 2 seconds movement to 100%: the simulation ends at 100%, then re-syncs to 60%
+    vi.clearAllMocks();
+    await somfyPlatform.moveToPosition(cover, PERCENT100THS_MAX_CLOSED);
+    device.updateStates([{ name: 'core:ClosureState', type: 1, value: '60' }]);
+    await vi.waitFor(() => expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `TaHoma position update for Device1 deferred while moving`), { timeout: 1500 });
+    expect(cover.tahomaPositionPending).toBe(true);
+    await vi.waitFor(
+      () => {
+        expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at ${PERCENT100THS_MAX_CLOSED}`);
+        expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Updating Device1 current and target position to ${CYAN}60 %${nf} from TaHoma`);
+        expect(current()).toBe(6000);
+      },
+      { timeout: 5000 },
+    );
+    expect(cover.tahomaPositionPending).toBe(false);
+    expect(isMoving(cover)).toBe(false);
+
+    // No update during the movement: the simulation result is kept
+    vi.clearAllMocks();
+    await somfyPlatform.moveToPosition(cover, PERCENT100THS_MIN_OPEN);
+    await vi.waitFor(() => expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at ${PERCENT100THS_MIN_OPEN}`), { timeout: 5000 });
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.INFO, expect.stringContaining('Updating Device1'));
+    expect(current()).toBe(PERCENT100THS_MIN_OPEN);
+
+    // A stale flag from a previous movement is reset when a new movement starts
+    cover.tahomaPositionPending = true;
+    vi.clearAllMocks();
+    await somfyPlatform.moveToPosition(cover, PERCENT100THS_MAX_CLOSED);
+    expect(cover.tahomaPositionPending).toBe(false);
+    // A second moveToPosition while moving stops the movement and re-syncs the deferred update
+    device.updateStates([{ name: 'core:ClosureState', type: 1, value: '30' }]);
+    await vi.waitFor(() => expect(cover.tahomaPositionPending).toBe(true), { timeout: 1500 });
+    await somfyPlatform.moveToPosition(cover, PERCENT100THS_MIN_OPEN);
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, 'Stopping current movement.');
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Updating Device1 current and target position to ${CYAN}30 %${nf} from TaHoma`);
+    expect(current()).toBe(3000);
+    expect(isMoving(cover)).toBe(false);
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+  }, 20000);
+
+  it('should log an error if setting the TaHoma position at discovery fails', async () => {
+    setMockDevice({ label: 'Device1', uniqueName: 'RollerShutterGenericIOComponent', uiClass: 'RollerShutter' });
+    mockDevices[0].states = [{ name: 'core:ClosureState', type: 1, value: 40 }];
+    clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
+    const setStatusSpy = vi.spyOn(MatterbridgeEndpoint.prototype, 'setWindowCoveringCurrentTargetStatus').mockRejectedValueOnce(new Error('Test error'));
+    await somfyPlatform.discoverDevices();
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.ERROR, expect.stringContaining('Error setting the TaHoma position of Device1'));
+    expect(somfyPlatform.covers.size).toBe(1);
+    setStatusSpy.mockRestore();
+
+    somfyPlatform.tahomaDevices = [];
+    somfyPlatform.covers.clear();
+    await somfyPlatform.unregisterAllDevices();
+    expect(aggregator.parts.size).toBe(0);
+    await flushAsync();
+  });
+
   it('should discover devices with command "open", "close" and "stop"', async () => {
     setMockDevice({ label: 'Device1', uniqueName: 'xxx', uiClass: 'xxx', commands: ['open', 'close', 'stop'] });
     clientGetDevicesSpy.mockResolvedValueOnce(mockDevices);
@@ -888,6 +1180,7 @@ describe('SomfyTahomaPlatform', () => {
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Moving from ${PERCENT100THS_MIN_OPEN} to 5000...`);
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving stopped at 5000`);
     expect(device.getAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths')).toBe(5000);
+    expect(somfyPlatform.covers.get('Device1')?.moveInterval).toBeUndefined();
 
     vi.clearAllMocks();
     await device.executeCommandHandler('WindowCovering.goToLiftPercentage', { liftPercent100thsValue: 10000 }, 'windowCovering', (device.state as any).windowCovering, device);
@@ -1093,6 +1386,83 @@ describe('SomfyTahomaPlatform', () => {
 
     expect(clientExecuteSpy).toHaveBeenCalledWith('apply/highPriority', expect.anything());
     expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
+    expect(cover.moveInterval).toBeUndefined();
+  });
+
+  it('should cancel a pending debounced command on stopMotion', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+
+    await cover.bridgedDevice.setWindowCoveringCurrentTargetStatus(5000, 5000, WindowCovering.MovementStatus.Stopped);
+    cover.movementStatus = WindowCovering.MovementStatus.Stopped;
+    vi.clearAllMocks();
+    await device.executeCommandHandler('WindowCovering.goToLiftPercentage', { liftPercent100thsValue: 8000 }, 'windowCovering', (device.state as any).windowCovering, device);
+    expect(cover.commandTimeout).toBeDefined();
+    await device.executeCommandHandler('WindowCovering.stopMotion', {}, 'windowCovering', {} as any, device);
+    expect(cover.commandTimeout).toBeUndefined();
+    await wait(700);
+
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.INFO, `Command ${ign}goToLiftPercentage${rs}${nf} ${CYAN}8000${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
+    expect(clientExecuteSpy).not.toHaveBeenCalled();
+    expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
+  });
+
+  it('should not start the simulation when a stop is handled while the move command is in flight', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+
+    await cover.bridgedDevice.setWindowCoveringCurrentTargetStatus(5000, 5000, WindowCovering.MovementStatus.Stopped);
+    cover.movementStatus = WindowCovering.MovementStatus.Stopped;
+    vi.clearAllMocks();
+    // The stopMotion arrives while the TaHoma close command is still being sent
+    clientExecuteSpy.mockImplementationOnce(async () => {
+      await device.executeCommandHandler('WindowCovering.stopMotion', {}, 'windowCovering', {} as any, device);
+    });
+    await somfyPlatform.moveToPosition(cover, 8000);
+
+    expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.DEBUG, `Moving from 5000 to 8000 cancelled while the command was in flight`);
+    expect(cover.moveInterval).toBeUndefined();
+    expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
+    expect(isMoving(cover)).toBe(false);
+    expect(clientExecuteSpy).toHaveBeenCalledTimes(2); // close, then stop
+  });
+
+  it('should coalesce two rapid downOrClose commands into one', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+    const device = cover.bridgedDevice;
+
+    await cover.bridgedDevice.setWindowCoveringCurrentTargetStatus(PERCENT100THS_MAX_CLOSED, PERCENT100THS_MAX_CLOSED, WindowCovering.MovementStatus.Stopped);
+    cover.movementStatus = WindowCovering.MovementStatus.Stopped;
+    vi.clearAllMocks();
+    await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
+    await device.executeCommandHandler('WindowCovering.downOrClose', {}, 'windowCovering', (device.state as any).windowCovering, device);
+    await wait(700);
+
+    const calls = loggerLogSpy.mock.calls.filter(([, message]) => message === `Command ${ign}downOrClose${rs}${nf} called for ${CYAN}${cover.tahomaDevice.label}`);
+    expect(calls).toHaveLength(1);
+    expect(cover.commandTimeout).toBeUndefined();
+  });
+
+  it('should not move when the current position is unknown', async () => {
+    const cover = somfyPlatform.covers.get('Device1');
+    expect(cover).toBeDefined();
+    if (!cover) return;
+
+    await cover.bridgedDevice.setAttribute(WindowCovering.id, 'currentPositionLiftPercent100ths', null);
+    cover.movementStatus = WindowCovering.MovementStatus.Stopped;
+    vi.clearAllMocks();
+    await somfyPlatform.moveToPosition(cover, 5000);
+
+    expect(loggerLogSpy).not.toHaveBeenCalledWith(LogLevel.INFO, expect.stringContaining('Moving from'));
+    expect(clientExecuteSpy).not.toHaveBeenCalled();
+    expect(cover.movementStatus).toBe(WindowCovering.MovementStatus.Stopped);
+    await cover.bridgedDevice.setWindowCoveringCurrentTargetStatus(5000, 5000, WindowCovering.MovementStatus.Stopped);
   });
 
   it('should call onConfigure', async () => {

@@ -31,6 +31,47 @@ If you like this project and find it useful, please consider giving it a star on
 
 ---
 
+## [1.7.2] - 2026-11-06
+
+### Added
+
+- [tahoma]: Add `getTahomaPosition()` helper reading the real position of bidirectional (io) covers from their TaHoma states.
+- [cover]: Add `isMoving()` helper reporting a pending (debounced) or in-progress movement started by the plugin.
+- [tahoma]: Set the current and target position of bidirectional (io) covers from their TaHoma state at discovery, on both WindowCovering and Closure. Based on PR [54](https://github.com/Luligu/matterbridge-somfy-tahoma/pull/54). Thanks Ludovic BOUÉ.
+- [tahoma]: Update the current and target position of bidirectional (io) covers from TaHoma state changes, only while the plugin is not moving the cover. An update received during a movement is applied when the movement ends. Addresses [26](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/26). Thanks smuteau for the logs, the devices list and all the tests on real bidirectional covers.
+- [tahoma]: Log the execution result of each command sent to TaHoma (failures and timeouts as warnings). Refer to [26](https://github.com/Luligu/matterbridge-somfy-tahoma/issues/26).
+
+### Changed
+
+- [agents]: Update `.antigravity/settings.json` to v.1.0.6.
+- [agents]: Update `.claude/settings.json` to v.1.0.9.
+- [codex]: Update `.codex/rules/default.rules` to v.1.0.7.
+- [workflows]: Update `.github/workflows/build.yml` to v.2.0.8.
+- [workflows]: Update `.github/workflows/codecov.yml` to v.2.0.8.
+- [workflows]: Update `.github/workflows/codeql.yml` to v.2.0.0.
+- [workflows]: Update `.github/workflows/publish.yml` to v.2.0.7.
+- [config]: Update `.gitignore` to v.1.0.5.
+- [config]: Update `.oxfmtrc.json` to v.1.2.0.
+- [config]: Update `.oxlintrc.json` to v.1.2.0.
+- [config]: Update `vitest.config.ts` to v.2.0.9.
+- [package]: Bump `@vitest/coverage-v8` to v.5.1.0.
+- [package]: Bump `oxfmt` to v.0.76.0.
+- [package]: Bump `oxlint` to v.1.91.0.
+- [package]: Bump `oxlint-tsgolint` to v.7.0.2006.
+- [package]: Bump `vitest` to v.5.1.0.
+- [agents]: Update `.agents/README.md` to v.1.0.5.
+- [agents]: Update `.agents/skills/verify-agent-context/SKILL.md`, `.claude/skills/verify-agent-context/SKILL.md` and `.github/skills/verify-agent-context/SKILL.md` to v.1.0.6.
+- [agents]: Update `AGENTS.md` to v.1.0.10.
+- [config]: Update `SHARED-AGENTS.md`.
+
+### Fixed
+
+- [cover]: WindowCovering `stopMotion` now cancels a move command still waiting in its 500 ms debounce, so the cover no longer starts moving after a quick stop.
+- [cover]: Reset the movement timer when a simulated movement ends or is stopped.
+- [cover]: Don't start the movement simulation when a stop arrives while the open/close command is still being sent to TaHoma.
+
+<a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>
+
 ## [1.7.1] - 2026-10-31
 
 ### Added

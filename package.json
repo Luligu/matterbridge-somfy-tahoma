@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-somfy-tahoma",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Matterbridge somfy tahoma plugin",
   "author": "https://github.com/Luligu",
   "license": "Apache-2.0",
@@ -71,7 +71,6 @@
     "plugin": true,
     "jest": false,
     "vitest": true,
-    "native": true,
     "git": false,
     "version": false,
     "publish": false,
@@ -128,11 +127,11 @@
   },
   "devDependencies": {
     "@types/node": "26.6.6",
-    "@vitest/coverage-v8": "5.0.5",
-    "oxfmt": "0.75.0",
-    "oxlint": "1.90.0",
-    "oxlint-tsgolint": "7.0.2005",
+    "@vitest/coverage-v8": "5.1.0",
+    "oxfmt": "0.76.0",
+    "oxlint": "1.91.0",
+    "oxlint-tsgolint": "7.0.2006",
     "typescript": "7.0.2",
-    "vitest": "5.0.5"
+    "vitest": "5.1.0"
   }
 }

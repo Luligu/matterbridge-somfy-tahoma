@@ -40,7 +40,7 @@ import { ClosureCoveringTag, ClosurePanelTag, ClosureTag } from 'matterbridge/ma
 import { ClosureControl, ClosureDimension, Identify, WindowCovering } from 'matterbridge/matter/clusters';
 import type { Semtag } from 'matterbridge/matter/types';
 import { inspectError, isValidNumber, isValidString } from 'matterbridge/utils';
-import { Action, Client, Command, type Device, Execution, type State } from 'overkiz-client';
+import { Action, Client, Command, type Device, Execution, ExecutionState, type State } from 'overkiz-client';
 
 export type MovementDuration = Record<string, number>;
 export type ClosureOptions = Record<string, { calibration?: boolean; ventilation?: boolean; pedestrian?: boolean; signaturePosition?: number }>;
@@ -72,6 +72,8 @@ export interface Cover {
   moveInterval?: NodeJS.Timeout;
   /** Debounce timer coalescing rapid successive move commands before a single TaHoma command is sent. */
   commandTimeout?: NodeJS.Timeout;
+  /** A TaHoma position update arrived while our own movement was in progress: re-sync from TaHoma when it ends. */
+  tahomaPositionPending?: boolean;
 }
 
 export type SomfyTahomaPlatformConfig = PlatformConfig & {
@@ -125,6 +127,48 @@ function getCoveringTag(tahomaDevice: Device): Semtag {
   if (uiClass === 'Awning' || uiClass === 'Pergola') return ClosureCoveringTag.Awning;
   if (uiClass === 'Screen' || uiClass === 'ExteriorScreen') return ClosureCoveringTag.Blind;
   return ClosureCoveringTag.Shutter; // Shutter, RollerShutter and any other supported uiClass
+}
+
+/** Special TaHoma position value: the cover is at its memorized "My" position (see core:Memorized1PositionState). */
+const TAHOMA_POSITION_MY = 108;
+/** Special TaHoma position value: the cover position is unknown. */
+const TAHOMA_POSITION_UNKNOWN = 124;
+/** TaHoma states read by getTahomaPosition: a change in any of them can change the cover position. */
+const TAHOMA_POSITION_STATES = new Set(['core:ClosureState', 'core:DeploymentState', 'core:TargetClosureState', 'core:Memorized1PositionState']);
+
+/**
+ * Reads a numeric TaHoma state. Values read with getDevices are numbers, while values received with
+ * DeviceStateChangedEvent are strings (e.g. `'0'`), so both are accepted.
+ *
+ * @param {Device} tahomaDevice - The TaHoma device to read from.
+ * @param {string} stateName - The state name, e.g. `core:ClosureState`.
+ * @returns {number | undefined} The state value, or undefined if the state is missing or not numeric.
+ */
+function getTahomaNumberState(tahomaDevice: Device, stateName: string): number | undefined {
+  const value: unknown = tahomaDevice.states.find((s) => s.name === stateName)?.value;
+  const parsed = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+  return isValidNumber(parsed) ? parsed : undefined;
+}
+
+/**
+ * Reads the real position of a bidirectional (io) TaHoma cover and converts it to the Matter convention, like the
+ * Home Assistant Overkiz integration does:
+ * - `core:DeploymentState` (0 retracted to 100 deployed) is inverted, since a deployed awning is closed for Matter. It is used
+ *   for uiClass `Awning`, or when the device doesn't report `core:ClosureState`.
+ * - otherwise `core:ClosureState` (0 fully open to 100 fully closed).
+ * - 108 ("My" position) falls back to `core:Memorized1PositionState` and 124 (unknown) falls back to `core:TargetClosureState`.
+ *
+ * @param {Device} tahomaDevice - The TaHoma device to read from.
+ * @returns {number | undefined} The position, 0 (fully open) to 10000 (fully closed), or undefined for stateless (RTS) devices or an unknown position.
+ */
+export function getTahomaPosition(tahomaDevice: Device): number | undefined {
+  const hasState = (name: string): boolean => tahomaDevice.states.some((s) => s.name === name);
+  const deployment = hasState('core:DeploymentState') && (tahomaDevice.definition.uiClass === 'Awning' || !hasState('core:ClosureState'));
+  let percent = getTahomaNumberState(tahomaDevice, deployment ? 'core:DeploymentState' : 'core:ClosureState');
+  if (percent === TAHOMA_POSITION_MY) percent = getTahomaNumberState(tahomaDevice, 'core:Memorized1PositionState');
+  if (percent === TAHOMA_POSITION_UNKNOWN) percent = getTahomaNumberState(tahomaDevice, 'core:TargetClosureState');
+  if (!isValidNumber(percent, 0, 100)) return undefined;
+  return Math.round((deployment ? 100 - percent : percent) * 100);
 }
 
 /**
@@ -210,6 +254,17 @@ async function setCoverStopped(cover: Cover): Promise<void> {
 }
 
 /**
+ * Reports whether a movement started from our command handlers is in progress: either a command is still waiting
+ * in its debounce (`cover.commandTimeout`) or the cover is opening/closing (`cover.movementStatus`).
+ *
+ * @param {Cover} cover - The cover to check.
+ * @returns {boolean} True if a movement is pending or in progress, false if the cover is stopped.
+ */
+export function isMoving(cover: Cover): boolean {
+  return cover.commandTimeout !== undefined || cover.movementStatus !== WindowCovering.MovementStatus.Stopped;
+}
+
+/**
  * Marks the cover as moving towards a target position, on whichever cluster (WindowCovering or Closure) is
  * currently in use. Updates `cover.movementStatus`.
  *
@@ -220,6 +275,10 @@ async function setCoverStopped(cover: Cover): Promise<void> {
  */
 async function setCoverMoving(cover: Cover, targetPosition: number, closing: boolean): Promise<void> {
   const log = cover.bridgedDevice.log;
+  // Set before the attribute writes: the debounce timer is already cleared, so isMoving() relies on this alone
+  cover.movementStatus = closing ? WindowCovering.MovementStatus.Closing : WindowCovering.MovementStatus.Opening;
+  // Only TaHoma updates received during this movement count for the re-sync when it ends
+  cover.tahomaPositionPending = false;
   if (cover.liftPanel) {
     await cover.liftPanel.setAttribute(ClosureDimension, 'targetState', { position: targetPosition }, log);
     await cover.bridgedDevice.setAttribute(ClosureControl, 'mainState', ClosureControl.MainState.Moving, log);
@@ -227,7 +286,6 @@ async function setCoverMoving(cover: Cover, targetPosition: number, closing: boo
     await cover.bridgedDevice.setAttribute(WindowCovering, 'targetPositionLiftPercent100ths', targetPosition, log);
     await cover.bridgedDevice.setWindowCoveringStatus(closing ? WindowCovering.MovementStatus.Closing : WindowCovering.MovementStatus.Opening);
   }
-  cover.movementStatus = closing ? WindowCovering.MovementStatus.Closing : WindowCovering.MovementStatus.Opening;
 }
 
 /**
@@ -470,10 +528,20 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       this.log.debug(`- states ${debugStringify(device.states)}`);
       this.log.debug(`- duration ${duration}`);
 
-      // Listen for state changes on the device and log them
-      device.on('states', (changedStates: State[]) => {
-        // v8 ignore next -- This is for debugging purposes and is not critical to cover in tests
+      // Listen for state changes on the device: bidirectional (io) covers report their real position
+      // oxlint-disable-next-line typescript/no-misused-promises -- EventEmitter listeners are not awaited
+      device.on('states', async (changedStates: State[]) => {
         this.log.debug(`***Tahoma update for ${device.label}: ${debugStringify(changedStates)}`);
+        if (!changedStates.some((s) => TAHOMA_POSITION_STATES.has(s.name))) return;
+        const platformCover = this.covers.get(device.label);
+        if (!platformCover) return;
+        // Our own movement drives current and target until it ends: don't fight the simulation, re-sync when it ends
+        if (isMoving(platformCover)) {
+          platformCover.tahomaPositionPending = true;
+          this.log.debug(`TaHoma position update for ${device.label} deferred while moving`);
+          return;
+        }
+        await this.applyTahomaPosition(platformCover);
       });
 
       let cover: MatterbridgeEndpoint;
@@ -508,7 +576,20 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         cover.addRequiredClusters();
       }
       await this.registerDevice(cover);
-      this.covers.set(device.label, { tahomaDevice: device, bridgedDevice: cover, liftPanel, movementStatus: WindowCovering.MovementStatus.Stopped, movementDuration: duration });
+      const platformCover: Cover = { tahomaDevice: device, bridgedDevice: cover, liftPanel, movementStatus: WindowCovering.MovementStatus.Stopped, movementDuration: duration };
+      this.covers.set(device.label, platformCover);
+
+      // Bidirectional (io) covers report their real position: nothing is moving yet, so set both current and target to it.
+      // Done after registerDevice so it overrides the position restored from storage.
+      const tahomaPosition = getTahomaPosition(device);
+      if (tahomaPosition !== undefined) {
+        this.log.info(`Setting ${device.label} current and target position to ${CYAN}${tahomaPosition / 100} %${nf} from TaHoma`);
+        try {
+          await setCoverStoppedAt(platformCover, tahomaPosition);
+        } catch (error) {
+          inspectError(this.log, `Error setting the TaHoma position of ${device.label}`, error);
+        }
+      }
 
       cover.addCommandHandler('Identify.identify', async ({ request: { identifyTime } }) => {
         const cover = this.covers.get(device.label);
@@ -554,6 +635,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
             const position = getCoverPosition(cover);
             if (isValidNumber(position, PERCENT100THS_MIN_OPEN, PERCENT100THS_MAX_CLOSED)) await setCoverStoppedAt(cover, position);
             else await setCoverStopped(cover);
+            await this.resyncTahomaPosition(cover);
           } catch (error) {
             inspectError(cover.bridgedDevice.log, 'Error stopping cover', error);
           }
@@ -623,7 +705,10 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
           const cover = this.covers.get(device.label);
           if (!cover) return;
           cover.bridgedDevice.log.info(`Command ${ign}stopMotion${rs}${nf} called for ${CYAN}${cover.tahomaDevice.label}. Status ${cover.movementStatus}`);
+          if (cover.commandTimeout) clearTimeout(cover.commandTimeout);
+          cover.commandTimeout = undefined;
           clearInterval(cover.moveInterval);
+          cover.moveInterval = undefined;
           if (cover.movementStatus !== WindowCovering.MovementStatus.Stopped) {
             await this.sendCommand('stop', cover.tahomaDevice, true);
           }
@@ -631,6 +716,38 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
         });
       }
     }
+  }
+
+  /**
+   * Sets the current and target position of a cover to the real position reported by TaHoma, when it is known and
+   * differs from the current one. Call it only while the cover is not moving (see isMoving).
+   *
+   * @param {Cover} cover - The cover to update.
+   * @returns {Promise<void>}
+   */
+  async applyTahomaPosition(cover: Cover): Promise<void> {
+    const label = cover.tahomaDevice.label;
+    const tahomaPosition = getTahomaPosition(cover.tahomaDevice);
+    if (tahomaPosition === undefined || tahomaPosition === getCoverPosition(cover)) return;
+    this.log.info(`Updating ${label} current and target position to ${CYAN}${tahomaPosition / 100} %${nf} from TaHoma`);
+    try {
+      await setCoverStoppedAt(cover, tahomaPosition);
+    } catch (error) {
+      inspectError(this.log, `Error updating the TaHoma position of ${label}`, error);
+    }
+  }
+
+  /**
+   * Re-syncs the cover from TaHoma at the end of our own movement, if a TaHoma position update was deferred while it
+   * was moving (e.g. the real cover reached its position before the simulation did).
+   *
+   * @param {Cover} cover - The cover whose movement just ended.
+   * @returns {Promise<void>}
+   */
+  async resyncTahomaPosition(cover: Cover): Promise<void> {
+    if (!cover.tahomaPositionPending) return;
+    cover.tahomaPositionPending = false;
+    await this.applyTahomaPosition(cover);
   }
 
   // With Matter 0=open 10000=close. Cluster-agnostic: reads/writes go through getCoverPosition/setCoverStoppedAt/
@@ -650,6 +767,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       cover.moveInterval = undefined;
       await setCoverStoppedAt(cover, currentPosition);
       await this.sendCommand('stop', cover.tahomaDevice, true);
+      await this.resyncTahomaPosition(cover);
       return;
     }
     // Return if already at target position
@@ -666,6 +784,11 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     log.debug(`Moving from ${currentPosition} to ${targetPosition} in ${movementSeconds} seconds. Movement requested ${movement}`);
     await setCoverMoving(cover, targetPosition, targetPosition > currentPosition);
     await this.sendCommand(targetPosition > currentPosition ? 'close' : 'open', cover.tahomaDevice, true);
+    // A stop (or another move) handled while the command was in flight already stopped the cover: don't start the simulation
+    if (cover.movementStatus === WindowCovering.MovementStatus.Stopped) {
+      log.debug(`Moving from ${currentPosition} to ${targetPosition} cancelled while the command was in flight`);
+      return;
+    }
 
     // oxlint-disable-next-line typescript/no-misused-promises
     cover.moveInterval = setInterval(async () => {
@@ -673,9 +796,11 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       currentPosition = Math.round(currentPosition + movement / movementSeconds);
       if (Math.abs(targetPosition - currentPosition) <= 100 || (movement > 0 && currentPosition >= targetPosition) || (movement < 0 && currentPosition <= targetPosition)) {
         clearInterval(cover.moveInterval);
+        cover.moveInterval = undefined;
         await setCoverStoppedAt(cover, targetPosition);
         if (targetPosition !== PERCENT100THS_MIN_OPEN && targetPosition !== PERCENT100THS_MAX_CLOSED) await this.sendCommand('stop', cover.tahomaDevice, true);
         log.debug(`Moving stopped at ${targetPosition}`);
+        await this.resyncTahomaPosition(cover);
       } else {
         log.debug(`Moving from ${currentPosition} to ${targetPosition} difference ${Math.abs(targetPosition - currentPosition)}`);
         await setCoverCurrentPosition(cover, currentPosition);
@@ -717,6 +842,14 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
       const newAction = new Action(device.deviceURL, [newCommand]);
       const isLocalApi = this.config.service === 'local';
       const newExecution = isLocalApi ? new LocalApiExecution('Sending ' + resolvedCommand, newAction) : new Execution('Sending ' + resolvedCommand, newAction);
+      // Log the execution results (ExecutionStateChangedEvent) received by the overkiz-client event poller
+      newExecution.on('update', (state: ExecutionState, event?: { failureType?: string } | null) => {
+        if (state === ExecutionState.FAILED || state === ExecutionState.TIMED_OUT) {
+          this.log.warn(`Command ${resolvedCommand} to ${device.label} ${state}${event?.failureType ? `: ${event.failureType}` : ''}`);
+        } else {
+          this.log.debug(`Command ${resolvedCommand} to ${device.label} ${state}`);
+        }
+      });
       const executionPath = isLocalApi || !highPriority ? 'apply' : 'apply/highPriority';
       await this.tahomaClient?.execute(executionPath, newExecution);
     } catch (error) {
