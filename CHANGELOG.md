@@ -54,6 +54,15 @@ If you like this project and find it useful, please consider giving it a star on
 - [config]: Update `.oxfmtrc.json` to v.1.2.0.
 - [config]: Update `.oxlintrc.json` to v.1.2.0.
 - [config]: Update `vitest.config.ts` to v.2.0.9.
+- [package]: Bump `@vitest/coverage-v8` to v.5.1.0.
+- [package]: Bump `oxfmt` to v.0.76.0.
+- [package]: Bump `oxlint` to v.1.91.0.
+- [package]: Bump `oxlint-tsgolint` to v.7.0.2006.
+- [package]: Bump `vitest` to v.5.1.0.
+- [agents]: Update `.agents/README.md` to v.1.0.5.
+- [agents]: Update `.agents/skills/verify-agent-context/SKILL.md`, `.claude/skills/verify-agent-context/SKILL.md` and `.github/skills/verify-agent-context/SKILL.md` to v.1.0.6.
+- [agents]: Update `AGENTS.md` to v.1.0.10.
+- [config]: Update `SHARED-AGENTS.md`.
 
 ### Fixed
 
