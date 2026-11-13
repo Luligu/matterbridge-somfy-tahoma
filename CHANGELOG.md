@@ -35,6 +35,7 @@ If you like this project and find it useful, please consider giving it a star on
 
 ### Changed
 
+- [logger]: Apply logger level changes to the platform and all registered devices with canonical platform messages.
 - [package]: Bump transitive `axios` to v.1.21.0 and `follow-redirects` to v.1.16.2 (overkiz-client → axios) to fix security advisory [GHSA-mrwp-f3q8-3g9p](https://github.com/advisories/GHSA-mrwp-f3q8-3g9p).
 
 <a href="https://www.buymeacoffee.com/luligugithub"><img src="https://matterbridge.io/assets/bmc-button.svg" alt="Buy me a coffee" width="80"></a>

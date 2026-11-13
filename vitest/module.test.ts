@@ -1465,6 +1465,27 @@ describe('SomfyTahomaPlatform', () => {
     await cover.bridgedDevice.setWindowCoveringCurrentTargetStatus(5000, 5000, WindowCovering.MovementStatus.Stopped);
   });
 
+  it('should change the logger level of the platform and all registered devices', async () => {
+    const devices = somfyPlatform.getDevices();
+    expect(devices.length).toBeGreaterThan(0);
+    const platformLevel = somfyPlatform.log.logLevel;
+    const deviceLevels = devices.map((device) => device.log.logLevel);
+    try {
+      await somfyPlatform.onChangeLoggerLevel(LogLevel.DEBUG);
+      expect(somfyPlatform.log.logLevel).toBe(LogLevel.DEBUG);
+      for (const device of devices) {
+        expect(device.log.logLevel).toBe(LogLevel.DEBUG);
+      }
+      expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Changing logger level of platform ${config.name} to ${LogLevel.DEBUG}...`);
+      expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Platform ${config.name} logger level changed successfully to ${LogLevel.DEBUG}`);
+    } finally {
+      somfyPlatform.log.logLevel = platformLevel;
+      devices.forEach((device, index) => {
+        device.log.logLevel = deviceLevels[index];
+      });
+    }
+  });
+
   it('should call onConfigure', async () => {
     await somfyPlatform.onConfigure();
     expect(loggerLogSpy).toHaveBeenCalledWith(LogLevel.INFO, `Configuring platform ${config.name}...`);
