@@ -1,4 +1,4 @@
-# Shared agent instructions (v.1.0.5)
+# Shared agent instructions (v.1.0.6)
 
 This folder is the **single source of truth** for the instructions given to every coding agent used on this
 repository — OpenAI Codex, Claude Code, GitHub Copilot, Google Gemini / Antigravity and Bionic / LM Studio. Each agent reads the same documents through its
@@ -26,11 +26,12 @@ Reference documents. They are not loaded all the time — an agent opens the one
 | `rules/plugin-frontend.instructions.md` | Serving a plugin's own frontend SPA and REST API      |
 | `rules/chip-tests.instructions.md`      | The CHIP conformance test harness                     |
 
-Each starts with YAML frontmatter holding a `description` that ends with the file's version:
+Each starts with YAML frontmatter holding a human-readable `name` and a `description` that ends with the file's version:
 
 ```yaml
 ---
-description: 'Testing standards for unit tests in the project v.1.0.7'
+name: 'Testing Standards'
+description: 'Testing standards for unit tests in the project v.1.0.8'
 ---
 ```
 
@@ -69,7 +70,7 @@ small mirror in its own folder. Those mirrors hold **only** frontmatter plus a p
 
 ```markdown
 ---
-description: 'Testing standards for unit tests in the project v.1.0.7'
+description: 'Testing standards for unit tests in the project v.1.0.8'
 paths:
   - '**/*.test.ts'
 ---
@@ -85,7 +86,7 @@ when the skill runs, and both also read the mirror's `description` to offer the 
 
 **A new rule:**
 
-1. Write `.agents/rules/<topic>.instructions.md` with a `description` frontmatter ending in `v.1.0.0`.
+1. Write `.agents/rules/<topic>.instructions.md` with a human-readable `name` and a `description` ending in `v.1.0.0` in its frontmatter.
 2. Add a bullet for it in `AGENTS.md` under _Additional Agent Guidance_ — Codex and Bionic have no
    auto-loading, so a rule that is not listed there is invisible to them.
 3. Create the two pointer files, copying the frontmatter style of an existing pair and setting the

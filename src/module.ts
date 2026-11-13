@@ -35,7 +35,7 @@ import {
   windowCovering,
 } from 'matterbridge';
 import { Closure } from 'matterbridge/devices';
-import { type AnsiLogger, BLUE, CYAN, debugStringify, ign, nf, rs, stringify, YELLOW } from 'matterbridge/logger';
+import { type AnsiLogger, BLUE, CYAN, debugStringify, ign, type LogLevel, nf, rs, stringify, YELLOW } from 'matterbridge/logger';
 import { ClosureCoveringTag, ClosurePanelTag, ClosureTag } from 'matterbridge/matter';
 import { ClosureControl, ClosureDimension, Identify, WindowCovering } from 'matterbridge/matter/clusters';
 import type { Semtag } from 'matterbridge/matter/types';
@@ -103,6 +103,11 @@ export type SomfyTahomaPlatformConfig = PlatformConfig & {
  * can reject that payload with `400 Unknown object`.
  */
 class LocalApiExecution extends Execution {
+  /**
+   * Serializes the execution using only fields accepted by Somfy's Local API
+   *
+   * @returns {{ label: string; actions: { deviceURL: string; commands: { name: string; parameters: unknown[] }[] }[] }} The execution label and device commands.
+   */
   toJSON(): { label: string; actions: { deviceURL: string; commands: { name: string; parameters: unknown[] }[] }[] } {
     return {
       label: this.label,
@@ -330,6 +335,14 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
   /** Indicates whether the platform is currently connected to the TaHoma service. */
   connected = false;
 
+  /**
+   * Initializes the platform configuration and TaHoma client
+   *
+   * @param {PlatformMatterbridge} matterbridge The Matterbridge instance hosting the platform.
+   * @param {AnsiLogger} log The platform logger.
+   * @param {SomfyTahomaPlatformConfig} config The TaHoma connection and cover configuration.
+   * @throws {Error} If the Matterbridge version is unsupported.
+   */
   constructor(
     matterbridge: PlatformMatterbridge,
     log: AnsiLogger,
@@ -381,6 +394,12 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     });
   }
 
+  /**
+   * Connects to TaHoma and discovers supported covers once the platform is ready
+   *
+   * @param {string} [reason] The reason for starting the platform.
+   * @returns {Promise<void>} Resolves after discovery, or an early exit when the client is unavailable or cannot connect.
+   */
   override async onStart(reason?: string): Promise<void> {
     await this.ready;
 
@@ -400,6 +419,11 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.log.info(`Platform ${this.config.name} started successfully`);
   }
 
+  /**
+   * Restores registered covers to a stopped state using their persisted positions
+   *
+   * @returns {Promise<void>} Resolves after configuring the covers, or an early exit when the client is unavailable.
+   */
   override async onConfigure(): Promise<void> {
     await super.onConfigure();
     this.log.info(`Configuring platform ${this.config.name}...`);
@@ -421,6 +445,28 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.log.info(`Platform ${this.config.name} configured successfully`);
   }
 
+  /**
+   * Updates the logger level of the platform and its registered devices.
+   *
+   * @param {LogLevel} logLevel The new logger level.
+   * @returns {Promise<void>} Resolves after updating the platform and registered device loggers.
+   */
+  // oxlint-disable-next-line typescript/require-await
+  override async onChangeLoggerLevel(logLevel: LogLevel): Promise<void> {
+    this.log.info(`Changing logger level of platform ${this.config.name} to ${logLevel}...`);
+    this.log.logLevel = logLevel;
+    for (const device of this.getDevices()) {
+      device.log.logLevel = logLevel;
+    }
+    this.log.info(`Platform ${this.config.name} logger level changed successfully to ${logLevel}`);
+  }
+
+  /**
+   * Removes TaHoma listeners, clears cover timers and optionally unregisters devices
+   *
+   * @param {string} [reason] The reason for shutting down the platform.
+   * @returns {Promise<void>} Resolves after platform shutdown and cover cleanup.
+   */
   override async onShutdown(reason?: string): Promise<void> {
     await super.onShutdown(reason);
     this.log.info(`Shutting down platform ${this.config.name} with reason: ${reason ?? 'no reason provided'}...`);
@@ -442,6 +488,11 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     this.log.info(`Platform ${this.config.name} shut down successfully`);
   }
 
+  /**
+   * Discovers supported TaHoma covers and registers their Matter endpoints and command handlers
+   *
+   * @returns {Promise<void>} Resolves after discovery, or an early exit when the client is unavailable.
+   */
   async discoverDevices(): Promise<void> {
     // TaHoma
     if (!this.tahomaClient) {
@@ -723,7 +774,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
    * differs from the current one. Call it only while the cover is not moving (see isMoving).
    *
    * @param {Cover} cover - The cover to update.
-   * @returns {Promise<void>}
+   * @returns {Promise<void>} Resolves after applying the known position, or immediately when no update is needed.
    */
   async applyTahomaPosition(cover: Cover): Promise<void> {
     const label = cover.tahomaDevice.label;
@@ -742,7 +793,7 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
    * was moving (e.g. the real cover reached its position before the simulation did).
    *
    * @param {Cover} cover - The cover whose movement just ended.
-   * @returns {Promise<void>}
+   * @returns {Promise<void>} Resolves after applying a deferred update, or immediately when none is pending.
    */
   async resyncTahomaPosition(cover: Cover): Promise<void> {
     if (!cover.tahomaPositionPending) return;
@@ -750,9 +801,16 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     await this.applyTahomaPosition(cover);
   }
 
-  // With Matter 0=open 10000=close. Cluster-agnostic: reads/writes go through getCoverPosition/setCoverStoppedAt/
-  // setCoverMoving/setCoverCurrentPosition, which branch on cover.liftPanel to target either the WindowCovering
-  // cluster or the Closure/ClosureDimension clusters (see the useClosure config option).
+  /**
+   * Moves a cover towards a target position using its configured full-travel duration
+   *
+   * Uses cluster-agnostic helpers for WindowCovering and Closure endpoints. An unknown current position skips
+   * movement; a request received during movement stops the cover and applies any deferred TaHoma update.
+   *
+   * @param {Cover} cover The cover to move.
+   * @param {number} targetPosition The target position in hundredths of a percent closed, from 0 (open) to 10000 (closed).
+   * @returns {Promise<void>} Resolves after handling the request and starting any movement timer, not after movement finishes.
+   */
   async moveToPosition(cover: Cover, targetPosition: number): Promise<void> {
     const log = cover.bridgedDevice.log;
     const position = getCoverPosition(cover);
@@ -808,6 +866,16 @@ export class SomfyTahomaPlatform extends MatterbridgeDynamicPlatform {
     }, 1000);
   }
 
+  /**
+   * Sends a TaHoma command after resolving device-specific command names and configured direction inversion
+   *
+   * Local API requests use a compatible payload and the standard execution path. Execution failures are logged.
+   *
+   * @param {string} command The requested command, such as open, close or stop.
+   * @param {Device} device The TaHoma device receiving the command.
+   * @param {boolean} [highPriority] Whether cloud requests use the high-priority execution path. Defaults to false.
+   * @returns {Promise<void>} Resolves after submitting the command or logging a submission error.
+   */
   async sendCommand(command: string, device: Device, highPriority = false): Promise<void> {
     let resolvedCommand = command;
     // Pergola fabric roofs: open retracts the fabric (undeploy) and close extends it (deploy), like the HA Overkiz integration
